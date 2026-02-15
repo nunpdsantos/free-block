@@ -1,4 +1,3 @@
-let ctx: AudioContext | null = null;
 let muted = false;
 
 try {
@@ -6,25 +5,57 @@ try {
   if (stored === 'true') muted = true;
 } catch { /* ignore */ }
 
-function getCtx(): AudioContext | null {
-  if (muted) return null;
-  if (!ctx) {
-    try {
-      ctx = new AudioContext();
-    } catch {
-      return null;
-    }
-  }
-  if (ctx.state === 'suspended') ctx.resume();
-  return ctx;
-}
-
 /** Haptic pulse — always fires (independent of sound mute) */
 function vibrate(pattern: number | number[]) {
   try {
     navigator?.vibrate?.(pattern);
   } catch { /* unsupported */ }
 }
+
+/**
+ * Audio pool — pre-load each sound and keep multiple instances
+ * so rapid-fire playback doesn't cut off previous plays.
+ */
+const POOL_SIZE = 4;
+
+function createPool(src: string): HTMLAudioElement[] {
+  const pool: HTMLAudioElement[] = [];
+  for (let i = 0; i < POOL_SIZE; i++) {
+    const a = new Audio(src);
+    a.preload = 'auto';
+    pool.push(a);
+  }
+  return pool;
+}
+
+let placePool: HTMLAudioElement[] | null = null;
+let clearPool: HTMLAudioElement[] | null = null;
+let comboPool: HTMLAudioElement[] | null = null;
+let gameoverPool: HTMLAudioElement[] | null = null;
+
+let placeIdx = 0;
+let clearIdx = 0;
+let comboIdx = 0;
+let gameoverIdx = 0;
+
+function ensurePools() {
+  if (!placePool) {
+    placePool = createPool('/sounds/place.ogg');
+    clearPool = createPool('/sounds/clear.ogg');
+    comboPool = createPool('/sounds/combo.ogg');
+    gameoverPool = createPool('/sounds/gameover.ogg');
+  }
+}
+
+function playFromPool(pool: HTMLAudioElement[], idx: number, volume: number): number {
+  const el = pool[idx % POOL_SIZE];
+  el.volume = Math.min(1, Math.max(0, volume));
+  el.currentTime = 0;
+  el.play().catch(() => { /* blocked by autoplay policy */ });
+  return (idx + 1) % POOL_SIZE;
+}
+
+// --- Public API ---
 
 export function isSoundMuted(): boolean {
   return muted;
@@ -37,120 +68,34 @@ export function setSoundMuted(m: boolean) {
   } catch { /* ignore */ }
 }
 
-// --- Sound effects ---
-
-/** Warm pop on piece placement */
+/** Soft pop on piece placement */
 export function playPlace() {
   vibrate(8);
-
-  const c = getCtx();
-  if (!c) return;
-  const t = c.currentTime;
-
-  const osc = c.createOscillator();
-  const gain = c.createGain();
-  osc.connect(gain);
-  gain.connect(c.destination);
-
-  osc.type = 'sine';
-  osc.frequency.setValueAtTime(500, t);
-  osc.frequency.exponentialRampToValueAtTime(150, t + 0.05);
-
-  gain.gain.setValueAtTime(0.13, t);
-  gain.gain.exponentialRampToValueAtTime(0.001, t + 0.07);
-
-  osc.start(t);
-  osc.stop(t + 0.07);
+  if (muted) return;
+  ensurePools();
+  placeIdx = playFromPool(placePool!, placeIdx, 0.5);
 }
 
-/** Crystal chime on line clear — pitch rises with combo, richer on multi-clears */
+/** Chime on line clear — volume rises with combo */
 export function playClear(combo: number = 0, linesCleared: number = 1) {
   vibrate(linesCleared >= 2 ? [15, 30, 15] : 15);
+  if (muted) return;
+  ensurePools();
 
-  const c = getCtx();
-  if (!c) return;
-  const t = c.currentTime;
-
-  const pitchMult = 1 + combo * 0.06;
-  const baseFreqs = [800, 1200];
-  const duration = linesCleared >= 2 ? 0.35 : 0.25;
-  const volume = 0.08;
-
-  // Main chord tones
-  for (const freq of baseFreqs) {
-    const osc = c.createOscillator();
-    const gain = c.createGain();
-    osc.connect(gain);
-    gain.connect(c.destination);
-
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(freq * pitchMult, t);
-
-    gain.gain.setValueAtTime(volume, t);
-    gain.gain.exponentialRampToValueAtTime(0.001, t + duration);
-
-    osc.start(t);
-    osc.stop(t + duration);
-  }
-
-  // Shimmer — slightly detuned high harmonic
-  const shimmer = c.createOscillator();
-  const shimmerGain = c.createGain();
-  shimmer.connect(shimmerGain);
-  shimmerGain.connect(c.destination);
-
-  shimmer.type = 'sine';
-  shimmer.frequency.setValueAtTime(1760 * pitchMult, t);
-  shimmerGain.gain.setValueAtTime(0.025, t);
-  shimmerGain.gain.exponentialRampToValueAtTime(0.001, t + duration * 0.7);
-
-  shimmer.start(t);
-  shimmer.stop(t + duration * 0.7);
-
-  // Extra sparkle for multi-line clears
   if (linesCleared >= 2) {
-    const sparkle = c.createOscillator();
-    const sparkleGain = c.createGain();
-    sparkle.connect(sparkleGain);
-    sparkleGain.connect(c.destination);
-
-    sparkle.type = 'sine';
-    sparkle.frequency.setValueAtTime(2400 * pitchMult, t + 0.05);
-    sparkle.frequency.exponentialRampToValueAtTime(3200 * pitchMult, t + 0.15);
-
-    sparkleGain.gain.setValueAtTime(0.02, t + 0.05);
-    sparkleGain.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
-
-    sparkle.start(t + 0.05);
-    sparkle.stop(t + 0.3);
+    // Multi-clear gets the richer three-tone sound
+    const vol = Math.min(1, 0.5 + combo * 0.05);
+    comboIdx = playFromPool(comboPool!, comboIdx, vol);
+  } else {
+    const vol = Math.min(1, 0.4 + combo * 0.05);
+    clearIdx = playFromPool(clearPool!, clearIdx, vol);
   }
 }
 
-/** Descending minor triad on game over */
+/** Descending tone on game over */
 export function playGameOver() {
   vibrate([40, 60, 80]);
-
-  const c = getCtx();
-  if (!c) return;
-  const t = c.currentTime;
-
-  const notes = [330, 262, 196]; // E4, C4, G3
-
-  for (let i = 0; i < notes.length; i++) {
-    const osc = c.createOscillator();
-    const gain = c.createGain();
-    osc.connect(gain);
-    gain.connect(c.destination);
-
-    osc.type = 'sine';
-    const noteTime = t + i * 0.16;
-    osc.frequency.setValueAtTime(notes[i], noteTime);
-
-    gain.gain.setValueAtTime(0, noteTime);
-    gain.gain.linearRampToValueAtTime(0.1, noteTime + 0.02);
-    gain.gain.exponentialRampToValueAtTime(0.001, noteTime + 0.3);
-
-    osc.start(noteTime);
-    osc.stop(noteTime + 0.3);
-  }
+  if (muted) return;
+  ensurePools();
+  gameoverIdx = playFromPool(gameoverPool!, gameoverIdx, 0.6);
 }
