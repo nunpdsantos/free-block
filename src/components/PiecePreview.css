@@ -7,7 +7,7 @@
   cursor: grab;
   user-select: none;
   transition: transform 0.15s ease, opacity 0.15s ease;
-  animation: piece-enter 0.3s ease-out;
+  animation: piece-enter 0.3s ease-out backwards;
 }
 
 .piece-preview:active {

@@ -1,7 +1,7 @@
 import { useReducer, useEffect, useCallback, useState, useRef, useMemo } from 'react';
 import { gameReducer, createInitialState } from '../game/reducer';
 import type { Board as BoardType } from '../game/types';
-import { canPlacePiece, placePiece, findCompletedLines } from '../game/logic';
+import { canPlacePiece, placePiece, findCompletedLines, getClearingCells, calculateScore } from '../game/logic';
 import { useDrag } from '../hooks/useDrag';
 import { CLEAR_ANIMATION_MS, CLEAR_STAGGER_MS, GRID_SIZE, BG_PALETTES } from '../game/constants';
 import { playPlace, playClear, playGameOver, isSoundMuted, setSoundMuted } from '../audio/sounds';
@@ -42,9 +42,12 @@ export function Game({ topScore, onQuit, onSaveScore }: GameProps) {
   const [isPaused, setIsPaused] = useState(false);
   const [confettiTrigger, setConfettiTrigger] = useState(0);
   const [muted, setMuted] = useState(isSoundMuted);
+  const [scorePop, setScorePop] = useState<number | null>(null);
+  const [reviveFlash, setReviveFlash] = useState(false);
   const gameRef = useRef<HTMLDivElement>(null);
   const scoreSavedRef = useRef(false);
   const prevGameOverRef = useRef(false);
+  const scorePopKeyRef = useRef(0);
 
   // --- Background palette cycling ---
   const bgIndex = useMemo(() => getBgPaletteIndex(state.score), [state.score]);
@@ -100,6 +103,12 @@ export function Game({ topScore, onQuit, onSaveScore }: GameProps) {
       if (linesCleared > 0) {
         playClear(state.streak, linesCleared);
 
+        // Compute points for score pop display
+        const clearCells = getClearingCells(rows, cols);
+        const points = calculateScore(clearCells.length, linesCleared, state.streak);
+        setScorePop(points);
+        scorePopKeyRef.current += 1;
+
         setAnimBoard(boardAfterPlace);
         const newPieces = [...state.currentPieces];
         newPieces[pieceIndex] = null;
@@ -139,6 +148,7 @@ export function Game({ topScore, onQuit, onSaveScore }: GameProps) {
           setAnimBoard(null);
           setAnimPieces(null);
           setIsAnimating(false);
+          setScorePop(null);
           dispatch({ type: 'PLACE_PIECE', pieceIndex, row, col });
         }, totalMs);
       } else {
@@ -197,6 +207,8 @@ export function Game({ topScore, onQuit, onSaveScore }: GameProps) {
 
   const handleRevive = useCallback(() => {
     dispatch({ type: 'REVIVE' });
+    setReviveFlash(true);
+    setTimeout(() => setReviveFlash(false), 600);
   }, []);
 
   const handleQuit = useCallback(() => {
@@ -214,6 +226,12 @@ export function Game({ topScore, onQuit, onSaveScore }: GameProps) {
   }, []);
 
   const isNewHighScore = state.score > 0 && state.score >= topScore && state.isGameOver;
+
+  // Build board container class
+  let boardContainerClass = 'board-container';
+  if (state.streak > 0) boardContainerClass += ' board-container--streak';
+  if (state.isGameOver) boardContainerClass += ' board-container--gameover';
+  if (reviveFlash) boardContainerClass += ' board-container--revive';
 
   return (
     <div className="game" ref={gameRef} style={{ touchAction: 'none' }}>
@@ -233,7 +251,7 @@ export function Game({ topScore, onQuit, onSaveScore }: GameProps) {
         )}
       </div>
 
-      <div className={`board-container${state.streak > 0 ? ' board-container--streak' : ''}`} ref={boardRef}>
+      <div className={boardContainerClass} ref={boardRef}>
         <Board
           board={displayBoard}
           ghostCells={ghostCells}
@@ -244,6 +262,11 @@ export function Game({ topScore, onQuit, onSaveScore }: GameProps) {
           onDismiss={handleDismissCelebration}
         />
         <Confetti trigger={confettiTrigger} />
+        {scorePop !== null && (
+          <div className="score-pop" key={scorePopKeyRef.current}>
+            +{scorePop.toLocaleString()}
+          </div>
+        )}
       </div>
 
       <PieceTray

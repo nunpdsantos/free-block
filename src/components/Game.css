@@ -48,6 +48,7 @@
 .board-container {
   position: relative;
   border-radius: 12px;
+  transition: filter 0.5s ease;
 }
 
 .board-container--streak {
@@ -56,11 +57,65 @@
   animation: streak-glow 1.2s ease-in-out infinite alternate;
 }
 
+/* Board dims when game is over */
+.board-container--gameover {
+  filter: grayscale(0.6) brightness(0.5);
+}
+
+/* Brightness pulse when revive clears cells */
+.board-container--revive {
+  animation: revive-flash 0.6s ease-out;
+}
+
+/* Floating score points indicator */
+.score-pop {
+  position: absolute;
+  top: 40%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 28px;
+  font-weight: 900;
+  color: #fff;
+  text-shadow:
+    0 0 12px rgba(255, 215, 64, 0.6),
+    0 2px 8px rgba(0, 0, 0, 0.5);
+  animation: score-pop-anim 0.8s ease-out forwards;
+  pointer-events: none;
+  z-index: 55;
+}
+
 @keyframes streak-glow {
   from {
     outline-color: rgba(255, 215, 64, 0.5);
   }
   to {
     outline-color: rgba(255, 215, 64, 1);
+  }
+}
+
+@keyframes revive-flash {
+  0% {
+    filter: brightness(1);
+  }
+  30% {
+    filter: brightness(1.6) saturate(1.5);
+  }
+  100% {
+    filter: brightness(1);
+  }
+}
+
+@keyframes score-pop-anim {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -40%) scale(0.5);
+  }
+  25% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.15);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -90%) scale(0.8);
   }
 }

@@ -72,7 +72,10 @@ export const PiecePreview = memo(function PiecePreview({
     <div
       className={`piece-preview ${isDragging ? 'piece-preview--dragging' : ''}`}
       onPointerDown={handlePointerDown}
-      style={{ touchAction: 'none' }}
+      style={{
+        touchAction: 'none',
+        animationDelay: `${pieceIndex * 100}ms`,
+      }}
     >
       <div
         className="preview-grid"
