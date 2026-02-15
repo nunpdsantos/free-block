@@ -1,24 +1,24 @@
-# Gridlock vs Block Blast — Fidelity Audit Report v3
+# Gridlock vs Block Blast — Fidelity Audit Report v4
 
-> Updated 15/02/2026 after implementing polish improvements (confetti, streak glow, dynamic revive, color themes).
+> Updated 15/02/2026 after matching original revive mechanics (scattered cell removal + streak preservation).
 > Cross-references 5 independent research sweeps against the current Gridlock codebase.
 
 ---
 
-## Overall Match Score: **91%** (was 90% in v2, 82% in v1)
+## Overall Match Score: **92%** (was 91% in v3, 90% in v2, 82% in v1)
 
-| Category | v1 Match | v2 Match | v3 Match | Weight | v1 Weighted | v2 Weighted | v3 Weighted |
-|----------|----------|----------|----------|--------|-------------|-------------|-------------|
-| Core Mechanics | 95% | 98% | 98% | 25% | 23.8% | 24.5% | 24.5% |
-| Scoring System | 85% | 97% | 97% | 20% | 17.0% | 19.4% | 19.4% |
-| Piece System | 92% | 98% | 98% | 15% | 13.8% | 14.7% | 14.7% |
-| Difficulty/DDA | 88% | 92% | 92% | 15% | 13.2% | 13.8% | 13.8% |
-| Revive System | 60% | 90% | 92% | 10% | 6.0% | 9.0% | 9.2% |
-| UI/Visual Design | 80% | 88% | 95% | 10% | 8.0% | 8.8% | 9.5% |
-| Audio/Polish | 0% | 0% | 0% | 5% | 0.0% | 0.0% | 0.0% |
-| **Total** | | | | **100%** | **81.8%** | **90.2%** | **91.1%** |
+| Category | v1 | v2 | v3 | v4 | Weight | v4 Weighted |
+|----------|-----|-----|-----|-----|--------|-------------|
+| Core Mechanics | 95% | 98% | 98% | 98% | 25% | 24.5% |
+| Scoring System | 85% | 97% | 97% | 97% | 20% | 19.4% |
+| Piece System | 92% | 98% | 98% | 98% | 15% | 14.7% |
+| Difficulty/DDA | 88% | 92% | 92% | 92% | 15% | 13.8% |
+| Revive System | 60% | 90% | 92% | 97% | 10% | 9.7% |
+| UI/Visual Design | 80% | 88% | 95% | 95% | 10% | 9.5% |
+| Audio/Polish | 0% | 0% | 0% | 0% | 5% | 0.0% |
+| **Total** | **82%** | **90%** | **91%** | **92%** | **100%** | **91.6%** |
 
-> **Excluding audio** (intentionally omitted): **96% match** across all gameplay-relevant categories.
+> **Excluding audio** (intentionally omitted): **96%** match across all gameplay-relevant categories.
 
 ---
 
@@ -145,14 +145,15 @@ Color-per-shape is unconfirmed and purely cosmetic. No gameplay impact.
 
 ---
 
-## 5. REVIVE SYSTEM — 92% Match (was 90%)
+## 5. REVIVE SYSTEM — 97% Match (was 92%)
 
 | Feature | Original | Gridlock | Status |
 |---------|----------|----------|--------|
 | Revives available | 1 per game | 1 per game (`REVIVES_PER_GAME = 1`) | ✅ |
-| Cell removal on revive | Clears 2-3 rows based on board state | Dynamic: 2 rows normally, 3 rows when >50% filled | ✅ FIXED |
+| Cell removal on revive | Removes individual cells in congested areas (~2-3 rows worth) | Congestion-weighted random cell removal (16-24 cells) | ✅ FIXED |
+| Targets crowded areas | Yes — creates gaps where board is packed | Yes — cells with more filled neighbors are removed first | ✅ FIXED |
 | Score preserved | Yes | Yes | ✅ |
-| Streak resets | Yes | Yes, explicitly resets to 0 | ✅ |
+| Streak preserved | Yes — combo carries through revive | Yes — streak is no longer reset | ✅ FIXED |
 | New pieces generated | Yes | Yes (with fit validation) | ✅ |
 | Revive button shown | Only when available | Only when `revivesRemaining > 0` | ✅ |
 | Ad requirement | 30-second rewarded video ad | Free (no ads) | ✅ Intentional |
@@ -236,7 +237,15 @@ The original has 349 audio files. Gridlock has no audio by design choice — the
 | 13 | Streak golden glow aura (pulsing box-shadow) | UI | +0.1% |
 | 14 | Dynamic revive row count: 2 rows normally, 3 when >50% filled | Revive | +0.2% |
 | | **v3 total improvement** | | **+0.9%** |
-| | **Cumulative improvement (v1 → v3)** | | **+9.3%** |
+
+### v3 → v4 (Revive fidelity)
+
+| # | Improvement | Category | Score Impact |
+|---|------------|----------|-------------|
+| 15 | Scattered cell removal instead of full rows (congestion-weighted) | Revive | +0.3% |
+| 16 | Preserve combo streak through revive instead of resetting to 0 | Revive | +0.2% |
+| | **v4 total improvement** | | **+0.5%** |
+| | **Cumulative improvement (v1 → v4)** | | **+9.8%** |
 
 ---
 
@@ -265,4 +274,4 @@ The original has 349 audio files. Gridlock has no audio by design choice — the
 
 ---
 
-*Audit v3 compares Gridlock's codebase (commit `0d87920`) against the best available research on Block Blast by Hungry Studio. No official documentation exists — all findings are from community analysis, professional game deconstructions, and open-source reimplementations.*
+*Audit v4 compares Gridlock's codebase (commit `ff3dda5`) against the best available research on Block Blast by Hungry Studio. No official documentation exists — all findings are from community analysis, professional game deconstructions, and open-source reimplementations.*
