@@ -14,14 +14,16 @@ export function useDrag(
   const [ghostCells, setGhostCells] = useState<GhostCells>(new Map());
   const boardRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef<DragState | null>(null);
+  const rectRef = useRef<DOMRect | null>(null);
+  const rafRef = useRef<number>(0);
+  const lastGridRef = useRef<{ row: number | null; col: number | null }>({ row: null, col: null });
 
   const computeGridPos = useCallback(
     (clientX: number, clientY: number, piece: PieceShape) => {
-      const boardEl = boardRef.current;
-      if (!boardEl) return { row: null, col: null, isValid: false };
+      // Use cached rect — only call getBoundingClientRect once per drag
+      const rect = rectRef.current;
+      if (!rect) return { row: null, col: null, isValid: false };
 
-      const rect = boardEl.getBoundingClientRect();
-      // Center the piece on the pointer
       const pieceRows = Math.max(...piece.coords.map(c => c.row)) + 1;
       const pieceCols = Math.max(...piece.coords.map(c => c.col)) + 1;
 
@@ -44,6 +46,11 @@ export function useDrag(
 
   const updateGhost = useCallback(
     (row: number | null, col: number | null, piece: PieceShape, isValid: boolean) => {
+      // Skip if grid position hasn't changed — avoids re-render
+      const last = lastGridRef.current;
+      if (last.row === row && last.col === col) return;
+      lastGridRef.current = { row, col };
+
       const ghost: GhostCells = new Map();
       if (row !== null && col !== null) {
         for (const coord of piece.coords) {
@@ -62,6 +69,11 @@ export function useDrag(
   const onPointerDown = useCallback(
     (piece: PieceShape, pieceIndex: number, clientX: number, clientY: number) => {
       if (isAnimating) return;
+
+      // Cache board rect once at drag start
+      const boardEl = boardRef.current;
+      if (boardEl) rectRef.current = boardEl.getBoundingClientRect();
+
       const state: DragState = {
         piece,
         pieceIndex,
@@ -73,6 +85,7 @@ export function useDrag(
       };
       dragRef.current = state;
       setDragState(state);
+      lastGridRef.current = { row: null, col: null };
 
       const { row, col, isValid } = computeGridPos(clientX, clientY, piece);
       updateGhost(row, col, piece, isValid);
@@ -85,23 +98,32 @@ export function useDrag(
       const current = dragRef.current;
       if (!current) return;
 
-      const { row, col, isValid } = computeGridPos(clientX, clientY, current.piece);
-      const newState: DragState = {
-        ...current,
-        pointerX: clientX,
-        pointerY: clientY,
-        boardRow: row,
-        boardCol: col,
-        isValid,
-      };
-      dragRef.current = newState;
-      setDragState(newState);
-      updateGhost(row, col, current.piece, isValid);
+      // Cancel any pending rAF to avoid stacking frames
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+
+      rafRef.current = requestAnimationFrame(() => {
+        const latest = dragRef.current;
+        if (!latest) return;
+
+        const { row, col, isValid } = computeGridPos(clientX, clientY, latest.piece);
+        const newState: DragState = {
+          ...latest,
+          pointerX: clientX,
+          pointerY: clientY,
+          boardRow: row,
+          boardCol: col,
+          isValid,
+        };
+        dragRef.current = newState;
+        setDragState(newState);
+        updateGhost(row, col, latest.piece, isValid);
+      });
     },
     [computeGridPos, updateGhost]
   );
 
   const onPointerUp = useCallback(() => {
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
     const current = dragRef.current;
     if (!current) return;
 
@@ -110,12 +132,17 @@ export function useDrag(
     }
 
     dragRef.current = null;
+    rectRef.current = null;
+    lastGridRef.current = { row: null, col: null };
     setDragState(null);
     setGhostCells(new Map());
   }, [onDrop]);
 
   const cancelDrag = useCallback(() => {
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
     dragRef.current = null;
+    rectRef.current = null;
+    lastGridRef.current = { row: null, col: null };
     setDragState(null);
     setGhostCells(new Map());
   }, []);
