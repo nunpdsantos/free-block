@@ -5,16 +5,13 @@ export const FINGER_OFFSET = 40; // px upward on mobile
 export const CLEAR_ANIMATION_MS = 450;
 
 export const PIECE_COLORS = {
-  red: '#e74c3c',
-  orange: '#e67e22',
-  yellow: '#f1c40f',
-  green: '#2ecc71',
-  teal: '#1abc9c',
-  blue: '#3498db',
-  indigo: '#5b6abf',
-  purple: '#9b59b6',
-  pink: '#e84393',
-  brown: '#b5651d',
+  red: '#ef4444',
+  orange: '#f97316',
+  yellow: '#eab308',
+  green: '#22c55e',
+  blue: '#3b82f6',
+  purple: '#a855f7',
+  pink: '#ec4899',
 } as const;
 
 export const PIECE_COLOR_KEYS = Object.keys(PIECE_COLORS) as (keyof typeof PIECE_COLORS)[];

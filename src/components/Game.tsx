@@ -153,7 +153,10 @@ export function Game({ topScore, onQuit, onSaveScore }: GameProps) {
         />
         {!state.isGameOver && (
           <button className="pause-btn" onClick={() => setIsPaused(true)} aria-label="Pause">
-            ⏸
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+              <rect x="2" y="1" width="4" height="14" rx="1" />
+              <rect x="10" y="1" width="4" height="14" rx="1" />
+            </svg>
           </button>
         )}
       </div>
