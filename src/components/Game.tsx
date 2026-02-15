@@ -4,6 +4,7 @@ import type { Board as BoardType } from '../game/types';
 import { canPlacePiece, placePiece, findCompletedLines, getClearingCells } from '../game/logic';
 import { useDrag } from '../hooks/useDrag';
 import { CLEAR_ANIMATION_MS } from '../game/constants';
+import { playPlace, playClear, playGameOver, isSoundMuted, setSoundMuted } from '../audio/sounds';
 import { Board } from './Board';
 import { PieceTray } from './PieceTray';
 import { DragOverlay } from './DragOverlay';
@@ -28,8 +29,10 @@ export function Game({ topScore, onQuit, onSaveScore }: GameProps) {
   const [animPieces, setAnimPieces] = useState<typeof state.currentPieces | null>(null);
   const [isPaused, setIsPaused] = useState(false);
   const [confettiTrigger, setConfettiTrigger] = useState(0);
+  const [muted, setMuted] = useState(isSoundMuted);
   const gameRef = useRef<HTMLDivElement>(null);
   const scoreSavedRef = useRef(false);
+  const prevGameOverRef = useRef(false);
 
   // Reset save flag on new game
   useEffect(() => {
@@ -38,17 +41,37 @@ export function Game({ topScore, onQuit, onSaveScore }: GameProps) {
     }
   }, [state.isGameOver]);
 
+  // Game over sound
+  useEffect(() => {
+    if (state.isGameOver && !prevGameOverRef.current) {
+      playGameOver();
+    }
+    prevGameOverRef.current = state.isGameOver;
+  }, [state.isGameOver]);
+
+  const toggleMute = useCallback(() => {
+    setMuted(prev => {
+      const next = !prev;
+      setSoundMuted(next);
+      return next;
+    });
+  }, []);
+
   const handleDrop = useCallback(
     (pieceIndex: number, row: number, col: number) => {
       const piece = state.currentPieces[pieceIndex];
       if (!piece) return;
       if (!canPlacePiece(state.board, piece, row, col)) return;
 
+      playPlace();
+
       const boardAfterPlace = placePiece(state.board, piece, row, col);
       const { rows, cols } = findCompletedLines(boardAfterPlace);
       const linesCleared = rows.length + cols.length;
 
       if (linesCleared > 0) {
+        playClear(state.streak, linesCleared);
+
         setAnimBoard(boardAfterPlace);
         const newPieces = [...state.currentPieces];
         newPieces[pieceIndex] = null;
@@ -73,7 +96,7 @@ export function Game({ topScore, onQuit, onSaveScore }: GameProps) {
         dispatch({ type: 'PLACE_PIECE', pieceIndex, row, col });
       }
     },
-    [state.board, state.currentPieces]
+    [state.board, state.currentPieces, state.streak]
   );
 
   const displayBoard = animBoard ?? state.board;
@@ -184,6 +207,8 @@ export function Game({ topScore, onQuit, onSaveScore }: GameProps) {
 
       {isPaused && !state.isGameOver && (
         <PauseMenu
+          isMuted={muted}
+          onToggleSound={toggleMute}
           onResume={() => setIsPaused(false)}
           onRestart={handleRestart}
           onQuit={handleQuit}

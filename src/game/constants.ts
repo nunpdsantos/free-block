@@ -5,13 +5,14 @@ export const FINGER_OFFSET = 40; // px upward on mobile
 export const CLEAR_ANIMATION_MS = 450;
 
 export const PIECE_COLORS = {
-  red: '#ef4444',
-  orange: '#f97316',
-  yellow: '#eab308',
-  green: '#22c55e',
-  blue: '#3b82f6',
-  purple: '#a855f7',
-  pink: '#ec4899',
+  blue: '#5B8DEF',
+  cyan: '#42C6EA',
+  red: '#EF5350',
+  orange: '#FFA726',
+  yellow: '#FFCA28',
+  green: '#66BB6A',
+  purple: '#AB47BC',
+  pink: '#EC407A',
 } as const;
 
 export const PIECE_COLOR_KEYS = Object.keys(PIECE_COLORS) as (keyof typeof PIECE_COLORS)[];
@@ -21,9 +22,7 @@ export const POINTS_PER_CELL = 10;
 export const COMBO_BASE_BONUS = 20;
 export const COMBO_INCREMENT = 10;
 export const STREAK_MULTIPLIER_INCREMENT = 0.5;
-export const STREAK_MULTIPLIER_CAP = 3.0;
-export const PERFECT_CLEAR_BONUS = 1000;
-export const PLACEMENT_POINTS = 10;
+export const STREAK_MULTIPLIER_CAP = 8.0;
 
 // Revive
 export const REVIVES_PER_GAME = 1;

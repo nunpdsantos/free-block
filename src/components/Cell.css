@@ -2,40 +2,70 @@
   position: relative;
   width: 48px;
   height: 48px;
-  border-radius: 7px;
+  border-radius: 5px;
   background-color: var(--cell-empty);
   overflow: visible;
   will-change: transform, opacity;
 }
 
+/* 3D beveled gem-like block */
 .cell--filled {
-  box-shadow: inset 2px 2px 4px rgba(255, 255, 255, 0.25),
-    inset -2px -2px 4px rgba(0, 0, 0, 0.35),
-    0 0 8px rgba(255, 255, 255, 0.06);
+  border-radius: 5px;
+  box-shadow:
+    inset 3px 3px 6px rgba(255, 255, 255, 0.35),
+    inset -3px -3px 6px rgba(0, 0, 0, 0.45);
   animation: cell-place 0.2s ease-out;
 }
 
+/* Glossy highlight overlay */
+.cell--filled::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 5px;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.3) 0%,
+    rgba(255, 255, 255, 0.08) 40%,
+    transparent 60%
+  );
+  pointer-events: none;
+}
+
+/* Ghost — semi-transparent with white outline */
 .cell--ghost-valid {
   background-color: var(--ghost-valid) !important;
-  box-shadow: none;
+  box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, 0.55);
+}
+.cell--ghost-valid::before {
+  display: none;
 }
 
 .cell--ghost-invalid {
   background-color: var(--ghost-invalid) !important;
   box-shadow: none;
 }
+.cell--ghost-invalid::before {
+  display: none;
+}
 
+/* Line clear — purple/magenta glow beam dissolve */
 .cell--clearing {
-  animation: cell-clear 0.4s ease-out forwards;
+  animation: cell-clear 0.45s ease-out forwards;
 }
 
 .cell--clearing::after {
   content: '';
   position: absolute;
-  inset: -4px;
+  inset: -6px;
   border-radius: 10px;
-  background: radial-gradient(circle, rgba(255, 255, 255, 0.8) 0%, transparent 70%);
-  animation: cell-sparkle 0.4s ease-out forwards;
+  background: radial-gradient(
+    circle,
+    rgba(200, 64, 233, 0.9) 0%,
+    rgba(200, 64, 233, 0.3) 45%,
+    transparent 75%
+  );
+  animation: cell-sparkle 0.45s ease-out forwards;
   pointer-events: none;
 }
 
@@ -57,28 +87,31 @@
   0% {
     transform: scale(1);
     opacity: 1;
+    filter: brightness(1);
   }
-  20% {
-    transform: scale(1.15);
+  25% {
+    transform: scale(1.12);
     opacity: 1;
+    filter: brightness(1.6);
   }
   100% {
-    transform: scale(0) rotate(10deg);
+    transform: scale(0.5);
     opacity: 0;
+    filter: brightness(2);
   }
 }
 
 @keyframes cell-sparkle {
   0% {
-    transform: scale(0.5);
+    transform: scale(0.4);
     opacity: 0;
   }
   25% {
-    transform: scale(1.2);
+    transform: scale(1.1);
     opacity: 1;
   }
   100% {
-    transform: scale(1.8);
+    transform: scale(1.6);
     opacity: 0;
   }
 }

@@ -12,10 +12,10 @@
 
 .main-menu-title h1 {
   font-size: 48px;
-  font-weight: 800;
+  font-weight: 900;
   letter-spacing: 6px;
   color: var(--text-primary);
-  text-shadow: 0 0 20px var(--accent-glow), 0 0 40px rgba(0, 0, 0, 0.3);
+  text-shadow: 0 0 24px var(--accent-glow), 0 2px 4px rgba(0, 0, 0, 0.3);
   text-align: center;
 }
 
@@ -32,10 +32,11 @@
   border-radius: 12px;
   padding: 16px 32px;
   font-size: 18px;
-  font-weight: 600;
+  font-weight: 800;
   cursor: pointer;
   transition: transform 0.15s ease, box-shadow 0.15s ease;
   text-align: center;
+  font-family: inherit;
 }
 
 .menu-btn:hover {
@@ -61,54 +62,16 @@
 .menu-btn--secondary {
   background: linear-gradient(135deg, var(--card-bg-light), var(--card-bg));
   color: var(--text-primary);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .menu-btn--secondary:hover {
-  border-color: rgba(255, 255, 255, 0.18);
-}
-
-.theme-picker {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-}
-
-.theme-picker-label {
-  font-size: 12px;
-  color: var(--text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 2px;
-}
-
-.theme-picker-options {
-  display: flex;
-  gap: 12px;
-}
-
-.theme-swatch {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  border: 2px solid rgba(255, 255, 255, 0.15);
-  cursor: pointer;
-  transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
-}
-
-.theme-swatch:hover {
-  transform: scale(1.15);
-  border-color: rgba(255, 255, 255, 0.3);
-}
-
-.theme-swatch--active {
-  border-color: var(--text-primary);
-  box-shadow: 0 0 8px rgba(255, 255, 255, 0.3);
-  transform: scale(1.1);
+  border-color: rgba(255, 255, 255, 0.2);
 }
 
 .main-menu-top-score {
   font-size: 16px;
+  font-weight: 700;
   color: var(--text-secondary);
   letter-spacing: 1px;
 }

@@ -135,15 +135,6 @@ export function calculateScore(
   return Math.round(subtotal * streakMultiplier);
 }
 
-export function isBoardEmpty(board: Board): boolean {
-  for (let r = 0; r < GRID_SIZE; r++) {
-    for (let c = 0; c < GRID_SIZE; c++) {
-      if (board[r][c] !== null) return false;
-    }
-  }
-  return true;
-}
-
 export function canPieceFitAnywhere(board: Board, piece: PieceShape): boolean {
   for (let r = 0; r < GRID_SIZE; r++) {
     for (let c = 0; c < GRID_SIZE; c++) {

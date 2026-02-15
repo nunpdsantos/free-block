@@ -7,13 +7,12 @@ import {
   clearLines,
   getClearingCells,
   calculateScore,
-  isBoardEmpty,
   canAnyPieceFit,
   getCelebrationText,
   clearCellsForRevive,
 } from './logic';
 import { generateThreePieces } from './pieces';
-import { PERFECT_CLEAR_BONUS, PLACEMENT_POINTS, REVIVES_PER_GAME } from './constants';
+import { REVIVES_PER_GAME } from './constants';
 
 export function createInitialState(): GameState {
   return {
@@ -63,12 +62,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         linesCleared > 0 ? newStreak - 1 : 0
       );
 
-      // Perfect clear bonus
-      const perfectBonus = linesCleared > 0 && isBoardEmpty(newBoard)
-        ? PERFECT_CLEAR_BONUS
-        : 0;
-
-      const newScore = state.score + pointsEarned + perfectBonus + PLACEMENT_POINTS;
+      const newScore = state.score + pointsEarned;
       const newHighScore = Math.max(newScore, state.highScore);
 
       // Update pieces - remove placed piece

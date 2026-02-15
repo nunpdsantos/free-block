@@ -22,8 +22,9 @@
 .pause-btn {
   position: absolute;
   right: 0;
-  top: 16px;
-  background: rgba(255, 255, 255, 0.06);
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(255, 255, 255, 0.08);
   border: none;
   border-radius: 10px;
   color: var(--text-secondary);
@@ -37,30 +38,30 @@
 }
 
 .pause-btn:hover {
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.15);
   color: var(--text-primary);
 }
 
 .pause-btn:active {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .board-container {
   position: relative;
-  border-radius: 14px;
+  border-radius: 12px;
 }
 
 .board-container--streak {
-  outline: 3px solid var(--streak-glow);
+  outline: 2px solid var(--streak-glow);
   outline-offset: 2px;
   animation: streak-glow 1.2s ease-in-out infinite alternate;
 }
 
 @keyframes streak-glow {
   from {
-    opacity: 0.7;
+    outline-color: rgba(255, 215, 64, 0.5);
   }
   to {
-    opacity: 1;
+    outline-color: rgba(255, 215, 64, 1);
   }
 }

@@ -11,7 +11,7 @@
 
 .tutorial-title {
   font-size: 28px;
-  font-weight: 700;
+  font-weight: 900;
   color: var(--text-primary);
   letter-spacing: 2px;
 }
@@ -123,7 +123,7 @@
 .tutorial-clear-flash {
   height: 2px;
   width: 100%;
-  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  background: linear-gradient(90deg, transparent, var(--clear-glow), transparent);
   animation: flash-line 1s ease-in-out infinite;
 }
 

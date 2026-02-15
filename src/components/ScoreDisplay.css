@@ -1,59 +1,58 @@
 .score-display {
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  padding: 16px 0 8px;
+  align-items: flex-start;
+  justify-content: space-between;
+  width: 100%;
+  padding: 12px 0 8px;
 }
 
-.score-main {
-  text-align: center;
+.score-section {
+  display: flex;
+  flex-direction: column;
 }
 
 .score-label {
-  font-size: 14px;
+  font-size: 11px;
+  font-weight: 700;
   color: var(--text-secondary);
   text-transform: uppercase;
-  letter-spacing: 2px;
+  letter-spacing: 1.5px;
+}
+
+.score-label--best {
+  text-align: right;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+}
+
+.crown-icon {
+  font-size: 14px;
+  line-height: 1;
 }
 
 .score-value {
-  font-size: 42px;
-  font-weight: 700;
+  font-size: 36px;
+  font-weight: 900;
   color: var(--text-primary);
-  line-height: 1.1;
+  line-height: 1.15;
 }
 
-.score-secondary {
-  display: flex;
-  gap: 24px;
+.score-value--best {
+  font-size: 28px;
+  color: var(--score-best);
+  text-align: right;
 }
 
-.score-item {
-  text-align: center;
-}
-
-.score-item-label {
-  font-size: 11px;
-  color: var(--text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  display: block;
-}
-
-.score-item-value {
+/* Streak badge — floating between score sections */
+.streak-badge {
+  align-self: center;
   font-size: 18px;
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
-.score-item--streak {
-  animation: streak-pulse 0.8s ease-in-out infinite alternate;
-}
-
-.streak-value {
+  font-weight: 900;
   color: var(--streak-glow);
-  text-shadow: 0 0 8px var(--streak-glow);
+  text-shadow: 0 0 10px var(--streak-glow), 0 0 20px rgba(255, 215, 64, 0.3);
+  animation: streak-pulse 0.8s ease-in-out infinite alternate;
 }
 
 @keyframes streak-pulse {
@@ -61,6 +60,6 @@
     transform: scale(1);
   }
   to {
-    transform: scale(1.08);
+    transform: scale(1.12);
   }
 }

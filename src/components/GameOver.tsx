@@ -22,18 +22,26 @@ export function GameOver({
   return (
     <div className="game-over-overlay">
       <div className="game-over-card">
-        <h2 className="game-over-title">Game Over</h2>
-        {isNewHighScore && (
-          <div className="game-over-new-best">New Best!</div>
+        {isNewHighScore ? (
+          <div className="new-best-celebration">
+            <div className="new-best-burst" />
+            <div className="new-best-crown">&#9813;</div>
+            <div className="new-best-banner">NEW BEST</div>
+            <div className="new-best-score">{score.toLocaleString()}</div>
+          </div>
+        ) : (
+          <>
+            <h2 className="game-over-title">Game Over</h2>
+            <div className="game-over-score">
+              <div className="game-over-score-label">Score</div>
+              <div className="game-over-score-value">{score.toLocaleString()}</div>
+            </div>
+            <div className="game-over-best">
+              <span className="game-over-best-label">Best: </span>
+              <span>{highScore.toLocaleString()}</span>
+            </div>
+          </>
         )}
-        <div className="game-over-score">
-          <div className="game-over-score-label">Score</div>
-          <div className="game-over-score-value">{score.toLocaleString()}</div>
-        </div>
-        <div className="game-over-best">
-          <span className="game-over-best-label">Best: </span>
-          <span>{highScore.toLocaleString()}</span>
-        </div>
         <div className="game-over-buttons">
           {revivesRemaining > 0 && (
             <button className="game-over-btn game-over-btn--revive" onClick={onRevive}>

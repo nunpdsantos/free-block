@@ -1,12 +1,14 @@
 import './PauseMenu.css';
 
 type PauseMenuProps = {
+  isMuted: boolean;
+  onToggleSound: () => void;
   onResume: () => void;
   onRestart: () => void;
   onQuit: () => void;
 };
 
-export function PauseMenu({ onResume, onRestart, onQuit }: PauseMenuProps) {
+export function PauseMenu({ isMuted, onToggleSound, onResume, onRestart, onQuit }: PauseMenuProps) {
   return (
     <div className="pause-overlay">
       <div className="pause-card">
@@ -14,6 +16,9 @@ export function PauseMenu({ onResume, onRestart, onQuit }: PauseMenuProps) {
         <div className="pause-buttons">
           <button className="menu-btn menu-btn--play" onClick={onResume}>
             Resume
+          </button>
+          <button className="menu-btn menu-btn--secondary" onClick={onToggleSound}>
+            Sound: {isMuted ? 'OFF' : 'ON'}
           </button>
           <button className="menu-btn menu-btn--secondary" onClick={onRestart}>
             Restart

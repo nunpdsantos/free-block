@@ -1,73 +1,22 @@
-/* Midnight (default) — neutral dark */
-:root, [data-theme="midnight"] {
-  --bg: #0d1117;
-  --board-bg: #161b22;
-  --cell-empty: #21262d;
-  --cell-border: #0d1117;
-  --accent: #58a6ff;
-  --accent-dark: #388bfd;
-  --accent-glow: rgba(88, 166, 255, 0.3);
-  --card-bg: #161b22;
-  --card-bg-light: #21262d;
-  --ghost-valid: rgba(74, 222, 128, 0.5);
-  --ghost-invalid: rgba(248, 113, 113, 0.5);
-  --text-primary: #e6edf3;
-  --text-secondary: #8b949e;
-  --streak-glow: #fbbf24;
-}
-
-/* Ember — warm dark */
-[data-theme="forest"] {
-  --bg: #12100e;
-  --board-bg: #1c1917;
-  --cell-empty: #26211d;
-  --cell-border: #12100e;
-  --accent: #f97316;
-  --accent-dark: #ea580c;
-  --accent-glow: rgba(249, 115, 22, 0.3);
-  --card-bg: #1c1917;
-  --card-bg-light: #26211d;
-  --ghost-valid: rgba(74, 222, 128, 0.5);
-  --ghost-invalid: rgba(248, 113, 113, 0.5);
-  --text-primary: #ede8e3;
-  --text-secondary: #9c8e82;
-  --streak-glow: #fbbf24;
-}
-
-/* Frost — cool dark */
-[data-theme="ocean"] {
-  --bg: #0b1215;
-  --board-bg: #131b20;
-  --cell-empty: #1b252c;
-  --cell-border: #0b1215;
-  --accent: #22d3ee;
-  --accent-dark: #06b6d4;
-  --accent-glow: rgba(34, 211, 238, 0.3);
-  --card-bg: #131b20;
-  --card-bg-light: #1b252c;
-  --ghost-valid: rgba(45, 212, 191, 0.5);
-  --ghost-invalid: rgba(251, 113, 133, 0.5);
-  --text-primary: #e0eaef;
-  --text-secondary: #7fa5b0;
-  --streak-glow: #22d3ee;
-}
-
-/* Neon — vibrant arcade dark */
-[data-theme="space"] {
-  --bg: #0e0c13;
-  --board-bg: #16131e;
-  --cell-empty: #201c29;
-  --cell-border: #0e0c13;
-  --accent: #c084fc;
-  --accent-dark: #a855f7;
-  --accent-glow: rgba(192, 132, 252, 0.3);
-  --card-bg: #16131e;
-  --card-bg-light: #201c29;
-  --ghost-valid: rgba(192, 132, 252, 0.5);
-  --ghost-invalid: rgba(251, 113, 133, 0.5);
-  --text-primary: #e8e0f0;
-  --text-secondary: #9188a4;
-  --streak-glow: #e879f9;
+/* Block Blast visual identity — single theme */
+:root {
+  --bg: #4A5899;
+  --bg-dark: #3D4A80;
+  --board-bg: #1A1F3D;
+  --cell-empty: #232850;
+  --cell-border: #1A1F3D;
+  --card-bg: #2A3060;
+  --card-bg-light: #354080;
+  --ghost-valid: rgba(255, 255, 255, 0.18);
+  --ghost-invalid: rgba(248, 113, 113, 0.35);
+  --text-primary: #ffffff;
+  --text-secondary: #9BA3C7;
+  --streak-glow: #FFD740;
+  --score-best: #FFD740;
+  --clear-glow: #C840E9;
+  --accent: #5B8DEF;
+  --accent-dark: #4A7BDD;
+  --accent-glow: rgba(91, 141, 239, 0.35);
 }
 
 * {
@@ -81,9 +30,10 @@ html, body, #root {
 }
 
 body {
-  background-color: var(--bg);
+  background: linear-gradient(180deg, var(--bg) 0%, var(--bg-dark) 100%);
+  background-attachment: fixed;
   color: var(--text-primary);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Nunito', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
