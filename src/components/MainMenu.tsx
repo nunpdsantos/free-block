@@ -2,10 +2,10 @@ import type { ThemeId } from '../App';
 import './MainMenu.css';
 
 const THEMES: { id: ThemeId; label: string; swatch: string }[] = [
-  { id: 'midnight', label: 'Midnight', swatch: '#2a4080' },
-  { id: 'forest', label: 'Forest', swatch: '#1e6638' },
-  { id: 'ocean', label: 'Ocean', swatch: '#0e5068' },
-  { id: 'space', label: 'Space', swatch: '#3d1f80' },
+  { id: 'midnight', label: 'Midnight', swatch: '#58a6ff' },
+  { id: 'forest', label: 'Ember', swatch: '#f97316' },
+  { id: 'ocean', label: 'Frost', swatch: '#22d3ee' },
+  { id: 'space', label: 'Neon', swatch: '#c084fc' },
 ];
 
 type MainMenuProps = {
