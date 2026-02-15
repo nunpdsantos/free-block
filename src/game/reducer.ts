@@ -13,7 +13,7 @@ import {
   clearRowsForRevive,
 } from './logic';
 import { generateThreePieces } from './pieces';
-import { PERFECT_CLEAR_BONUS, PLACEMENT_POINTS, REVIVES_PER_GAME, REVIVE_ROWS_TO_CLEAR } from './constants';
+import { PERFECT_CLEAR_BONUS, PLACEMENT_POINTS, REVIVES_PER_GAME } from './constants';
 
 export function createInitialState(): GameState {
   return {
@@ -111,7 +111,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
     case 'REVIVE': {
       if (state.revivesRemaining <= 0 || !state.isGameOver) return state;
 
-      const newBoard = clearRowsForRevive(state.board, REVIVE_ROWS_TO_CLEAR);
+      const newBoard = clearRowsForRevive(state.board);
       const newPieces = generateThreePieces(newBoard, 0);
 
       return {

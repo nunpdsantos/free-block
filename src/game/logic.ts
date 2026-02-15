@@ -163,7 +163,16 @@ export function canAnyPieceFit(
   return false;
 }
 
-export function clearRowsForRevive(board: Board, rowCount: number): Board {
+export function clearRowsForRevive(board: Board): Board {
+  // Dynamic row count: clear 3 rows if board is >50% full, otherwise 2
+  let filled = 0;
+  for (let r = 0; r < GRID_SIZE; r++) {
+    for (let c = 0; c < GRID_SIZE; c++) {
+      if (board[r][c] !== null) filled++;
+    }
+  }
+  const rowCount = filled / (GRID_SIZE * GRID_SIZE) > 0.5 ? 3 : 2;
+
   // Find the rows with the most filled cells — clearing those creates the most space
   const rowFills = Array.from({ length: GRID_SIZE }, (_, r) => ({
     row: r,

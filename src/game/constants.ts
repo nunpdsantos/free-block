@@ -42,7 +42,6 @@ export const PLACEMENT_POINTS = 10;
 
 // Revive
 export const REVIVES_PER_GAME = 1;
-export const REVIVE_ROWS_TO_CLEAR = 2;
 
 // Adaptive piece generation — mercy (when struggling)
 export const PITY_THRESHOLD = 7;

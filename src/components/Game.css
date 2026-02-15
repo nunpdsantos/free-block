@@ -44,4 +44,23 @@
 
 .board-container {
   position: relative;
+  border-radius: 14px;
+  transition: box-shadow 0.3s ease;
+}
+
+.board-container--streak {
+  box-shadow: 0 0 15px 3px rgba(241, 196, 15, 0.3),
+              0 0 30px 6px rgba(241, 196, 15, 0.15);
+  animation: streak-glow 1.2s ease-in-out infinite alternate;
+}
+
+@keyframes streak-glow {
+  from {
+    box-shadow: 0 0 15px 3px rgba(241, 196, 15, 0.3),
+                0 0 30px 6px rgba(241, 196, 15, 0.15);
+  }
+  to {
+    box-shadow: 0 0 20px 5px rgba(241, 196, 15, 0.45),
+                0 0 40px 10px rgba(241, 196, 15, 0.2);
+  }
 }

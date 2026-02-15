@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import type { LeaderboardEntry } from './game/types';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { Game } from './components/Game';
@@ -6,6 +6,8 @@ import { MainMenu } from './components/MainMenu';
 import { Tutorial } from './components/Tutorial';
 import { Leaderboard } from './components/Leaderboard';
 import './App.css';
+
+export type ThemeId = 'midnight' | 'forest' | 'ocean' | 'space';
 
 type Screen = 'menu' | 'tutorial' | 'leaderboard' | 'playing';
 
@@ -46,6 +48,11 @@ export default function App() {
     'gridlock-leaderboard',
     INITIAL_LEADERBOARD
   );
+  const [theme, setTheme] = useLocalStorage<ThemeId>('gridlock-theme', 'midnight');
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+  }, [theme]);
 
   const topScore = leaderboard.length > 0 ? leaderboard[0].score : 0;
 
@@ -71,6 +78,8 @@ export default function App() {
       {screen === 'menu' && (
         <MainMenu
           topScore={topScore}
+          theme={theme}
+          onThemeChange={setTheme}
           onPlay={() => setScreen('playing')}
           onTutorial={() => setScreen('tutorial')}
           onLeaderboard={() => setScreen('leaderboard')}

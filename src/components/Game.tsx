@@ -11,6 +11,7 @@ import { ScoreDisplay } from './ScoreDisplay';
 import { GameOver } from './GameOver';
 import { CelebrationText } from './CelebrationText';
 import { PauseMenu } from './PauseMenu';
+import { Confetti } from './Confetti';
 import './Game.css';
 
 type GameProps = {
@@ -26,6 +27,7 @@ export function Game({ topScore, onQuit, onSaveScore }: GameProps) {
   const [animBoard, setAnimBoard] = useState<BoardType | null>(null);
   const [animPieces, setAnimPieces] = useState<typeof state.currentPieces | null>(null);
   const [isPaused, setIsPaused] = useState(false);
+  const [confettiTrigger, setConfettiTrigger] = useState(0);
   const gameRef = useRef<HTMLDivElement>(null);
   const scoreSavedRef = useRef(false);
 
@@ -56,6 +58,9 @@ export function Game({ topScore, onQuit, onSaveScore }: GameProps) {
         const cellSet = new Set(cells.map(c => `${c.row},${c.col}`));
         setClearingCells(cellSet);
         setIsAnimating(true);
+        if (linesCleared >= 2) {
+          setConfettiTrigger(t => t + 1);
+        }
 
         setTimeout(() => {
           setClearingCells(new Set());
@@ -153,7 +158,7 @@ export function Game({ topScore, onQuit, onSaveScore }: GameProps) {
         )}
       </div>
 
-      <div className="board-container" ref={boardRef}>
+      <div className={`board-container${state.streak > 0 ? ' board-container--streak' : ''}`} ref={boardRef}>
         <Board
           board={displayBoard}
           ghostCells={ghostCells}
@@ -163,6 +168,7 @@ export function Game({ topScore, onQuit, onSaveScore }: GameProps) {
           text={state.celebrationText}
           onDismiss={handleDismissCelebration}
         />
+        <Confetti trigger={confettiTrigger} />
       </div>
 
       <PieceTray

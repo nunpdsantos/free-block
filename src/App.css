@@ -1,4 +1,5 @@
-:root {
+/* Midnight (default) */
+:root, [data-theme="midnight"] {
   --bg: #1a1a2e;
   --board-bg: #16213e;
   --cell-empty: #1e2d4a;
@@ -8,6 +9,45 @@
   --text-primary: #ffffff;
   --text-secondary: #8899aa;
   --streak-glow: #f1c40f;
+}
+
+/* Forest */
+[data-theme="forest"] {
+  --bg: #1a2e1a;
+  --board-bg: #162e1a;
+  --cell-empty: #1e3e22;
+  --cell-border: #0f2a12;
+  --ghost-valid: rgba(46, 204, 113, 0.4);
+  --ghost-invalid: rgba(231, 76, 60, 0.4);
+  --text-primary: #e8f5e9;
+  --text-secondary: #81a784;
+  --streak-glow: #fdd835;
+}
+
+/* Ocean */
+[data-theme="ocean"] {
+  --bg: #0d1b2a;
+  --board-bg: #1b2838;
+  --cell-empty: #1b3a4b;
+  --cell-border: #0a1628;
+  --ghost-valid: rgba(0, 230, 180, 0.4);
+  --ghost-invalid: rgba(255, 82, 82, 0.4);
+  --text-primary: #e0f7fa;
+  --text-secondary: #78a8b8;
+  --streak-glow: #00e5ff;
+}
+
+/* Space */
+[data-theme="space"] {
+  --bg: #0b0b1a;
+  --board-bg: #12122a;
+  --cell-empty: #1a1a35;
+  --cell-border: #08081a;
+  --ghost-valid: rgba(156, 39, 176, 0.4);
+  --ghost-invalid: rgba(244, 67, 54, 0.4);
+  --text-primary: #ede7f6;
+  --text-secondary: #9e8eb8;
+  --streak-glow: #ce93d8;
 }
 
 * {
