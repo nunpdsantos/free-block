@@ -11,7 +11,7 @@ export function MainMenu({ topScore, onPlay, onTutorial, onLeaderboard }: MainMe
   return (
     <div className="main-menu">
       <div className="main-menu-title">
-        <h1>BLOCK BLAST</h1>
+        <h1>GRIDLOCK</h1>
       </div>
 
       <div className="main-menu-buttons">

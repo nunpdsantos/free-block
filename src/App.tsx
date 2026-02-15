@@ -14,7 +14,7 @@ const MAX_LEADERBOARD = 5;
 function getInitialLeaderboard(): LeaderboardEntry[] {
   // Check if leaderboard already exists
   try {
-    const existing = window.localStorage.getItem('blockblast-leaderboard');
+    const existing = window.localStorage.getItem('gridlock-leaderboard');
     if (existing) return JSON.parse(existing) as LeaderboardEntry[];
   } catch {
     // fall through to migration
@@ -22,13 +22,13 @@ function getInitialLeaderboard(): LeaderboardEntry[] {
 
   // Migrate old single highscore key
   try {
-    const raw = window.localStorage.getItem('blockblast-highscore');
+    const raw = window.localStorage.getItem('gridlock-highscore');
     if (raw) {
       const score = JSON.parse(raw) as number;
-      window.localStorage.removeItem('blockblast-highscore');
+      window.localStorage.removeItem('gridlock-highscore');
       if (score > 0) {
         const migrated = [{ score, date: new Date().toLocaleDateString() }];
-        window.localStorage.setItem('blockblast-leaderboard', JSON.stringify(migrated));
+        window.localStorage.setItem('gridlock-leaderboard', JSON.stringify(migrated));
         return migrated;
       }
     }
@@ -43,7 +43,7 @@ const INITIAL_LEADERBOARD = getInitialLeaderboard();
 export default function App() {
   const [screen, setScreen] = useState<Screen>('menu');
   const [leaderboard, setLeaderboard] = useLocalStorage<LeaderboardEntry[]>(
-    'blockblast-leaderboard',
+    'gridlock-leaderboard',
     INITIAL_LEADERBOARD
   );
 

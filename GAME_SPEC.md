@@ -1,7 +1,7 @@
-# Block Blast — Game Specification
+# Gridlock — Game Specification
 
-> Complete specification for a free, ad-free clone of Block Blast (Hungry Studio).
-> All mechanics target parity with the original Classic/Endless mode.
+> Complete specification for Gridlock, a free, ad-free block puzzle game.
+> All mechanics target parity with the original Block Blast Classic/Endless mode.
 
 ---
 
@@ -211,11 +211,11 @@ App (screen state + leaderboard)
 
 ## 10. Leaderboard
 
-- Stored in `localStorage` as `'blockblast-leaderboard'`.
+- Stored in `localStorage` as `'gridlock-leaderboard'`.
 - Format: `Array<{ score: number; date: string }>`, max 5 entries.
 - Sorted descending by score.
 - Score is saved to leaderboard when game over is final (no more revives, or player chooses not to revive).
-- Migration: on first load, if old `'blockblast-highscore'` key exists, migrate it into the leaderboard array.
+- Migration: on first load, if old `'gridlock-highscore'` key exists, migrate it into the leaderboard array.
 
 ---
 
