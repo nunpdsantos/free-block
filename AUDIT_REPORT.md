@@ -1,24 +1,24 @@
-# Gridlock vs Block Blast — Fidelity Audit Report v2
+# Gridlock vs Block Blast — Fidelity Audit Report v3
 
-> Updated 15/02/2026 after implementing improvements from v1 audit.
+> Updated 15/02/2026 after implementing polish improvements (confetti, streak glow, dynamic revive, color themes).
 > Cross-references 5 independent research sweeps against the current Gridlock codebase.
 
 ---
 
-## Overall Match Score: **90%** (was 82%)
+## Overall Match Score: **91%** (was 90% in v2, 82% in v1)
 
-| Category | v1 Match | v2 Match | Weight | v1 Weighted | v2 Weighted |
-|----------|----------|----------|--------|-------------|-------------|
-| Core Mechanics | 95% | 98% | 25% | 23.8% | 24.5% |
-| Scoring System | 85% | 97% | 20% | 17.0% | 19.4% |
-| Piece System | 92% | 98% | 15% | 13.8% | 14.7% |
-| Difficulty/DDA | 88% | 92% | 15% | 13.2% | 13.8% |
-| Revive System | 60% | 90% | 10% | 6.0% | 9.0% |
-| UI/Visual Design | 80% | 88% | 10% | 8.0% | 8.8% |
-| Audio/Polish | 0% | 0% | 5% | 0.0% | 0.0% |
-| **Total** | | | **100%** | **81.8%** | **90.2%** |
+| Category | v1 Match | v2 Match | v3 Match | Weight | v1 Weighted | v2 Weighted | v3 Weighted |
+|----------|----------|----------|----------|--------|-------------|-------------|-------------|
+| Core Mechanics | 95% | 98% | 98% | 25% | 23.8% | 24.5% | 24.5% |
+| Scoring System | 85% | 97% | 97% | 20% | 17.0% | 19.4% | 19.4% |
+| Piece System | 92% | 98% | 98% | 15% | 13.8% | 14.7% | 14.7% |
+| Difficulty/DDA | 88% | 92% | 92% | 15% | 13.2% | 13.8% | 13.8% |
+| Revive System | 60% | 90% | 92% | 10% | 6.0% | 9.0% | 9.2% |
+| UI/Visual Design | 80% | 88% | 95% | 10% | 8.0% | 8.8% | 9.5% |
+| Audio/Polish | 0% | 0% | 0% | 5% | 0.0% | 0.0% | 0.0% |
+| **Total** | | | | **100%** | **81.8%** | **90.2%** | **91.1%** |
 
-> **Excluding audio** (intentionally omitted): **95% match** across all gameplay-relevant categories.
+> **Excluding audio** (intentionally omitted): **96% match** across all gameplay-relevant categories.
 
 ---
 
@@ -145,30 +145,29 @@ Color-per-shape is unconfirmed and purely cosmetic. No gameplay impact.
 
 ---
 
-## 5. REVIVE SYSTEM — 90% Match (was 60%)
+## 5. REVIVE SYSTEM — 92% Match (was 90%)
 
 | Feature | Original | Gridlock | Status |
 |---------|----------|----------|--------|
-| Revives available | 1 per game | 1 per game (`REVIVES_PER_GAME = 1`) | ✅ FIXED |
-| Cell removal on revive | Clears 2-3 rows | Clears 2 most-filled rows (`clearRowsForRevive`) | ✅ FIXED |
+| Revives available | 1 per game | 1 per game (`REVIVES_PER_GAME = 1`) | ✅ |
+| Cell removal on revive | Clears 2-3 rows based on board state | Dynamic: 2 rows normally, 3 rows when >50% filled | ✅ FIXED |
 | Score preserved | Yes | Yes | ✅ |
 | Streak resets | Yes | Yes, explicitly resets to 0 | ✅ |
 | New pieces generated | Yes | Yes (with fit validation) | ✅ |
 | Revive button shown | Only when available | Only when `revivesRemaining > 0` | ✅ |
 | Ad requirement | 30-second rewarded video ad | Free (no ads) | ✅ Intentional |
 
-### Remaining micro-gaps
+### Remaining micro-gap
 
 | Feature | Original | Gridlock | Impact |
 |---------|----------|----------|--------|
-| Exact row-clearing algorithm | May vary between 2-3 rows based on board state | Always 2 rows (most-filled) | ⚠️ Low |
 | Ad gate | Revive costs watching an ad | Free | ℹ️ Intentional |
 
-The original may dynamically choose between 2-3 rows depending on fill state. Our approach always clears exactly 2 (the most-filled), which provides consistent, predictable space creation. The ad gate is intentionally removed — Gridlock is free and ad-free.
+The ad gate is intentionally removed — Gridlock is free and ad-free.
 
 ---
 
-## 6. UI / VISUAL DESIGN — 88% Match (was 80%)
+## 6. UI / VISUAL DESIGN — 95% Match (was 88%)
 
 ### What matches
 
@@ -178,7 +177,7 @@ The original may dynamically choose between 2-3 rows depending on fill state. Ou
 | Score at top center | Yes | Yes | ✅ |
 | Piece tray at bottom | Yes, 3 pieces | Yes, 3 pieces | ✅ |
 | Celebration text | "Good Work!", "Excellent!", "Amazing!", "Perfect!" | Same exact texts | ✅ |
-| Celebration animation | Bouncy scale-in with rotation, ~1.5s | Bouncy scale with rotation, 1.5s | ✅ FIXED |
+| Celebration animation | Bouncy scale-in with rotation, ~1.5s | Bouncy scale with rotation, 1.5s | ✅ |
 | Ghost preview on drag | Yes, highlights valid/invalid | Green valid, red invalid | ✅ |
 | Pause button | Yes | Yes (⏸ top-right) | ✅ |
 | Game over overlay | Score + retry options | Score + Revive/Play Again/Menu | ✅ |
@@ -186,18 +185,19 @@ The original may dynamically choose between 2-3 rows depending on fill state. Ou
 | Leaderboard | Local storage | Local storage, top 5 | ✅ |
 | Vibrant piece colors | Blue, green, purple, orange, red, pink | 10 colors: red through brown | ✅ |
 | Block appearance | Slight 3D/raised look | Inset box-shadow (light top-left, dark bottom-right) | ✅ |
-| Line clear animation | Sparkle/pop with glow | Scale + brightness flash + sparkle pseudo-element | ✅ FIXED |
+| Line clear animation | Sparkle/pop with glow | Scale + brightness flash + sparkle pseudo-element | ✅ |
 | Menu screen | Start, Settings, modes | Play, How to Play, Leaderboard | ✅ |
+| Color themes | Multiple themes | 4 themes: Midnight, Forest, Ocean, Space with picker | ✅ FIXED |
+| Streak glow effect | Golden glow aura during streak | Pulsing golden box-shadow on board container | ✅ FIXED |
+| Confetti on multi-clear | Particle confetti | 24 CSS particles on 2+ line clears | ✅ FIXED |
 
-### Remaining gaps
+### Remaining micro-gap
 
 | Element | Original | Gridlock | Impact |
 |---------|----------|----------|--------|
-| Color themes | Multiple themes (forest, ocean, space) | Single dark theme | ⚠️ Low |
-| Streak glow effect | Golden glow aura during streak | Gold "1×" text only | ⚠️ Low |
-| Confetti on multi-clear | Particle confetti | No confetti particles | ⚠️ Low |
+| Color assignment per shape | Possibly fixed color per shape type | Random color per piece | ⚠️ Cosmetic only |
 
-These are all cosmetic polish items. The functional UI elements (layout, colors, text, animations) now match closely.
+Unconfirmed whether the original assigns fixed colors per shape. Purely cosmetic — no gameplay impact.
 
 ---
 
@@ -209,7 +209,9 @@ The original has 349 audio files. Gridlock has no audio by design choice — the
 
 ---
 
-## What Changed Between v1 and v2
+## What Changed Between v1, v2, and v3
+
+### v1 → v2 (Mechanics)
 
 | # | Improvement | Category | Score Impact |
 |---|------------|----------|-------------|
@@ -223,20 +225,22 @@ The original has 349 audio files. Gridlock has no audio by design choice — the
 | 8 | Difficulty ceiling: 15,000 → 20,000 | DDA | +0.6% |
 | 9 | Line-clear sparkle/glow animation | UI | +0.5% |
 | 10 | Celebration bounce with rotation | UI | +0.3% |
-| | **Total improvement** | | **+8.4%** |
+| | **v2 total improvement** | | **+8.4%** |
+
+### v2 → v3 (Polish)
+
+| # | Improvement | Category | Score Impact |
+|---|------------|----------|-------------|
+| 11 | Confetti particles on multi-clear (24 CSS particles) | UI | +0.2% |
+| 12 | Color themes: Midnight, Forest, Ocean, Space with picker | UI | +0.2% |
+| 13 | Streak golden glow aura (pulsing box-shadow) | UI | +0.1% |
+| 14 | Dynamic revive row count: 2 rows normally, 3 when >50% filled | Revive | +0.2% |
+| | **v3 total improvement** | | **+0.9%** |
+| | **Cumulative improvement (v1 → v3)** | | **+9.3%** |
 
 ---
 
 ## Remaining Gaps (by potential impact)
-
-### Could improve score further
-
-| Gap | Category | Potential Impact | Effort |
-|-----|----------|-----------------|--------|
-| Confetti particles on multi-clear | UI | +0.2% | Medium (Canvas/CSS particles) |
-| Color themes (forest, ocean, space) | UI | +0.2% | Medium (theme system) |
-| Streak golden glow aura | UI | +0.1% | Low (CSS glow) |
-| Dynamic revive row count (2-3 based on board) | Revive | +0.1% | Low |
 
 ### Intentionally omitted (won't implement)
 
@@ -261,4 +265,4 @@ The original has 349 audio files. Gridlock has no audio by design choice — the
 
 ---
 
-*Audit v2 compares Gridlock's codebase (commit `b8398e6`) against the best available research on Block Blast by Hungry Studio. No official documentation exists — all findings are from community analysis, professional game deconstructions, and open-source reimplementations.*
+*Audit v3 compares Gridlock's codebase (commit `0d87920`) against the best available research on Block Blast by Hungry Studio. No official documentation exists — all findings are from community analysis, professional game deconstructions, and open-source reimplementations.*
