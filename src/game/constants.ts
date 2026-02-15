@@ -36,11 +36,13 @@ export const POINTS_PER_CELL = 10;
 export const COMBO_BASE_BONUS = 20;
 export const COMBO_INCREMENT = 10;
 export const STREAK_MULTIPLIER_INCREMENT = 0.5;
-export const PERFECT_CLEAR_BONUS = 300;
+export const STREAK_MULTIPLIER_CAP = 3.0;
+export const PERFECT_CLEAR_BONUS = 1000;
+export const PLACEMENT_POINTS = 10;
 
 // Revive
-export const REVIVES_PER_GAME = 3;
-export const REVIVE_CELLS_CLEARED = 20;
+export const REVIVES_PER_GAME = 1;
+export const REVIVE_ROWS_TO_CLEAR = 2;
 
 // Adaptive piece generation — mercy (when struggling)
 export const PITY_THRESHOLD = 7;
@@ -50,7 +52,7 @@ export const SOLUTION_WEIGHT_BOOST = 5.0;
 
 // Adaptive piece generation — difficulty scaling (when doing well)
 export const DIFFICULTY_SCORE_THRESHOLD = 3000; // score where difficulty ramp begins
-export const DIFFICULTY_SCORE_CEILING = 15000;  // score where difficulty maxes out
+export const DIFFICULTY_SCORE_CEILING = 20000;  // score where difficulty maxes out
 export const DIFFICULTY_HARD_BOOST_MAX = 3.0;   // max multiplier for hard pieces at ceiling
 export const DIFFICULTY_EASY_PENALTY_MAX = 0.3; // min multiplier for easy pieces at ceiling
 export const STREAK_HARDENING_THRESHOLD = 2;    // streak count where pushback starts

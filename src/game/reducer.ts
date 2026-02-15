@@ -10,10 +10,10 @@ import {
   isBoardEmpty,
   canAnyPieceFit,
   getCelebrationText,
-  removeRandomCells,
+  clearRowsForRevive,
 } from './logic';
 import { generateThreePieces } from './pieces';
-import { PERFECT_CLEAR_BONUS, REVIVES_PER_GAME, REVIVE_CELLS_CLEARED } from './constants';
+import { PERFECT_CLEAR_BONUS, PLACEMENT_POINTS, REVIVES_PER_GAME, REVIVE_ROWS_TO_CLEAR } from './constants';
 
 export function createInitialState(): GameState {
   return {
@@ -68,7 +68,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         ? PERFECT_CLEAR_BONUS
         : 0;
 
-      const newScore = state.score + pointsEarned + perfectBonus;
+      const newScore = state.score + pointsEarned + perfectBonus + PLACEMENT_POINTS;
       const newHighScore = Math.max(newScore, state.highScore);
 
       // Update pieces - remove placed piece
@@ -111,7 +111,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
     case 'REVIVE': {
       if (state.revivesRemaining <= 0 || !state.isGameOver) return state;
 
-      const newBoard = removeRandomCells(state.board, REVIVE_CELLS_CLEARED);
+      const newBoard = clearRowsForRevive(state.board, REVIVE_ROWS_TO_CLEAR);
       const newPieces = generateThreePieces(newBoard, 0);
 
       return {

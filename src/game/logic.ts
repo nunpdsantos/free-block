@@ -5,6 +5,7 @@ import {
   COMBO_BASE_BONUS,
   COMBO_INCREMENT,
   STREAK_MULTIPLIER_INCREMENT,
+  STREAK_MULTIPLIER_CAP,
   CELEBRATION_TEXTS,
 } from './constants';
 
@@ -127,7 +128,10 @@ export function calculateScore(
       ? COMBO_BASE_BONUS + (linesCleared - 1) * COMBO_INCREMENT
       : 0;
   const subtotal = basePoints + comboBonus;
-  const streakMultiplier = 1 + streak * STREAK_MULTIPLIER_INCREMENT;
+  const streakMultiplier = Math.min(
+    STREAK_MULTIPLIER_CAP,
+    1 + streak * STREAK_MULTIPLIER_INCREMENT
+  );
   return Math.round(subtotal * streakMultiplier);
 }
 
@@ -159,22 +163,20 @@ export function canAnyPieceFit(
   return false;
 }
 
-export function removeRandomCells(board: Board, count: number): Board {
-  const filled: { r: number; c: number }[] = [];
-  for (let r = 0; r < GRID_SIZE; r++) {
-    for (let c = 0; c < GRID_SIZE; c++) {
-      if (board[r][c] !== null) filled.push({ r, c });
-    }
-  }
-  // Fisher-Yates shuffle, take first `count`
-  const toRemove = Math.min(count, filled.length);
-  for (let i = filled.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [filled[i], filled[j]] = [filled[j], filled[i]];
-  }
+export function clearRowsForRevive(board: Board, rowCount: number): Board {
+  // Find the rows with the most filled cells — clearing those creates the most space
+  const rowFills = Array.from({ length: GRID_SIZE }, (_, r) => ({
+    row: r,
+    filled: board[r].filter(cell => cell !== null).length,
+  }));
+  rowFills.sort((a, b) => b.filled - a.filled);
+  const rowsToClear = rowFills.slice(0, rowCount).map(r => r.row);
+
   const newBoard = board.map(row => [...row]);
-  for (let i = 0; i < toRemove; i++) {
-    newBoard[filled[i].r][filled[i].c] = null;
+  for (const r of rowsToClear) {
+    for (let c = 0; c < GRID_SIZE; c++) {
+      newBoard[r][c] = null;
+    }
   }
   return newBoard;
 }

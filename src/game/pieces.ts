@@ -242,6 +242,19 @@ function pickWeightedPiece(
   return available[available.length - 1];
 }
 
+function pieceFitsOnBoard(board: Board, coords: Coord[]): boolean {
+  const piece = { coords, color: '', id: '' } as PieceShape;
+  for (let r = 0; r < GRID_SIZE; r++) {
+    for (let c = 0; c < GRID_SIZE; c++) {
+      if (canPlacePiece(board, piece, r, c)) return true;
+    }
+  }
+  return false;
+}
+
+// Fallback 1×1 monomino — always fits if any cell is empty
+const FALLBACK_MONO: PieceDef = PIECE_DEFS[0]; // 'mono' — the 1×1 piece
+
 export function generateThreePieces(
   board?: Board | null,
   movesSinceLastClear: number = 0,
@@ -260,7 +273,26 @@ export function generateThreePieces(
   const used = new Set<string>();
   const pieces: PieceShape[] = [];
   for (let i = 0; i < 3; i++) {
-    const def = pickWeightedPiece(used, weights);
+    let def: PieceDef | null = null;
+
+    if (board) {
+      // Try up to 20 picks to find a piece that fits on the board
+      for (let attempt = 0; attempt < 20; attempt++) {
+        const candidate = pickWeightedPiece(used, weights);
+        if (pieceFitsOnBoard(board, candidate.coords)) {
+          def = candidate;
+          break;
+        }
+      }
+      // Fallback: 1×1 mono (fits if any empty cell exists)
+      if (!def) {
+        def = FALLBACK_MONO;
+      }
+    } else {
+      // No board context (initial game) — pick freely
+      def = pickWeightedPiece(used, weights);
+    }
+
     used.add(def.id);
     pieces.push({
       id: def.id + '-' + Date.now() + '-' + i,

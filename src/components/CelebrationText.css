@@ -18,21 +18,27 @@
 @keyframes celebration-anim {
   0% {
     opacity: 0;
-    transform: scale(0.3);
+    transform: scale(0.2) rotate(-8deg);
   }
-  15% {
+  12% {
     opacity: 1;
-    transform: scale(1.2);
+    transform: scale(1.35) rotate(3deg);
   }
-  25% {
-    transform: scale(1);
+  22% {
+    transform: scale(0.9) rotate(-2deg);
+  }
+  32% {
+    transform: scale(1.1) rotate(1deg);
+  }
+  40% {
+    transform: scale(1) rotate(0deg);
   }
   75% {
     opacity: 1;
-    transform: scale(1);
+    transform: scale(1) rotate(0deg);
   }
   100% {
     opacity: 0;
-    transform: scale(0.8) translateY(-20px);
+    transform: scale(0.7) translateY(-30px) rotate(-5deg);
   }
 }

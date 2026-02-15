@@ -37,7 +37,7 @@ export function GameOver({
         <div className="game-over-buttons">
           {revivesRemaining > 0 && (
             <button className="game-over-btn game-over-btn--revive" onClick={onRevive}>
-              Revive ({revivesRemaining} left)
+              Revive
             </button>
           )}
           <button className="game-over-btn" onClick={onPlayAgain}>
