@@ -35,6 +35,7 @@ export type GameState = {
   celebrationText: string | null;
   revivesRemaining: number;
   movesSinceLastClear: number;
+  pieceGeneration: number;
 };
 
 export type GameAction =

@@ -11,18 +11,20 @@ type PieceTrayProps = {
     clientY: number
   ) => void;
   draggingIndex: number | null;
+  generation: number;
 };
 
 export function PieceTray({
   pieces,
   onPointerDown,
   draggingIndex,
+  generation,
 }: PieceTrayProps) {
   return (
     <div className="piece-tray">
       {pieces.map((piece, i) => (
         <PiecePreview
-          key={i}
+          key={`${i}-${generation}`}
           piece={piece}
           pieceIndex={i}
           onPointerDown={onPointerDown}

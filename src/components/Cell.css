@@ -14,7 +14,7 @@
   box-shadow:
     inset 3px 3px 6px rgba(255, 255, 255, 0.35),
     inset -3px -3px 6px rgba(0, 0, 0, 0.45);
-  animation: cell-place 0.2s ease-out;
+  animation: cell-place 0.25s ease-out;
 }
 
 /* Glossy highlight overlay */
@@ -49,7 +49,7 @@
   display: none;
 }
 
-/* Line clear — purple/magenta glow beam dissolve */
+/* Line clear — staggered cascade with glow dissolve */
 .cell--clearing {
   animation: cell-clear 0.45s ease-out forwards;
 }
@@ -66,38 +66,45 @@
     transparent 75%
   );
   animation: cell-sparkle 0.45s ease-out forwards;
+  animation-delay: inherit;
   pointer-events: none;
 }
 
+/* Placement — pop with brief brightness flash */
 @keyframes cell-place {
   0% {
-    transform: scale(0.8);
-    opacity: 0.6;
+    transform: scale(0.7);
+    opacity: 0.4;
+    filter: brightness(1.8);
   }
-  50% {
-    transform: scale(1.05);
+  40% {
+    transform: scale(1.08);
+    opacity: 1;
+    filter: brightness(1.3);
   }
   100% {
     transform: scale(1);
     opacity: 1;
+    filter: brightness(1);
   }
 }
 
+/* Clear — scale up, glow, dissolve */
 @keyframes cell-clear {
   0% {
     transform: scale(1);
     opacity: 1;
     filter: brightness(1);
   }
-  25% {
-    transform: scale(1.12);
+  20% {
+    transform: scale(1.15);
     opacity: 1;
-    filter: brightness(1.6);
+    filter: brightness(1.8);
   }
   100% {
-    transform: scale(0.5);
+    transform: scale(0.4);
     opacity: 0;
-    filter: brightness(2);
+    filter: brightness(2.2);
   }
 }
 
@@ -106,12 +113,12 @@
     transform: scale(0.4);
     opacity: 0;
   }
-  25% {
+  20% {
     transform: scale(1.1);
     opacity: 1;
   }
   100% {
-    transform: scale(1.6);
+    transform: scale(1.8);
     opacity: 0;
   }
 }

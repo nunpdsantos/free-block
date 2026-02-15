@@ -7,7 +7,7 @@ import './Board.css';
 type BoardProps = {
   board: BoardType;
   ghostCells: GhostCells;
-  clearingCells: Set<string>;
+  clearingCells: Map<string, number>;
 };
 
 export const Board = memo(function Board({
@@ -20,13 +20,15 @@ export const Board = memo(function Board({
     for (let c = 0; c < GRID_SIZE; c++) {
       const key = `${r},${c}`;
       const ghost = ghostCells.get(key);
+      const clearDelay = clearingCells.get(key);
       cells.push(
         <Cell
           key={key}
           color={board[r][c]}
           isGhost={ghost !== undefined}
           ghostValid={ghost === true}
-          isClearing={clearingCells.has(key)}
+          isClearing={clearDelay !== undefined}
+          clearDelay={clearDelay ?? 0}
         />
       );
     }

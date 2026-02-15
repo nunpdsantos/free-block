@@ -26,6 +26,7 @@ export function createInitialState(): GameState {
     celebrationText: null,
     revivesRemaining: REVIVES_PER_GAME,
     movesSinceLastClear: 0,
+    pieceGeneration: 0,
   };
 }
 
@@ -92,6 +93,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         lastClearCount: linesCleared,
         celebrationText,
         movesSinceLastClear: newMovesSinceLastClear,
+        pieceGeneration: allPlaced ? state.pieceGeneration + 1 : state.pieceGeneration,
       };
     }
 
@@ -116,6 +118,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         movesSinceLastClear: 0,
         revivesRemaining: state.revivesRemaining - 1,
         celebrationText: null,
+        pieceGeneration: state.pieceGeneration + 1,
       };
     }
 
