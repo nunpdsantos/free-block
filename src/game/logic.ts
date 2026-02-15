@@ -163,30 +163,62 @@ export function canAnyPieceFit(
   return false;
 }
 
-export function clearRowsForRevive(board: Board): Board {
-  // Dynamic row count: clear 3 rows if board is >50% full, otherwise 2
-  let filled = 0;
+export function clearCellsForRevive(board: Board): Board {
+  // Collect all filled cells
+  const filledCells: { row: number; col: number }[] = [];
   for (let r = 0; r < GRID_SIZE; r++) {
     for (let c = 0; c < GRID_SIZE; c++) {
-      if (board[r][c] !== null) filled++;
+      if (board[r][c] !== null) filledCells.push({ row: r, col: c });
     }
   }
-  const rowCount = filled / (GRID_SIZE * GRID_SIZE) > 0.5 ? 3 : 2;
 
-  // Find the rows with the most filled cells — clearing those creates the most space
-  const rowFills = Array.from({ length: GRID_SIZE }, (_, r) => ({
-    row: r,
-    filled: board[r].filter(cell => cell !== null).length,
-  }));
-  rowFills.sort((a, b) => b.filled - a.filled);
-  const rowsToClear = rowFills.slice(0, rowCount).map(r => r.row);
+  // Clear ~2-3 rows worth of cells (16-24 cells), targeting congested areas
+  // More cells removed when board is more full
+  const fillRatio = filledCells.length / (GRID_SIZE * GRID_SIZE);
+  const targetCells = fillRatio > 0.5
+    ? GRID_SIZE * 3  // 24 cells (~3 rows worth) when packed
+    : GRID_SIZE * 2; // 16 cells (~2 rows worth) otherwise
+  const toRemove = Math.min(targetCells, filledCells.length);
 
+  // Weight cells by local congestion — cells surrounded by more filled neighbors
+  // are more likely to be removed, creating gaps in crowded areas
+  const weighted = filledCells.map(cell => {
+    let neighbors = 0;
+    for (let dr = -1; dr <= 1; dr++) {
+      for (let dc = -1; dc <= 1; dc++) {
+        if (dr === 0 && dc === 0) continue;
+        const nr = cell.row + dr;
+        const nc = cell.col + dc;
+        if (nr >= 0 && nr < GRID_SIZE && nc >= 0 && nc < GRID_SIZE && board[nr][nc] !== null) {
+          neighbors++;
+        }
+      }
+    }
+    return { ...cell, weight: neighbors + 1 };
+  });
+
+  // Shuffle using weighted random selection (higher congestion = more likely picked)
+  const selected = new Set<string>();
   const newBoard = board.map(row => [...row]);
-  for (const r of rowsToClear) {
-    for (let c = 0; c < GRID_SIZE; c++) {
-      newBoard[r][c] = null;
+
+  while (selected.size < toRemove && weighted.length > 0) {
+    const totalWeight = weighted.reduce((sum, c) => sum + c.weight, 0);
+    let roll = Math.random() * totalWeight;
+    for (let i = 0; i < weighted.length; i++) {
+      roll -= weighted[i].weight;
+      if (roll <= 0) {
+        const cell = weighted[i];
+        const key = `${cell.row},${cell.col}`;
+        if (!selected.has(key)) {
+          selected.add(key);
+          newBoard[cell.row][cell.col] = null;
+        }
+        weighted.splice(i, 1);
+        break;
+      }
     }
   }
+
   return newBoard;
 }
 

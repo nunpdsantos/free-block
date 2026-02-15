@@ -10,7 +10,7 @@ import {
   isBoardEmpty,
   canAnyPieceFit,
   getCelebrationText,
-  clearRowsForRevive,
+  clearCellsForRevive,
 } from './logic';
 import { generateThreePieces } from './pieces';
 import { PERFECT_CLEAR_BONUS, PLACEMENT_POINTS, REVIVES_PER_GAME } from './constants';
@@ -111,7 +111,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
     case 'REVIVE': {
       if (state.revivesRemaining <= 0 || !state.isGameOver) return state;
 
-      const newBoard = clearRowsForRevive(state.board);
+      const newBoard = clearCellsForRevive(state.board);
       const newPieces = generateThreePieces(newBoard, 0);
 
       return {
@@ -119,7 +119,6 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         board: newBoard,
         currentPieces: newPieces,
         isGameOver: false,
-        streak: 0,
         movesSinceLastClear: 0,
         revivesRemaining: state.revivesRemaining - 1,
         celebrationText: null,
