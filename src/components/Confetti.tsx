@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
+import { PIECE_COLORS } from '../game/constants';
 import './Confetti.css';
 
-const COLORS = ['#e74c3c', '#f1c40f', '#2ecc71', '#3498db', '#9b59b6', '#e67e22', '#e84393'];
+const COLORS = Object.values(PIECE_COLORS);
 const PARTICLE_COUNT = 12;
 
 type Particle = {

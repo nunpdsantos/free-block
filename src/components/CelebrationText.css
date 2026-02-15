@@ -11,7 +11,7 @@
   font-size: 36px;
   font-weight: 800;
   color: var(--streak-glow);
-  text-shadow: 0 0 20px rgba(241, 196, 15, 0.6), 0 2px 8px rgba(0, 0, 0, 0.5);
+  text-shadow: 0 0 20px var(--accent-glow), 0 2px 8px rgba(0, 0, 0, 0.5);
   animation: celebration-anim 1.5s ease-out forwards;
 }
 

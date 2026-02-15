@@ -1,3 +1,4 @@
+import { PIECE_COLORS } from '../game/constants';
 import './Tutorial.css';
 
 type TutorialProps = {
@@ -13,25 +14,25 @@ const STEPS = [
       [1, 0],
       [1, 0],
     ],
-    color: '#3498db',
+    color: PIECE_COLORS.blue,
   },
   {
     title: 'Clear Lines',
     description: 'Fill an entire row or column to clear it and earn points.',
     blocks: 'row',
-    color: '#2ecc71',
+    color: PIECE_COLORS.green,
   },
   {
     title: 'Combos',
     description: 'Clear multiple lines at once or in a row for streak bonuses and higher scores.',
     blocks: 'combo',
-    color: '#f1c40f',
+    color: PIECE_COLORS.yellow,
   },
   {
     title: 'Game Over',
     description: "The game ends when no remaining piece can fit on the board. Plan ahead!",
     blocks: 'gameover',
-    color: '#e74c3c',
+    color: PIECE_COLORS.red,
   },
 ];
 
@@ -77,7 +78,7 @@ function StepIllustration({ step }: { step: typeof STEPS[number] }) {
             <div
               key={i}
               className={`tutorial-cell ${i % 3 !== 0 ? 'tutorial-cell--filled' : ''}`}
-              style={i % 3 !== 0 ? { background: ['#3498db', '#e74c3c', '#2ecc71', '#9b59b6'][i % 4] } : undefined}
+              style={i % 3 !== 0 ? { background: [PIECE_COLORS.blue, PIECE_COLORS.red, PIECE_COLORS.green, PIECE_COLORS.purple][i % 4] } : undefined}
             />
           ))}
         </div>

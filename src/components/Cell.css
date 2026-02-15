@@ -2,15 +2,16 @@
   position: relative;
   width: 48px;
   height: 48px;
-  border-radius: 6px;
+  border-radius: 7px;
   background-color: var(--cell-empty);
   overflow: visible;
   will-change: transform, opacity;
 }
 
 .cell--filled {
-  box-shadow: inset 2px 2px 4px rgba(255, 255, 255, 0.2),
-    inset -2px -2px 4px rgba(0, 0, 0, 0.3);
+  box-shadow: inset 2px 2px 4px rgba(255, 255, 255, 0.25),
+    inset -2px -2px 4px rgba(0, 0, 0, 0.35),
+    0 0 8px rgba(255, 255, 255, 0.06);
   animation: cell-place 0.2s ease-out;
 }
 

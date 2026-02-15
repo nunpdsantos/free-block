@@ -15,7 +15,7 @@
   font-weight: 800;
   letter-spacing: 6px;
   color: var(--text-primary);
-  text-shadow: 0 0 20px rgba(52, 152, 219, 0.5), 0 0 40px rgba(52, 152, 219, 0.2);
+  text-shadow: 0 0 20px var(--accent-glow), 0 0 40px rgba(0, 0, 0, 0.3);
   text-align: center;
 }
 
@@ -47,25 +47,25 @@
 }
 
 .menu-btn--play {
-  background: linear-gradient(135deg, #3498db, #2980b9);
+  background: linear-gradient(135deg, var(--accent), var(--accent-dark));
   color: white;
-  box-shadow: 0 4px 16px rgba(52, 152, 219, 0.3);
+  box-shadow: 0 4px 16px var(--accent-glow);
   font-size: 20px;
   padding: 18px 32px;
 }
 
 .menu-btn--play:hover {
-  box-shadow: 0 6px 24px rgba(52, 152, 219, 0.5);
+  box-shadow: 0 6px 24px var(--accent-glow);
 }
 
 .menu-btn--secondary {
-  background: linear-gradient(135deg, #1e2d4a, #16213e);
+  background: linear-gradient(135deg, var(--card-bg-light), var(--card-bg));
   color: var(--text-primary);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .menu-btn--secondary:hover {
-  border-color: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.18);
 }
 
 .theme-picker {

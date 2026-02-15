@@ -10,7 +10,8 @@
 }
 
 .game-over-card {
-  background: linear-gradient(135deg, #1e2d4a, #16213e);
+  background: linear-gradient(135deg, var(--card-bg-light), var(--card-bg));
+  border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 20px;
   padding: 32px 40px;
   text-align: center;
@@ -67,7 +68,7 @@
 }
 
 .game-over-btn {
-  background: linear-gradient(135deg, #3498db, #2980b9);
+  background: linear-gradient(135deg, var(--accent), var(--accent-dark));
   color: white;
   border: none;
   border-radius: 12px;
@@ -88,20 +89,20 @@
 }
 
 .game-over-btn--secondary {
-  background: linear-gradient(135deg, #1e2d4a, #16213e);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: linear-gradient(135deg, var(--card-bg-light), var(--card-bg));
+  border: 1px solid rgba(255, 255, 255, 0.08);
   font-size: 16px;
   padding: 12px 40px;
 }
 
 .game-over-btn:hover {
   transform: scale(1.05);
-  box-shadow: 0 4px 16px rgba(52, 152, 219, 0.4);
+  box-shadow: 0 4px 16px var(--accent-glow);
 }
 
 .game-over-btn--secondary:hover {
   box-shadow: none;
-  border-color: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.18);
 }
 
 .game-over-btn:active {

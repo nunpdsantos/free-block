@@ -16,18 +16,6 @@ export const PIECE_COLORS = {
 
 export const PIECE_COLOR_KEYS = Object.keys(PIECE_COLORS) as (keyof typeof PIECE_COLORS)[];
 
-export const THEME = {
-  bg: '#1a1a2e',
-  boardBg: '#16213e',
-  cellEmpty: '#1e2d4a',
-  cellBorder: '#0f1b30',
-  ghostValid: 'rgba(46, 204, 113, 0.4)',
-  ghostInvalid: 'rgba(231, 76, 60, 0.4)',
-  textPrimary: '#ffffff',
-  textSecondary: '#8899aa',
-  streakGlow: '#f1c40f',
-} as const;
-
 // Scoring
 export const POINTS_PER_CELL = 10;
 export const COMBO_BASE_BONUS = 20;

@@ -10,7 +10,8 @@
 }
 
 .pause-card {
-  background: linear-gradient(135deg, #1e2d4a, #16213e);
+  background: linear-gradient(135deg, var(--card-bg-light), var(--card-bg));
+  border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 20px;
   padding: 32px 40px;
   text-align: center;

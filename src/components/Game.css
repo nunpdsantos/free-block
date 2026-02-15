@@ -51,7 +51,7 @@
 }
 
 .board-container--streak {
-  outline: 3px solid rgba(241, 196, 15, 0.5);
+  outline: 3px solid var(--streak-glow);
   outline-offset: 2px;
   animation: streak-glow 1.2s ease-in-out infinite alternate;
 }
