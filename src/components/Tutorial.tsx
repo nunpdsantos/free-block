@@ -18,13 +18,13 @@ const STEPS = [
   },
   {
     title: 'Clear Lines',
-    description: 'Fill an entire row or column to clear it and earn points.',
+    description: 'Fill an entire row or column to clear it. Each block cleared earns 10 points.',
     blocks: 'row',
     color: PIECE_COLORS.green,
   },
   {
-    title: 'Combos',
-    description: 'Clear multiple lines at once or in a row for streak bonuses and higher scores.',
+    title: 'Combos & Streaks',
+    description: 'Clear multiple lines at once for combo bonuses. Consecutive clears build a streak multiplier for even bigger scores!',
     blocks: 'combo',
     color: PIECE_COLORS.yellow,
   },
