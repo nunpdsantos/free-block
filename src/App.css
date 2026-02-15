@@ -1,0 +1,34 @@
+:root {
+  --bg: #1a1a2e;
+  --board-bg: #16213e;
+  --cell-empty: #1e2d4a;
+  --cell-border: #0f1b30;
+  --ghost-valid: rgba(46, 204, 113, 0.4);
+  --ghost-invalid: rgba(231, 76, 60, 0.4);
+  --text-primary: #ffffff;
+  --text-secondary: #8899aa;
+  --streak-glow: #f1c40f;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  background-color: var(--bg);
+  color: var(--text-primary);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.app {
+  width: 100%;
+  min-height: 100dvh;
+}

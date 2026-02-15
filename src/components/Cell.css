@@ -1,0 +1,57 @@
+.cell {
+  width: 48px;
+  height: 48px;
+  border-radius: 6px;
+  background-color: var(--cell-empty);
+  transition: background-color 0.1s ease;
+}
+
+.cell--filled {
+  box-shadow: inset 2px 2px 4px rgba(255, 255, 255, 0.2),
+    inset -2px -2px 4px rgba(0, 0, 0, 0.3);
+  animation: cell-place 0.2s ease-out;
+}
+
+.cell--ghost-valid {
+  background-color: var(--ghost-valid) !important;
+  box-shadow: none;
+}
+
+.cell--ghost-invalid {
+  background-color: var(--ghost-invalid) !important;
+  box-shadow: none;
+}
+
+.cell--clearing {
+  animation: cell-clear 0.45s ease-out forwards;
+}
+
+@keyframes cell-place {
+  0% {
+    transform: scale(0.8);
+    opacity: 0.6;
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes cell-clear {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  30% {
+    transform: scale(1.15);
+    opacity: 1;
+    filter: brightness(1.8);
+  }
+  100% {
+    transform: scale(0);
+    opacity: 0;
+  }
+}

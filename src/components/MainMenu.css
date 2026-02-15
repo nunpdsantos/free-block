@@ -1,0 +1,75 @@
+.main-menu {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100dvh;
+  padding: 32px 24px;
+  gap: 48px;
+  max-width: 420px;
+  margin: 0 auto;
+}
+
+.main-menu-title h1 {
+  font-size: 48px;
+  font-weight: 800;
+  letter-spacing: 6px;
+  color: var(--text-primary);
+  text-shadow: 0 0 20px rgba(52, 152, 219, 0.5), 0 0 40px rgba(52, 152, 219, 0.2);
+  text-align: center;
+}
+
+.main-menu-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  max-width: 280px;
+}
+
+.menu-btn {
+  border: none;
+  border-radius: 12px;
+  padding: 16px 32px;
+  font-size: 18px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  text-align: center;
+}
+
+.menu-btn:hover {
+  transform: scale(1.05);
+}
+
+.menu-btn:active {
+  transform: scale(0.98);
+}
+
+.menu-btn--play {
+  background: linear-gradient(135deg, #3498db, #2980b9);
+  color: white;
+  box-shadow: 0 4px 16px rgba(52, 152, 219, 0.3);
+  font-size: 20px;
+  padding: 18px 32px;
+}
+
+.menu-btn--play:hover {
+  box-shadow: 0 6px 24px rgba(52, 152, 219, 0.5);
+}
+
+.menu-btn--secondary {
+  background: linear-gradient(135deg, #1e2d4a, #16213e);
+  color: var(--text-primary);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.menu-btn--secondary:hover {
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.main-menu-top-score {
+  font-size: 16px;
+  color: var(--text-secondary);
+  letter-spacing: 1px;
+}

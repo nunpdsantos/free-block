@@ -1,0 +1,36 @@
+.piece-preview {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 90px;
+  min-height: 90px;
+  cursor: grab;
+  user-select: none;
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
+
+.piece-preview:active {
+  cursor: grabbing;
+}
+
+.piece-preview--empty {
+  cursor: default;
+}
+
+.piece-preview--dragging {
+  opacity: 0.3;
+  transform: scale(0.9);
+}
+
+.preview-cell {
+  border-radius: 4px;
+}
+
+.preview-cell--filled {
+  box-shadow: inset 1px 1px 2px rgba(255, 255, 255, 0.2),
+    inset -1px -1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.preview-cell--empty {
+  background: transparent;
+}
