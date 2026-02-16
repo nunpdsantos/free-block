@@ -5,7 +5,7 @@
   justify-content: center;
   min-height: 100dvh;
   padding: 32px 24px;
-  gap: 48px;
+  gap: 32px;
   max-width: 420px;
   margin: 0 auto;
 }
@@ -22,7 +22,7 @@
 .main-menu-buttons {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
   width: 100%;
   max-width: 280px;
 }
@@ -75,6 +75,8 @@
   background: linear-gradient(135deg, var(--card-bg-light), var(--card-bg));
   color: var(--text-primary);
   border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 14px 32px;
+  font-size: 16px;
 }
 
 .menu-btn--secondary:hover {
@@ -86,6 +88,41 @@
   font-weight: 700;
   color: var(--text-secondary);
   letter-spacing: 1px;
+}
+
+/* Streak badge */
+.streak-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  animation: menu-btn-enter 0.4s ease-out 0.1s both;
+}
+
+.streak-badge--warm .streak-badge-count {
+  color: var(--text-primary);
+}
+
+.streak-badge--hot .streak-badge-count {
+  color: #FFA726;
+}
+
+.streak-badge--fire .streak-badge-count {
+  color: #FF5722;
+}
+
+.streak-badge-flame {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.streak-badge-count {
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
 }
 
 /* Entrance stagger animations */
@@ -102,19 +139,27 @@
 }
 
 .main-menu-buttons .menu-btn:nth-child(2) {
-  animation-delay: 0.25s;
+  animation-delay: 0.22s;
 }
 
 .main-menu-buttons .menu-btn:nth-child(3) {
-  animation-delay: 0.35s;
+  animation-delay: 0.29s;
 }
 
 .main-menu-buttons .menu-btn:nth-child(4) {
-  animation-delay: 0.45s;
+  animation-delay: 0.36s;
+}
+
+.main-menu-buttons .menu-btn:nth-child(5) {
+  animation-delay: 0.43s;
+}
+
+.main-menu-buttons .menu-btn:nth-child(6) {
+  animation-delay: 0.50s;
 }
 
 .main-menu-top-score {
-  animation: menu-btn-enter 0.4s ease-out 0.55s both;
+  animation: menu-btn-enter 0.4s ease-out 0.60s both;
 }
 
 @keyframes menu-title-enter {

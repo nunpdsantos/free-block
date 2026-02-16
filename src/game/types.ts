@@ -70,3 +70,22 @@ export type GameAction =
   | { type: 'UNDO' }
   | { type: 'DISMISS_CELEBRATION' }
   | { type: 'LOAD_HIGH_SCORE'; highScore: number };
+
+export type PlayerStats = {
+  gamesPlayed: number;
+  totalScore: number;
+  totalLinesCleared: number;
+  totalPiecesPlaced: number;
+  bestStreak: number;
+  allClearCount: number;
+  totalRevivesUsed: number;
+  highestScoreWithoutRevive: number;
+};
+
+export type AchievementProgress = Record<string, number>; // achievementId → unlock timestamp
+
+export type DailyStreak = {
+  currentStreak: number;
+  bestStreak: number;
+  lastPlayedDate: string | null; // YYYY-MM-DD
+};

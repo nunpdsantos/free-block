@@ -1,18 +1,41 @@
-import { useState, useCallback, useEffect } from 'react';
-import type { LeaderboardEntry, DailyResult } from './game/types';
+import { useState, useCallback, useEffect, useRef } from 'react';
+import type { LeaderboardEntry, DailyResult, PlayerStats, AchievementProgress, DailyStreak } from './game/types';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { getThemeById, applyTheme } from './game/themes';
-import { dateToSeed, getTodayDateStr, getDayNumber } from './game/random';
+import { dateToSeed, getTodayDateStr, getDayNumber, getYesterdayDateStr } from './game/random';
+import { checkAchievements, getAchievementById } from './game/achievements';
+import type { Achievement, AchievementContext } from './game/achievements';
+import { REVIVES_PER_GAME } from './game/constants';
 import { Game } from './components/Game';
 import { MainMenu } from './components/MainMenu';
 import { Tutorial } from './components/Tutorial';
 import { Leaderboard } from './components/Leaderboard';
 import { DailyCalendar } from './components/DailyCalendar';
+import { StatsScreen } from './components/StatsScreen';
+import { AchievementsScreen } from './components/AchievementsScreen';
+import { AchievementToast } from './components/AchievementToast';
 import './App.css';
 
-type Screen = 'menu' | 'tutorial' | 'leaderboard' | 'playing' | 'daily' | 'daily-calendar';
+type Screen = 'menu' | 'tutorial' | 'leaderboard' | 'playing' | 'daily' | 'daily-calendar' | 'stats' | 'achievements';
 
 const MAX_LEADERBOARD = 5;
+
+const DEFAULT_STATS: PlayerStats = {
+  gamesPlayed: 0,
+  totalScore: 0,
+  totalLinesCleared: 0,
+  totalPiecesPlaced: 0,
+  bestStreak: 0,
+  allClearCount: 0,
+  totalRevivesUsed: 0,
+  highestScoreWithoutRevive: 0,
+};
+
+const DEFAULT_STREAK: DailyStreak = {
+  currentStreak: 0,
+  bestStreak: 0,
+  lastPlayedDate: null,
+};
 
 function getInitialLeaderboard(): LeaderboardEntry[] {
   try {
@@ -52,12 +75,96 @@ export default function App() {
     'gridlock-daily',
     {}
   );
+  const [stats, setStats] = useLocalStorage<PlayerStats>('gridlock-stats', DEFAULT_STATS);
+  const [achievementProgress, setAchievementProgress] = useLocalStorage<AchievementProgress>(
+    'gridlock-achievements',
+    {}
+  );
+  const [dailyStreak, setDailyStreak] = useLocalStorage<DailyStreak>(
+    'gridlock-daily-streak',
+    DEFAULT_STREAK
+  );
+
+  // Toast queue for achievement notifications
+  const [toastQueue, setToastQueue] = useState<Achievement[]>([]);
+  const currentToast = toastQueue.length > 0 ? toastQueue[0] : null;
+
+  const dismissToast = useCallback(() => {
+    setToastQueue(prev => prev.slice(1));
+  }, []);
+
+  // Game context ref — Game.tsx updates this so achievement checks can access in-game state
+  const gameContextRef = useRef<{
+    currentGameScore: number | null;
+    currentGameRevivesRemaining: number | null;
+    lastClearCount: number | null;
+  }>({ currentGameScore: null, currentGameRevivesRemaining: null, lastClearCount: null });
 
   // Apply theme on mount and when themeId changes
   useEffect(() => {
     const theme = getThemeById(themeId);
     applyTheme(theme);
   }, [themeId]);
+
+  // Achievement checking — runs whenever stats or dailyStreak change
+  const achievementProgressRef = useRef(achievementProgress);
+  achievementProgressRef.current = achievementProgress;
+
+  const dailyCount = Object.keys(dailyResults).length;
+
+  const runAchievementCheck = useCallback(() => {
+    const ctx: AchievementContext = {
+      stats,
+      dailyStreak,
+      dailyCount,
+      currentGameScore: gameContextRef.current.currentGameScore,
+      currentGameRevivesRemaining: gameContextRef.current.currentGameRevivesRemaining,
+      lastClearCount: gameContextRef.current.lastClearCount,
+    };
+    const newIds = checkAchievements(ctx, achievementProgressRef.current);
+    if (newIds.length > 0) {
+      const now = Date.now();
+      setAchievementProgress(prev => {
+        const next = { ...prev };
+        for (const id of newIds) {
+          next[id] = now;
+        }
+        return next;
+      });
+      const newAchievements = newIds
+        .map(id => getAchievementById(id))
+        .filter((a): a is Achievement => a !== undefined);
+      setToastQueue(prev => [...prev, ...newAchievements]);
+    }
+  }, [stats, dailyStreak, dailyCount, setAchievementProgress]);
+
+  // Run check whenever stats change
+  useEffect(() => {
+    runAchievementCheck();
+  }, [runAchievementCheck]);
+
+  const handleStatsUpdate = useCallback(
+    (updater: (prev: PlayerStats) => PlayerStats) => {
+      setStats(updater);
+    },
+    [setStats]
+  );
+
+  const handleGameContextUpdate = useCallback(
+    (ctx: { currentGameScore?: number; currentGameRevivesRemaining?: number; lastClearCount?: number | null }) => {
+      if (ctx.currentGameScore !== undefined) gameContextRef.current.currentGameScore = ctx.currentGameScore;
+      if (ctx.currentGameRevivesRemaining !== undefined) gameContextRef.current.currentGameRevivesRemaining = ctx.currentGameRevivesRemaining;
+      if (ctx.lastClearCount !== undefined) gameContextRef.current.lastClearCount = ctx.lastClearCount;
+    },
+    []
+  );
+
+  // Reset game context when leaving game
+  useEffect(() => {
+    if (screen !== 'playing' && screen !== 'daily') {
+      gameContextRef.current = { currentGameScore: null, currentGameRevivesRemaining: null, lastClearCount: null };
+    }
+  }, [screen]);
 
   const topScore = leaderboard.length > 0 ? leaderboard[0].score : 0;
 
@@ -105,8 +212,46 @@ export default function App() {
         pruned[date] = { date, score, dayNumber };
         return pruned;
       });
+
+      // Update daily streak
+      setDailyStreak(prev => {
+        const today = getTodayDateStr();
+        const yesterday = getYesterdayDateStr();
+        let newStreak: number;
+        if (prev.lastPlayedDate === today) {
+          // Already played today, no change
+          return prev;
+        } else if (prev.lastPlayedDate === yesterday) {
+          newStreak = prev.currentStreak + 1;
+        } else {
+          newStreak = 1;
+        }
+        return {
+          currentStreak: newStreak,
+          bestStreak: Math.max(newStreak, prev.bestStreak),
+          lastPlayedDate: today,
+        };
+      });
     },
-    [setDailyResults]
+    [setDailyResults, setDailyStreak]
+  );
+
+  const handleGameOver = useCallback(
+    (score: number, revivesRemaining: number, mode: 'classic' | 'daily') => {
+      setStats(prev => {
+        const next = { ...prev };
+        next.gamesPlayed += 1;
+        next.totalScore += score;
+        if (mode === 'classic') {
+          next.totalRevivesUsed += (REVIVES_PER_GAME - revivesRemaining);
+        }
+        if (revivesRemaining === REVIVES_PER_GAME && score > next.highestScoreWithoutRevive) {
+          next.highestScoreWithoutRevive = score;
+        }
+        return next;
+      });
+    },
+    [setStats]
   );
 
   const dailySeed = dateToSeed(todayStr);
@@ -121,6 +266,9 @@ export default function App() {
           todayCompleted={todayCompleted}
           onTutorial={() => setScreen('tutorial')}
           onLeaderboard={() => setScreen('leaderboard')}
+          onStats={() => setScreen('stats')}
+          onAchievements={() => setScreen('achievements')}
+          dailyStreak={dailyStreak}
         />
       )}
       {screen === 'tutorial' && (
@@ -128,6 +276,12 @@ export default function App() {
       )}
       {screen === 'leaderboard' && (
         <Leaderboard entries={leaderboard} onBack={() => setScreen('menu')} />
+      )}
+      {screen === 'stats' && (
+        <StatsScreen stats={stats} onBack={() => setScreen('menu')} />
+      )}
+      {screen === 'achievements' && (
+        <AchievementsScreen progress={achievementProgress} onBack={() => setScreen('menu')} />
       )}
       {screen === 'playing' && (
         <Game
@@ -137,6 +291,9 @@ export default function App() {
           onThemeChange={setThemeId}
           onQuit={() => setScreen('menu')}
           onSaveScore={handleSaveScore}
+          onStatsUpdate={handleStatsUpdate}
+          onGameContextUpdate={handleGameContextUpdate}
+          onGameOver={handleGameOver}
         />
       )}
       {screen === 'daily' && (
@@ -150,12 +307,23 @@ export default function App() {
           onSaveScore={handleSaveScore}
           onDailyComplete={handleDailySaveResult}
           onViewCalendar={() => setScreen('daily-calendar')}
+          onStatsUpdate={handleStatsUpdate}
+          onGameContextUpdate={handleGameContextUpdate}
+          onGameOver={handleGameOver}
         />
       )}
       {screen === 'daily-calendar' && (
         <DailyCalendar
           results={dailyResults}
           onBack={() => setScreen('menu')}
+        />
+      )}
+
+      {currentToast && (
+        <AchievementToast
+          key={currentToast.id}
+          achievement={currentToast}
+          onDismiss={dismissToast}
         />
       )}
     </div>

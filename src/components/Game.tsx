@@ -1,6 +1,6 @@
 import { useReducer, useEffect, useCallback, useState, useRef, useMemo } from 'react';
 import { gameReducer, createInitialState, createDailyState } from '../game/reducer';
-import type { Board as BoardType, GameMode } from '../game/types';
+import type { Board as BoardType, GameMode, PlayerStats } from '../game/types';
 import { getThemeById } from '../game/themes';
 import type { BgPalette } from '../game/themes';
 import {
@@ -48,6 +48,9 @@ type GameProps = {
   onSaveScore: (score: number) => void;
   onDailyComplete?: (score: number) => void;
   onViewCalendar?: () => void;
+  onStatsUpdate?: (updater: (prev: PlayerStats) => PlayerStats) => void;
+  onGameContextUpdate?: (ctx: { currentGameScore?: number; currentGameRevivesRemaining?: number; lastClearCount?: number | null }) => void;
+  onGameOver?: (score: number, revivesRemaining: number, mode: GameMode) => void;
 };
 
 /** Determine background palette index from score using given palettes */
@@ -62,7 +65,7 @@ function getBgPaletteIndex(score: number, palettes: BgPalette[]): number {
   return idx;
 }
 
-export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit, onSaveScore, onDailyComplete, onViewCalendar }: GameProps) {
+export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit, onSaveScore, onDailyComplete, onViewCalendar, onStatsUpdate, onGameContextUpdate, onGameOver }: GameProps) {
   const [state, dispatch] = useReducer(
     gameReducer,
     undefined,
@@ -163,6 +166,9 @@ export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit
       if (mode === 'daily' && onDailyComplete) {
         onDailyComplete(state.score);
       }
+      if (onGameOver) {
+        onGameOver(state.score, state.revivesRemaining, mode);
+      }
       shatterTimer = setTimeout(() => setIsShattered(true), 0);
       showUiTimer = setTimeout(() => setShowGameOverUI(true), 800);
     }
@@ -177,7 +183,7 @@ export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit
       if (shatterTimer) clearTimeout(shatterTimer);
       if (showUiTimer) clearTimeout(showUiTimer);
     };
-  }, [state.isGameOver, mode, onDailyComplete, state.score]);
+  }, [state.isGameOver, mode, onDailyComplete, onGameOver, state.score, state.revivesRemaining]);
 
   const prevVolumeRef = useRef(80);
 
@@ -220,6 +226,28 @@ export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit
       const boardAfterPlace = placePiece(state.board, piece, row, col);
       const { rows, cols } = findCompletedLines(boardAfterPlace);
       const linesCleared = rows.length + cols.length;
+
+      // Stats: piece placed
+      if (onStatsUpdate) {
+        const newStreak = linesCleared > 0 ? state.streak + 1 : 0;
+        onStatsUpdate(prev => ({
+          ...prev,
+          totalPiecesPlaced: prev.totalPiecesPlaced + 1,
+          totalLinesCleared: prev.totalLinesCleared + linesCleared,
+          bestStreak: Math.max(prev.bestStreak, newStreak),
+          allClearCount: prev.allClearCount + (linesCleared > 0 && isBoardEmpty(clearLines(boardAfterPlace, rows, cols)) ? 1 : 0),
+        }));
+      }
+      // Update game context for achievement checking
+      if (onGameContextUpdate) {
+        const clearCellsForCtx = getClearingCells(rows, cols);
+        const pointsForCtx = linesCleared > 0 ? calculateScore(clearCellsForCtx.length, linesCleared, state.streak) + (isBoardEmpty(clearLines(boardAfterPlace, rows, cols)) ? ALL_CLEAR_BONUS : 0) : 0;
+        onGameContextUpdate({
+          currentGameScore: state.score + pointsForCtx,
+          currentGameRevivesRemaining: state.revivesRemaining,
+          lastClearCount: linesCleared > 0 ? linesCleared : null,
+        });
+      }
 
       if (linesCleared > 0) {
         // Check for all-clear
@@ -349,7 +377,7 @@ export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit
         dispatch({ type: 'PLACE_PIECE', pieceIndex, row, col });
       }
     },
-    [state.board, state.currentPieces, state.streak, state.score]
+    [state.board, state.currentPieces, state.streak, state.score, state.revivesRemaining, onStatsUpdate, onGameContextUpdate]
   );
 
   const displayBoard = animBoard ?? state.board;

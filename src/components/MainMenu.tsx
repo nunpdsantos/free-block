@@ -1,3 +1,5 @@
+import type { DailyStreak } from '../game/types';
+import { DailyStreakBadge } from './DailyStreakBadge';
 import './MainMenu.css';
 
 type MainMenuProps = {
@@ -7,14 +9,19 @@ type MainMenuProps = {
   todayCompleted: boolean;
   onTutorial: () => void;
   onLeaderboard: () => void;
+  onStats: () => void;
+  onAchievements: () => void;
+  dailyStreak: DailyStreak;
 };
 
-export function MainMenu({ topScore, onPlay, onDaily, todayCompleted, onTutorial, onLeaderboard }: MainMenuProps) {
+export function MainMenu({ topScore, onPlay, onDaily, todayCompleted, onTutorial, onLeaderboard, onStats, onAchievements, dailyStreak }: MainMenuProps) {
   return (
     <div className="main-menu">
       <div className="main-menu-title">
         <h1>GRIDLOCK</h1>
       </div>
+
+      <DailyStreakBadge streak={dailyStreak} />
 
       <div className="main-menu-buttons">
         <button className="menu-btn menu-btn--play" onClick={onPlay}>
@@ -22,6 +29,12 @@ export function MainMenu({ topScore, onPlay, onDaily, todayCompleted, onTutorial
         </button>
         <button className="menu-btn menu-btn--daily" onClick={onDaily}>
           {todayCompleted ? 'Daily Results' : 'Daily Challenge'}
+        </button>
+        <button className="menu-btn menu-btn--secondary" onClick={onStats}>
+          Stats
+        </button>
+        <button className="menu-btn menu-btn--secondary" onClick={onAchievements}>
+          Achievements
         </button>
         <button className="menu-btn menu-btn--secondary" onClick={onTutorial}>
           How to Play
