@@ -18,14 +18,14 @@
 - `constants.ts` — All tunable values: grid size, scoring, DDA thresholds, piece colors, revive limit
 - `types.ts` — Board, PieceShape, GameState, GameAction, UndoSnapshot, GameMode, DailyResult, LeaderboardEntry
 - `logic.ts` — Pure functions: placement, line clearing, scoring, revive cell removal
-- `pieces.ts` — 14 piece families (40 orientations), weighted random selection with DDA, piece-fit validation (20 retries + 1×1 fallback), `generateDailyPieces` for seeded daily mode
+- `pieces.ts` — 15 piece families (37 orientations), weighted random selection with DDA, piece-fit validation (20 retries + 1×1 fallback), `generateDailyPieces` for seeded daily mode
 - `reducer.ts` — useReducer state machine: PLACE_PIECE, NEW_GAME, NEW_DAILY_GAME, REVIVE, DISMISS_CELEBRATION (UNDO action exists but disabled via UNDOS_PER_GAME=0)
 - `themes.ts` — 5 color themes (Classic, Midnight, Ocean, Sunset, Neon) with per-theme CSS variables and background palettes
 - `random.ts` — Mulberry32 seeded PRNG, date-to-seed conversion, day number utilities
 
 ### Audio (`src/audio/`)
 - `synth.ts` — Web Audio API synthesizer using sine/triangle waves, pentatonic scale (C5-E6), ADSR envelopes. Master `GainNode` for volume control via `setMasterVolume()`.
-- `sounds.ts` — Sound playback controller with volume level (0-100), haptic feedback via `navigator.vibrate()` fires independently of volume state. Migrates old `gridlock-muted` key to `gridlock-volume`.
+- `sounds.ts` — Sound playback controller with volume level (0-100), haptic feedback via `navigator.vibrate()` suppressed when muted (volume=0). Events: place, clear, all-clear, game over, revive. Migrates old `gridlock-muted` key to `gridlock-volume`.
 
 ### Key patterns
 - Game state is a `useReducer` — all mutations go through `reducer.ts`
