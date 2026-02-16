@@ -27,6 +27,8 @@ export type Theme = {
   // Swatch preview colors (gradient)
   swatchFrom: string;
   swatchTo: string;
+  // Achievement required to unlock (null = free)
+  requiredAchievement?: string;
 };
 
 export const THEMES: Theme[] = [
@@ -85,6 +87,7 @@ export const THEMES: Theme[] = [
   {
     id: 'ocean',
     name: 'Ocean',
+    requiredAchievement: 'clean_slate',
     bg: '#1A4B5E',
     bgDark: '#0F2F3D',
     boardBg: '#0D2028',
@@ -111,6 +114,7 @@ export const THEMES: Theme[] = [
   {
     id: 'sunset',
     name: 'Sunset',
+    requiredAchievement: 'inferno',
     bg: '#8B3A2E',
     bgDark: '#6B2A20',
     boardBg: '#2A1510',
@@ -137,6 +141,7 @@ export const THEMES: Theme[] = [
   {
     id: 'neon',
     name: 'Neon',
+    requiredAchievement: 'no_safety_net',
     bg: '#1A0A2E',
     bgDark: '#0D0518',
     boardBg: '#0F0820',

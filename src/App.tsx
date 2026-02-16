@@ -112,11 +112,15 @@ export default function App() {
     lastClearCount: number | null;
   }>({ currentGameScore: null, currentGameRevivesRemaining: null, lastClearCount: null });
 
-  // Apply theme on mount and when themeId changes
+  // Apply theme on mount and when themeId changes; fall back if locked
   useEffect(() => {
     const theme = getThemeById(themeId);
+    if (theme.requiredAchievement && !achievementProgress[theme.requiredAchievement]) {
+      setThemeId('classic');
+      return;
+    }
     applyTheme(theme);
-  }, [themeId]);
+  }, [themeId, achievementProgress, setThemeId]);
 
   // Achievement checking — runs whenever stats or dailyStreak change
   const achievementProgressRef = useRef(achievementProgress);
@@ -307,6 +311,7 @@ export default function App() {
           onStatsUpdate={handleStatsUpdate}
           onGameContextUpdate={handleGameContextUpdate}
           onGameOver={handleGameOver}
+          unlockedAchievements={achievementProgress}
         />
       )}
       {screen === 'daily' && (
@@ -323,6 +328,7 @@ export default function App() {
           onStatsUpdate={handleStatsUpdate}
           onGameContextUpdate={handleGameContextUpdate}
           onGameOver={handleGameOver}
+          unlockedAchievements={achievementProgress}
         />
       )}
       {screen === 'daily-calendar' && (

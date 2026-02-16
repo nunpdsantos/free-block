@@ -1,6 +1,6 @@
 import { useReducer, useEffect, useCallback, useState, useRef, useMemo } from 'react';
 import { gameReducer, createInitialState, createDailyState } from '../game/reducer';
-import type { Board as BoardType, GameMode, PlayerStats } from '../game/types';
+import type { Board as BoardType, GameMode, PlayerStats, AchievementProgress } from '../game/types';
 import { getThemeById } from '../game/themes';
 import type { BgPalette } from '../game/themes';
 import {
@@ -51,6 +51,7 @@ type GameProps = {
   onStatsUpdate?: (updater: (prev: PlayerStats) => PlayerStats) => void;
   onGameContextUpdate?: (ctx: { currentGameScore?: number; currentGameRevivesRemaining?: number; lastClearCount?: number | null }) => void;
   onGameOver?: (score: number, revivesRemaining: number, mode: GameMode) => void;
+  unlockedAchievements?: AchievementProgress;
 };
 
 /** Determine background palette index from score using given palettes */
@@ -65,7 +66,7 @@ function getBgPaletteIndex(score: number, palettes: BgPalette[]): number {
   return idx;
 }
 
-export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit, onSaveScore, onDailyComplete, onViewCalendar, onStatsUpdate, onGameContextUpdate, onGameOver }: GameProps) {
+export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit, onSaveScore, onDailyComplete, onViewCalendar, onStatsUpdate, onGameContextUpdate, onGameOver, unlockedAchievements }: GameProps) {
   const [state, dispatch] = useReducer(
     gameReducer,
     undefined,
@@ -590,6 +591,7 @@ export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit
           onResume={() => setIsPaused(false)}
           onRestart={handleRestart}
           onQuit={handleQuit}
+          unlockedAchievements={unlockedAchievements ?? {}}
         />
       )}
 

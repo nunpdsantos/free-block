@@ -1,4 +1,6 @@
 import { THEMES } from '../game/themes';
+import { getAchievementById } from '../game/achievements';
+import type { AchievementProgress } from '../game/types';
 import './PauseMenu.css';
 
 type PauseMenuProps = {
@@ -10,6 +12,7 @@ type PauseMenuProps = {
   onResume: () => void;
   onRestart: () => void;
   onQuit: () => void;
+  unlockedAchievements: AchievementProgress;
 };
 
 function SpeakerIcon({ volume }: { volume: number }) {
@@ -35,6 +38,7 @@ export function PauseMenu({
   volume, onVolumeChange, onToggleMute,
   themeId, onThemeChange,
   onResume, onRestart, onQuit,
+  unlockedAchievements,
 }: PauseMenuProps) {
   return (
     <div className="pause-overlay">
@@ -60,16 +64,22 @@ export function PauseMenu({
         <div className="pause-theme-section">
           <div className="pause-theme-label">Theme</div>
           <div className="pause-theme-swatches">
-            {THEMES.map((t) => (
-              <button
-                key={t.id}
-                className={`pause-theme-swatch ${t.id === themeId ? 'pause-theme-swatch--active' : ''}`}
-                style={{ background: `linear-gradient(135deg, ${t.swatchFrom}, ${t.swatchTo})` }}
-                onClick={() => onThemeChange(t.id)}
-                aria-label={t.name}
-                title={t.name}
-              />
-            ))}
+            {THEMES.map((t) => {
+              const locked = !!t.requiredAchievement && !unlockedAchievements[t.requiredAchievement];
+              const achievement = t.requiredAchievement ? getAchievementById(t.requiredAchievement) : null;
+              const tooltip = locked && achievement ? `Unlock: ${achievement.title}` : t.name;
+              return (
+                <button
+                  key={t.id}
+                  className={`pause-theme-swatch ${t.id === themeId ? 'pause-theme-swatch--active' : ''} ${locked ? 'pause-theme-swatch--locked' : ''}`}
+                  style={{ background: `linear-gradient(135deg, ${t.swatchFrom}, ${t.swatchTo})` }}
+                  onClick={locked ? undefined : () => onThemeChange(t.id)}
+                  aria-label={tooltip}
+                  title={tooltip}
+                  disabled={locked}
+                />
+              );
+            })}
           </div>
         </div>
 

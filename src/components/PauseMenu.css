@@ -140,6 +140,27 @@
   transform: scale(1.1);
 }
 
+.pause-theme-swatch--locked {
+  opacity: 0.35;
+  cursor: not-allowed;
+  position: relative;
+}
+
+.pause-theme-swatch--locked::after {
+  content: '\1F512';
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  filter: grayscale(1);
+}
+
+.pause-theme-swatch--locked:hover {
+  transform: none;
+}
+
 .pause-buttons {
   display: flex;
   flex-direction: column;
