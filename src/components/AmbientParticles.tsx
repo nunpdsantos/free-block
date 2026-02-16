@@ -16,10 +16,10 @@ function generateParticles(): AmbientParticle[] {
   return Array.from({ length: PARTICLE_COUNT }, (_, i) => ({
     id: i,
     x: Math.random() * 100,
-    size: 2 + Math.random() * 3,
+    size: 3 + Math.random() * 4,
     duration: 8 + Math.random() * 12,
     delay: Math.random() * 10,
-    opacity: 0.06 + Math.random() * 0.1,
+    opacity: 0.12 + Math.random() * 0.12,
   }));
 }
 

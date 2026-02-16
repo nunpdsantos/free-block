@@ -14,7 +14,7 @@
   box-shadow:
     inset 3px 3px 6px rgba(255, 255, 255, 0.35),
     inset -3px -3px 6px rgba(0, 0, 0, 0.45);
-  animation: cell-place 0.3s ease-out;
+  animation: cell-place 0.45s ease-out;
 }
 
 /* Glossy highlight overlay */
@@ -36,8 +36,8 @@
 .cell--ghost-valid {
   background-color: var(--ghost-color, var(--ghost-valid)) !important;
   box-shadow:
-    inset 0 0 0 1.5px rgba(255, 255, 255, 0.55),
-    0 0 8px 2px rgba(255, 255, 255, 0.12);
+    inset 0 0 0 1.5px rgba(255, 255, 255, 0.6),
+    0 0 12px 3px rgba(255, 255, 255, 0.2);
   animation: ghost-pulse 0.8s ease-in-out infinite alternate;
 }
 .cell--ghost-valid::before {
@@ -76,22 +76,22 @@
 /* Placement — pop with squish bounce */
 @keyframes cell-place {
   0% {
-    transform: scale(0.7);
-    opacity: 0.4;
-    filter: brightness(1.8);
+    transform: scale(0.6);
+    opacity: 0.3;
+    filter: brightness(2);
   }
-  30% {
-    transform: scale(1.02) scaleY(0.88) translateY(1px);
+  25% {
+    transform: scale(1.04) scaleY(0.8) translateY(2px);
     opacity: 1;
-    filter: brightness(1.3);
+    filter: brightness(1.4);
   }
-  55% {
-    transform: scale(1.06);
+  50% {
+    transform: scale(1.08) scaleY(1.06);
     opacity: 1;
     filter: brightness(1.15);
   }
   75% {
-    transform: scale(0.98);
+    transform: scale(0.97);
     opacity: 1;
     filter: brightness(1.05);
   }
@@ -148,10 +148,10 @@
 /* Ghost pulse */
 @keyframes ghost-pulse {
   from {
-    opacity: 0.25;
+    opacity: 0.2;
   }
   to {
-    opacity: 0.45;
+    opacity: 0.55;
   }
 }
 

@@ -19,7 +19,7 @@ import {
   ALL_CLEAR_BONUS,
   SCORE_MILESTONES,
 } from '../game/constants';
-import { playPlace, playClear, playGameOver, isSoundMuted, setSoundMuted } from '../audio/sounds';
+import { playPlace, playClear, playAllClear, playGameOver, isSoundMuted, setSoundMuted } from '../audio/sounds';
 import { Board } from './Board';
 import { PieceTray } from './PieceTray';
 import { DragOverlay } from './DragOverlay';
@@ -63,7 +63,6 @@ export function Game({ topScore, onQuit, onSaveScore }: GameProps) {
   const [scorePop, setScorePop] = useState<number | null>(null);
   const [reviveFlash, setReviveFlash] = useState(false);
   const [clearedLines, setClearedLines] = useState<{ rows: number[]; cols: number[] } | null>(null);
-  const [isShaking, setIsShaking] = useState(false);
   const [cellParticleTrigger, setCellParticleTrigger] = useState(0);
   const [isShattered, setIsShattered] = useState(false);
   const [showGameOverUI, setShowGameOverUI] = useState(false);
@@ -71,7 +70,7 @@ export function Game({ topScore, onQuit, onSaveScore }: GameProps) {
   const scoreSavedRef = useRef(false);
   const prevGameOverRef = useRef(false);
   const scorePopKeyRef = useRef(0);
-  const shakeKeyRef = useRef(0);
+  const boardElRef = useRef<HTMLDivElement>(null);
 
   // --- Background palette cycling ---
   const bgIndex = useMemo(() => getBgPaletteIndex(state.score), [state.score]);
@@ -137,6 +136,7 @@ export function Game({ topScore, onQuit, onSaveScore }: GameProps) {
         // Check for all-clear
         const boardAfterClear = clearLines(boardAfterPlace, rows, cols);
         const allClear = isBoardEmpty(boardAfterClear);
+        if (allClear) playAllClear();
 
         // Compute points for score pop display
         const clearCells = getClearingCells(rows, cols);
@@ -178,11 +178,21 @@ export function Game({ topScore, onQuit, onSaveScore }: GameProps) {
         // Cell particle burst — fires on ALL line clears
         setCellParticleTrigger(t => t + 1);
 
-        // Screen shake on 2+ line clears
+        // Screen shake on 2+ line clears (WAAPI — no remount)
         if (linesCleared >= 2) {
-          shakeKeyRef.current += 1;
-          setIsShaking(true);
-          setTimeout(() => setIsShaking(false), 300);
+          const el = boardElRef.current;
+          if (el) {
+            const px = Math.min(linesCleared + 1, 4);
+            el.animate([
+              { transform: 'translateX(0)' },
+              { transform: `translateX(${px}px)` },
+              { transform: `translateX(${-px}px)` },
+              { transform: `translateX(${px}px)` },
+              { transform: `translateX(${-0.5 * px}px)` },
+              { transform: `translateX(${0.3 * px}px)` },
+              { transform: 'translateX(0)' },
+            ], { duration: 300, easing: 'ease-out' });
+          }
         }
 
         // Confetti — bigger for all-clear
@@ -304,12 +314,6 @@ export function Game({ topScore, onQuit, onSaveScore }: GameProps) {
   }
   if (state.isGameOver && !isShattered) boardContainerClass += ' board-container--gameover';
   if (reviveFlash) boardContainerClass += ' board-container--revive';
-  if (isShaking) boardContainerClass += ' board-container--shake';
-
-  // Shake intensity based on lines cleared
-  const shakeStyle: React.CSSProperties | undefined = isShaking
-    ? { '--shake-px': `${Math.min(state.lastClearCount + 1, 4)}px` } as React.CSSProperties
-    : undefined;
 
   return (
     <div className="game" ref={gameRef} style={{ touchAction: 'none' }}>
@@ -333,9 +337,10 @@ export function Game({ topScore, onQuit, onSaveScore }: GameProps) {
 
       <div
         className={boardContainerClass}
-        ref={boardRef}
-        key={isShaking ? shakeKeyRef.current : 'board'}
-        style={shakeStyle}
+        ref={(el) => {
+          boardRef.current = el;
+          boardElRef.current = el;
+        }}
       >
         <Board
           board={displayBoard}

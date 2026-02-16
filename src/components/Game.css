@@ -84,11 +84,6 @@
   animation: revive-flash 0.6s ease-out;
 }
 
-/* Screen shake on combos */
-.board-container--shake {
-  animation: board-shake 0.3s ease-out;
-}
-
 /* Floating score points indicator */
 .score-pop {
   position: absolute;
@@ -147,16 +142,6 @@
   100% {
     filter: brightness(1);
   }
-}
-
-@keyframes board-shake {
-  0% { transform: translateX(0); }
-  15% { transform: translateX(var(--shake-px, 2px)); }
-  30% { transform: translateX(calc(-1 * var(--shake-px, 2px))); }
-  45% { transform: translateX(var(--shake-px, 2px)); }
-  60% { transform: translateX(calc(-0.5 * var(--shake-px, 2px))); }
-  75% { transform: translateX(calc(0.3 * var(--shake-px, 2px))); }
-  100% { transform: translateX(0); }
 }
 
 @keyframes score-pop-anim {

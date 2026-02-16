@@ -9,7 +9,7 @@
 .cell-particle {
   position: absolute;
   border-radius: 50%;
-  animation: cell-particle-burst 0.5s ease-out forwards;
+  animation: cell-particle-burst 0.65s ease-out forwards;
   opacity: 0;
 }
 
