@@ -8,7 +8,7 @@ import {
   signOut as firebaseSignOut,
   type User,
 } from 'firebase/auth';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, getDocFromServer } from 'firebase/firestore';
 import { auth, db } from '../firebase/config';
 import { generateDisplayName } from '../firebase/names';
 
@@ -22,10 +22,23 @@ export type AuthState = {
 
 async function ensureUserDoc(user: User): Promise<string> {
   const userRef = doc(db, 'users', user.uid);
-  const snap = await getDoc(userRef);
 
-  if (snap.exists()) {
-    return snap.data().displayName as string;
+  try {
+    // Try cache first (fast path for returning users)
+    const cached = await getDoc(userRef);
+    if (cached.exists()) {
+      return cached.data().displayName as string;
+    }
+  } catch {
+    // Cache miss or offline — try server directly
+    try {
+      const server = await getDocFromServer(userRef);
+      if (server.exists()) {
+        return server.data().displayName as string;
+      }
+    } catch {
+      // Both failed — fall through to create new doc
+    }
   }
 
   // New user — generate a name and create doc
@@ -43,8 +56,13 @@ export function useAuth(): AuthState {
     const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
         setUser(firebaseUser);
-        const name = await ensureUserDoc(firebaseUser);
-        setDisplayName(name);
+        try {
+          const name = await ensureUserDoc(firebaseUser);
+          setDisplayName(name);
+        } catch {
+          // Firestore unavailable — use a local fallback name
+          setDisplayName(firebaseUser.displayName ?? generateDisplayName());
+        }
         setLoading(false);
       } else {
         // No user — auto sign in anonymously
