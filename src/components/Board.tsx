@@ -1,6 +1,7 @@
 import { memo, useMemo } from 'react';
 import type { Board as BoardType, GhostCells } from '../game/types';
 import { GRID_SIZE } from '../game/constants';
+import { getCSSPx } from '../game/responsive';
 import { Cell } from './Cell';
 import './Board.css';
 
@@ -73,8 +74,8 @@ export const Board = memo(function Board({
   const shockwaves = useMemo(() => {
     if (!clearedLines) return null;
     const elements: React.ReactElement[] = [];
-    const cellTotal = 50; // 48px + 2px gap
-    const pad = 6;
+    const cellTotal = getCSSPx('--cell-size') + getCSSPx('--cell-gap');
+    const pad = getCSSPx('--board-padding');
 
     for (const rowIdx of clearedLines.rows) {
       const top = pad + rowIdx * cellTotal + 24; // center of row

@@ -13,6 +13,12 @@
 
 /* Block Blast visual identity — single theme */
 :root {
+  --cell-size: min(48px, calc((100vw - 58px) / 8));
+  --cell-gap: 2px;
+  --board-padding: 6px;
+  --preview-cell: calc(var(--cell-size) * 0.583);
+  --finger-offset: calc(var(--cell-size) * 0.833);
+
   --bg: #4A5899;
   --bg-dark: #3D4A80;
   --board-bg: #1A1F3D;

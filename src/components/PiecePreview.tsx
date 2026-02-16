@@ -1,6 +1,7 @@
 import { memo, useCallback } from 'react';
 import type { PieceShape } from '../game/types';
 import { getPieceBounds } from '../game/pieces';
+import { getCSSPx } from '../game/responsive';
 import './PiecePreview.css';
 
 type PiecePreviewProps = {
@@ -14,9 +15,6 @@ type PiecePreviewProps = {
   ) => void;
   isDragging: boolean;
 };
-
-const PREVIEW_CELL = 28;
-const PREVIEW_GAP = 2;
 
 export const PiecePreview = memo(function PiecePreview({
   piece,
@@ -40,8 +38,10 @@ export const PiecePreview = memo(function PiecePreview({
   const { rows, cols } = getPieceBounds(piece.coords);
   const coordSet = new Set(piece.coords.map(c => `${c.row},${c.col}`));
 
-  const width = cols * (PREVIEW_CELL + PREVIEW_GAP) - PREVIEW_GAP;
-  const height = rows * (PREVIEW_CELL + PREVIEW_GAP) - PREVIEW_GAP;
+  const previewCell = getCSSPx('--preview-cell');
+  const previewGap = getCSSPx('--cell-gap');
+  const width = cols * (previewCell + previewGap) - previewGap;
+  const height = rows * (previewCell + previewGap) - previewGap;
 
   const cells = [];
   for (let r = 0; r < rows; r++) {
@@ -81,9 +81,9 @@ export const PiecePreview = memo(function PiecePreview({
         className="preview-grid"
         style={{
           display: 'grid',
-          gridTemplateColumns: `repeat(${cols}, ${PREVIEW_CELL}px)`,
-          gridTemplateRows: `repeat(${rows}, ${PREVIEW_CELL}px)`,
-          gap: `${PREVIEW_GAP}px`,
+          gridTemplateColumns: `repeat(${cols}, ${previewCell}px)`,
+          gridTemplateRows: `repeat(${rows}, ${previewCell}px)`,
+          gap: `${previewGap}px`,
           width,
           height,
         }}

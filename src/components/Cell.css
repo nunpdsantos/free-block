@@ -1,7 +1,7 @@
 .cell {
   position: relative;
-  width: 48px;
-  height: 48px;
+  width: var(--cell-size);
+  height: var(--cell-size);
   border-radius: 5px;
   background-color: var(--cell-empty);
   overflow: visible;

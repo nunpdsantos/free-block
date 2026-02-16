@@ -1,10 +1,10 @@
 .board {
   position: relative;
   display: grid;
-  grid-template-columns: repeat(8, 48px);
-  grid-template-rows: repeat(8, 48px);
-  gap: 2px;
-  padding: 6px;
+  grid-template-columns: repeat(8, var(--cell-size));
+  grid-template-rows: repeat(8, var(--cell-size));
+  gap: var(--cell-gap);
+  padding: var(--board-padding);
   background-color: var(--board-bg);
   border-radius: 10px;
   box-shadow:
@@ -55,8 +55,8 @@
 }
 
 .shockwave--row {
-  left: 6px;
-  right: 6px;
+  left: var(--board-padding);
+  right: var(--board-padding);
   height: 5px;
   background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,1) 50%, transparent 100%);
   box-shadow: 0 0 10px 2px rgba(255, 255, 255, 0.5);
@@ -64,8 +64,8 @@
 }
 
 .shockwave--col {
-  top: 6px;
-  bottom: 6px;
+  top: var(--board-padding);
+  bottom: var(--board-padding);
   width: 5px;
   background: linear-gradient(180deg, transparent 0%, rgba(255,255,255,1) 50%, transparent 100%);
   box-shadow: 0 0 10px 2px rgba(255, 255, 255, 0.5);

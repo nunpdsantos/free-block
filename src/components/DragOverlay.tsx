@@ -1,15 +1,12 @@
 import { createPortal } from 'react-dom';
 import type { DragState } from '../game/types';
 import { getPieceBounds } from '../game/pieces';
-import { FINGER_OFFSET } from '../game/constants';
+import { getCSSPx } from '../game/responsive';
 import './DragOverlay.css';
 
 type DragOverlayProps = {
   dragState: DragState | null;
 };
-
-const DRAG_CELL = 48;
-const DRAG_GAP = 2;
 
 export function DragOverlay({ dragState }: DragOverlayProps) {
   if (!dragState) return null;
@@ -18,11 +15,14 @@ export function DragOverlay({ dragState }: DragOverlayProps) {
   const { rows, cols } = getPieceBounds(piece.coords);
   const coordSet = new Set(piece.coords.map(c => `${c.row},${c.col}`));
 
-  const width = cols * (DRAG_CELL + DRAG_GAP) - DRAG_GAP;
-  const height = rows * (DRAG_CELL + DRAG_GAP) - DRAG_GAP;
+  const dragCell = getCSSPx('--cell-size');
+  const dragGap = getCSSPx('--cell-gap');
+  const fingerOffset = getCSSPx('--finger-offset');
+  const width = cols * (dragCell + dragGap) - dragGap;
+  const height = rows * (dragCell + dragGap) - dragGap;
 
   const x = pointerX - width / 2;
-  const y = pointerY - FINGER_OFFSET - height / 2;
+  const y = pointerY - fingerOffset - height / 2;
 
   const cells = [];
   for (let r = 0; r < rows; r++) {
@@ -56,9 +56,9 @@ export function DragOverlay({ dragState }: DragOverlayProps) {
         className="drag-grid"
         style={{
           display: 'grid',
-          gridTemplateColumns: `repeat(${cols}, ${DRAG_CELL}px)`,
-          gridTemplateRows: `repeat(${rows}, ${DRAG_CELL}px)`,
-          gap: `${DRAG_GAP}px`,
+          gridTemplateColumns: `repeat(${cols}, ${dragCell}px)`,
+          gridTemplateRows: `repeat(${rows}, ${dragCell}px)`,
+          gap: `${dragGap}px`,
         }}
       >
         {cells}

@@ -1,9 +1,8 @@
 import { useRef, useCallback, useState } from 'react';
 import type { PieceShape, DragState, GhostCells, Board } from '../game/types';
 import { canPlacePiece } from '../game/logic';
-import { GRID_SIZE, CELL_SIZE, CELL_GAP, FINGER_OFFSET } from '../game/constants';
-
-const TOTAL_CELL = CELL_SIZE + CELL_GAP;
+import { GRID_SIZE } from '../game/constants';
+import { getCSSPx } from '../game/responsive';
 
 export function useDrag(
   board: Board,
@@ -14,6 +13,8 @@ export function useDrag(
   const [ghostCells, setGhostCells] = useState<GhostCells>(new Map());
   const boardRef = useRef<HTMLDivElement>(null);
   const boardPaddingRef = useRef(0);
+  const totalCellRef = useRef(0);
+  const fingerOffsetRef = useRef(0);
   const dragRef = useRef<DragState | null>(null);
   const rectRef = useRef<DOMRect | null>(null);
   const rafRef = useRef<number>(0);
@@ -29,11 +30,12 @@ export function useDrag(
       const pieceCols = Math.max(...piece.coords.map(c => c.col)) + 1;
 
       const BOARD_PADDING = boardPaddingRef.current;
-      const relX = clientX - rect.left - BOARD_PADDING - (pieceCols * TOTAL_CELL) / 2;
-      const relY = clientY - rect.top - BOARD_PADDING - FINGER_OFFSET - (pieceRows * TOTAL_CELL) / 2;
+      const totalCell = totalCellRef.current;
+      const relX = clientX - rect.left - BOARD_PADDING - (pieceCols * totalCell) / 2;
+      const relY = clientY - rect.top - BOARD_PADDING - fingerOffsetRef.current - (pieceRows * totalCell) / 2;
 
-      const col = Math.round(relX / TOTAL_CELL);
-      const row = Math.round(relY / TOTAL_CELL);
+      const col = Math.round(relX / totalCell);
+      const row = Math.round(relY / totalCell);
 
       if (row < 0 || row >= GRID_SIZE || col < 0 || col >= GRID_SIZE) {
         return { row: null, col: null, isValid: false };
@@ -71,13 +73,15 @@ export function useDrag(
     (piece: PieceShape, pieceIndex: number, clientX: number, clientY: number) => {
       if (isAnimating) return;
 
-      // Cache board rect once at drag start
+      // Cache board rect + responsive sizes once at drag start
       const boardEl = boardRef.current;
       if (boardEl) {
         rectRef.current = boardEl.getBoundingClientRect();
         const computed = getComputedStyle(boardEl);
         boardPaddingRef.current = parseFloat(computed.paddingLeft) || 0;
       }
+      totalCellRef.current = getCSSPx('--cell-size') + getCSSPx('--cell-gap');
+      fingerOffsetRef.current = getCSSPx('--finger-offset');
 
       const state: DragState = {
         piece,
@@ -139,6 +143,8 @@ export function useDrag(
     dragRef.current = null;
     rectRef.current = null;
     boardPaddingRef.current = 0;
+    totalCellRef.current = 0;
+    fingerOffsetRef.current = 0;
     lastGridRef.current = { row: null, col: null };
     setDragState(null);
     setGhostCells(new Map());
@@ -149,6 +155,8 @@ export function useDrag(
     dragRef.current = null;
     rectRef.current = null;
     boardPaddingRef.current = 0;
+    totalCellRef.current = 0;
+    fingerOffsetRef.current = 0;
     lastGridRef.current = { row: null, col: null };
     setDragState(null);
     setGhostCells(new Map());
