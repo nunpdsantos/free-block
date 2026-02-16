@@ -20,13 +20,13 @@
 - `logic.ts` — Pure functions: placement, line clearing, scoring, revive cell removal
 - `pieces.ts` — 15 piece families (37 orientations), weighted random selection with DDA, piece-fit validation (20 retries + 1×1 fallback), `generateDailyPieces` for seeded daily mode
 - `reducer.ts` — useReducer state machine: PLACE_PIECE, NEW_GAME, NEW_DAILY_GAME, REVIVE, DISMISS_CELEBRATION (UNDO action exists but disabled via UNDOS_PER_GAME=0)
-- `themes.ts` — 5 color themes (Classic, Midnight, Ocean, Sunset, Neon) with per-theme CSS variables and background palettes
+- `themes.ts` — 5 color themes (Classic, Midnight, Ocean, Sunset, Neon) with per-theme CSS variables, background palettes, and optional `requiredAchievement` for unlock gating
 - `random.ts` — Mulberry32 seeded PRNG, date-to-seed conversion, day number utilities, `getYesterdayDateStr()`
-- `achievements.ts` — 15 achievement definitions (bronze/silver/gold tiers), `checkAchievements()` returns newly unlocked IDs, `getAchievementById()` lookup
+- `achievements.ts` — 15 achievement definitions (bronze/silver/gold tiers) with optional `progress()` for trackable indicators, `checkAchievements()` returns newly unlocked IDs, `getAchievementById()` lookup
 
 ### Audio (`src/audio/`)
 - `synth.ts` — Web Audio API synthesizer using sine/triangle waves, pentatonic scale (C5-E6), ADSR envelopes. Master `GainNode` for volume control via `setMasterVolume()`.
-- `sounds.ts` — Sound playback controller with volume level (0-100), haptic feedback via `navigator.vibrate()` suppressed when muted (volume=0). Events: place, clear, all-clear, game over, revive. Migrates old `gridlock-muted` key to `gridlock-volume`.
+- `sounds.ts` — Sound playback controller with volume level (0-100), haptic feedback via `navigator.vibrate()` suppressed when muted (volume=0). Events: place, clear, all-clear, game over, revive, achievement. Migrates old `gridlock-muted` key to `gridlock-volume`.
 
 ### Key patterns
 - Game state is a `useReducer` — all mutations go through `reducer.ts`
@@ -34,7 +34,7 @@
 - Line-clear animations use a two-phase approach: visual animation plays first (via `clearingCells` Map with per-cell stagger delays + CSS), then `dispatch` fires after animation completes
 - Piece generation uses 5 multiplicative DDA systems: score ramp, pity timer, solution boost, streak pushback, board-state awareness
 - Revive (3 per game) removes individual cells weighted by local congestion (not full rows), resets streak to 0 and sets movesSinceLastClear to PITY_THRESHOLD so post-revive DDA produces fair pieces
-- Theme system: `App.tsx` stores `themeId` in localStorage, applies CSS vars via `applyTheme()`, passes to Game → PauseMenu
+- Theme system: `App.tsx` stores `themeId` in localStorage, applies CSS vars via `applyTheme()`, passes to Game → PauseMenu. 3 themes locked behind achievements: Ocean (Clean Slate), Sunset (Inferno), Neon (No Safety Net). Classic + Midnight always free. Falls back to Classic if selected theme is locked. PauseMenu swatches show lock icon + tooltip on locked themes.
 - Background palette cycles through 6 theme-specific colors as score increases, using CSS variable transitions. Each palette has tense variants (`bgTense`/`bgDarkTense`); tension signal interpolates toward them via `color-mix(in oklch, ...)`
 - Tension-reactive visuals: `tension` (0-1) derived from `movesSinceLastClear` (60%) + `fillRatio` (40%) drives background desaturation, ambient particle speed/opacity/hue shift, and clear burst particles. `pressure` (0-1, with dead zone) drives board-edge vignette via `--pressure` CSS var
 - Streak glow has 5 tiers: streak (1-2), hot (3-4), fire (5-7), whitehot (8-10), supernova (11+). All use static `box-shadow` + animated `outline-color` only (no animated box-shadow)
@@ -44,8 +44,8 @@
 - Daily challenge: seeded PRNG (mulberry32) ensures identical piece sequence per date, no DDA/revive/undo. Resets at local midnight.
 - Stats system: `App.tsx` owns `PlayerStats` via `useLocalStorage('gridlock-stats')`. `Game.tsx` reports events upward via `onStatsUpdate` (pieces placed, lines cleared, streak, all-clear in `handleDrop`) and `onGameOver` (games played, total score, revives used, no-revive high score).
 - Achievement system: centralized in `App.tsx`. A `useEffect` watching `stats` + `dailyStreak` runs `checkAchievements()` from `achievements.ts`. Newly unlocked achievements queue as toasts. `AchievementProgress` stored in `gridlock-achievements` (Record of id → timestamp).
-- Daily streak: updated in `handleDailySaveResult` — compares `lastPlayedDate` to today/yesterday to increment or reset. Stored in `gridlock-daily-streak`.
-- Achievement toast queue: `toastQueue` state in `App.tsx`, dequeues from front on dismiss. Each auto-dismisses after 3s. Rendered globally via `AchievementToast` (fixed position, z-index 9999).
+- Daily streak: updated in `handleDailySaveResult` — compares `lastPlayedDate` to today/yesterday to increment or reset. Stored in `gridlock-daily-streak`. Stale streaks reset to 0 on app mount if `lastPlayedDate` is neither today nor yesterday.
+- Achievement toast queue: `toastQueue` state in `App.tsx`, dequeues from front on dismiss. Each auto-dismisses after 3s. Rendered globally via `AchievementToast` (fixed position, z-index 9999). Plays `synthAchievement()` fanfare (C5→G5 rising fifth + E5 fill + sparkle noise) on unlock.
 - Game context ref: `gameContextRef` in `App.tsx` holds in-game state (score, revives remaining, last clear count) updated by `Game.tsx` via `onGameContextUpdate` callback — allows achievement checks to access live game state without prop drilling.
 
 ### Screen flow
@@ -57,9 +57,9 @@ App (screen state + leaderboard + theme + daily results + stats + achievements +
 ├── Leaderboard → Top 5 local scores
 ├── DailyCalendar → Completed daily challenges list with share
 ├── StatsScreen → 8 stat cards in 2-col grid (games, score, lines, pieces, streak, all-clears, revives, no-revive best)
-├── AchievementsScreen → 15 achievements gallery (locked/unlocked, bronze/silver/gold tiers)
+├── AchievementsScreen → 15 achievements gallery (locked/unlocked, bronze/silver/gold tiers, progress bars on trackable locked achievements)
 └── Game (mode: classic | daily) → Board, PieceTray, DragOverlay, ScoreDisplay
-    ├── PauseMenu overlay (volume slider + theme picker + restart/quit)
+    ├── PauseMenu overlay (volume slider + theme picker with lock states + restart/quit)
     ├── GameOver overlay (classic: Revive/Play Again/Menu; daily: Share/Calendar/Menu)
     ├── CelebrationText (line clear feedback)
     ├── Confetti (multi-clear particles)
