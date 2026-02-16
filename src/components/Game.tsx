@@ -53,16 +53,34 @@ type GameProps = {
   unlockedAchievements?: AchievementProgress;
 };
 
-/** Determine background palette index from score using given palettes */
-function getBgPaletteIndex(score: number, palettes: BgPalette[]): number {
-  let idx = 0;
+type InterpolatedBg = { bg: string; bgDark: string; bgTense: string; bgDarkTense: string };
+
+/** Continuously interpolate between adjacent palette stops based on exact score */
+function getInterpolatedBg(score: number, palettes: BgPalette[]): InterpolatedBg {
+  // Find lower bound
+  let lo = 0;
   for (let i = palettes.length - 1; i >= 0; i--) {
-    if (score >= palettes[i].score) {
-      idx = i;
-      break;
-    }
+    if (score >= palettes[i].score) { lo = i; break; }
   }
-  return idx;
+  // At or beyond last stop — return final palette directly
+  if (lo >= palettes.length - 1) {
+    const p = palettes[palettes.length - 1];
+    return { bg: p.bg, bgDark: p.bgDark, bgTense: p.bgTense, bgDarkTense: p.bgDarkTense };
+  }
+  const lower = palettes[lo];
+  const upper = palettes[lo + 1];
+  const upperPct = Math.round(((score - lower.score) / (upper.score - lower.score)) * 100);
+  // No mix needed at exact boundary
+  if (upperPct <= 0) {
+    return { bg: lower.bg, bgDark: lower.bgDark, bgTense: lower.bgTense, bgDarkTense: lower.bgDarkTense };
+  }
+  const mix = (a: string, b: string) => `color-mix(in oklch, ${a} ${100 - upperPct}%, ${b})`;
+  return {
+    bg: mix(lower.bg, upper.bg),
+    bgDark: mix(lower.bgDark, upper.bgDark),
+    bgTense: mix(lower.bgTense, upper.bgTense),
+    bgDarkTense: mix(lower.bgDarkTense, upper.bgDarkTense),
+  };
 }
 
 export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit, onDailyComplete, onViewCalendar, onStatsUpdate, onGameContextUpdate, onGameOver, unlockedAchievements }: GameProps) {
@@ -111,7 +129,7 @@ export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit
   // --- Background palette cycling (theme-aware) ---
   const theme = useMemo(() => getThemeById(themeId), [themeId]);
   const bgPalettes = theme.bgPalettes;
-  const bgIndex = useMemo(() => getBgPaletteIndex(state.score, bgPalettes), [state.score, bgPalettes]);
+  const interpolatedBg = useMemo(() => getInterpolatedBg(state.score, bgPalettes), [state.score, bgPalettes]);
 
   // Tension signal (0-1): drives background desaturation + particle reactivity
   const stateFillRatio = useMemo(() => getBoardFillRatio(state.board), [state.board]);
@@ -128,17 +146,16 @@ export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit
   }, [state.movesSinceLastClear]);
 
   useEffect(() => {
-    const palette = bgPalettes[bgIndex];
     const root = document.documentElement;
 
     if (tension > 0.05) {
       // Interpolate toward tense variant using color-mix in oklch
       const pct = Math.round(tension * 100);
-      root.style.setProperty('--bg', `color-mix(in oklch, ${palette.bg} ${100 - pct}%, ${palette.bgTense})`);
-      root.style.setProperty('--bg-dark', `color-mix(in oklch, ${palette.bgDark} ${100 - pct}%, ${palette.bgDarkTense})`);
+      root.style.setProperty('--bg', `color-mix(in oklch, ${interpolatedBg.bg} ${100 - pct}%, ${interpolatedBg.bgTense})`);
+      root.style.setProperty('--bg-dark', `color-mix(in oklch, ${interpolatedBg.bgDark} ${100 - pct}%, ${interpolatedBg.bgDarkTense})`);
     } else {
-      root.style.setProperty('--bg', palette.bg);
-      root.style.setProperty('--bg-dark', palette.bgDark);
+      root.style.setProperty('--bg', interpolatedBg.bg);
+      root.style.setProperty('--bg-dark', interpolatedBg.bgDark);
     }
 
     return () => {
@@ -146,7 +163,7 @@ export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit
       root.style.setProperty('--bg', bgPalettes[0].bg);
       root.style.setProperty('--bg-dark', bgPalettes[0].bgDark);
     };
-  }, [bgIndex, bgPalettes, tension]);
+  }, [interpolatedBg, bgPalettes, tension]);
 
   // Game over — shatter then show UI, save daily result
   useEffect(() => {
