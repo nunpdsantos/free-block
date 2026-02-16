@@ -24,6 +24,14 @@ export type ClearingCell = { row: number; col: number };
 
 export type LeaderboardEntry = { score: number; date: string };
 
+export type GlobalLeaderboardEntry = {
+  uid: string;
+  displayName: string;
+  score: number;
+  mode: 'classic' | 'daily';
+  date: string;
+};
+
 export type UndoSnapshot = {
   board: Board;
   currentPieces: (PieceShape | null)[];

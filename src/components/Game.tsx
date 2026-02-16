@@ -45,7 +45,6 @@ type GameProps = {
   themeId: string;
   onThemeChange: (id: string) => void;
   onQuit: () => void;
-  onSaveScore: (score: number) => void;
   onDailyComplete?: (score: number) => void;
   onViewCalendar?: () => void;
   onStatsUpdate?: (updater: (prev: PlayerStats) => PlayerStats) => void;
@@ -66,7 +65,7 @@ function getBgPaletteIndex(score: number, palettes: BgPalette[]): number {
   return idx;
 }
 
-export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit, onSaveScore, onDailyComplete, onViewCalendar, onStatsUpdate, onGameContextUpdate, onGameOver, unlockedAchievements }: GameProps) {
+export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit, onDailyComplete, onViewCalendar, onStatsUpdate, onGameContextUpdate, onGameOver, unlockedAchievements }: GameProps) {
   const [state, dispatch] = useReducer(
     gameReducer,
     undefined,
@@ -94,7 +93,6 @@ export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit
   const [settleCells, setSettleCells] = useState<Set<string>>(new Set());
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
   const gameRef = useRef<HTMLDivElement>(null);
-  const scoreSavedRef = useRef(false);
   const prevGameOverRef = useRef(false);
   const boardElRef = useRef<HTMLDivElement>(null);
 
@@ -149,13 +147,6 @@ export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit
       root.style.setProperty('--bg-dark', bgPalettes[0].bgDark);
     };
   }, [bgIndex, bgPalettes, tension]);
-
-  // Reset save flag on new game
-  useEffect(() => {
-    if (!state.isGameOver) {
-      scoreSavedRef.current = false;
-    }
-  }, [state.isGameOver]);
 
   // Game over — shatter then show UI, save daily result
   useEffect(() => {
@@ -416,17 +407,9 @@ export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit
     };
   }, [onPointerMove, onPointerUp, cancelDrag]);
 
-  const saveScore = useCallback(() => {
-    if (!scoreSavedRef.current && state.score > 0) {
-      scoreSavedRef.current = true;
-      onSaveScore(state.score);
-    }
-  }, [state.score, onSaveScore]);
-
   const handlePlayAgain = useCallback(() => {
-    saveScore();
     dispatch({ type: 'NEW_GAME' });
-  }, [saveScore]);
+  }, []);
 
   const handleRevive = useCallback(() => {
     playRevive();
@@ -436,9 +419,8 @@ export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit
   }, []);
 
   const handleQuit = useCallback(() => {
-    saveScore();
     onQuit();
-  }, [saveScore, onQuit]);
+  }, [onQuit]);
 
   const handleDismissCelebration = useCallback(() => {
     dispatch({ type: 'DISMISS_CELEBRATION' });

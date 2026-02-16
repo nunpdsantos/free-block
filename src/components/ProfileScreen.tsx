@@ -1,8 +1,10 @@
 import { useState } from 'react';
-import type { PlayerStats, AchievementProgress, DailyStreak, LeaderboardEntry } from '../game/types';
+import type { User } from 'firebase/auth';
+import type { PlayerStats, AchievementProgress, DailyStreak, LeaderboardEntry, GlobalLeaderboardEntry } from '../game/types';
 import { StatsContent } from './StatsScreen';
 import { AchievementsContent } from './AchievementsScreen';
 import { LeaderboardContent } from './Leaderboard';
+import { AuthStrip } from './AuthStrip';
 import './ProfileScreen.css';
 
 type Tab = 'stats' | 'achievements' | 'leaderboard';
@@ -19,15 +21,44 @@ type ProfileScreenProps = {
   dailyStreak: DailyStreak;
   dailyCount: number;
   leaderboard: LeaderboardEntry[];
+  globalLeaderboard: GlobalLeaderboardEntry[];
+  currentUid: string | null;
+  authUser: User | null;
+  authDisplayName: string | null;
+  authLoading: boolean;
+  onSignIn: () => void;
+  onSignOut: () => void;
   onBack: () => void;
 };
 
-export function ProfileScreen({ stats, achievementProgress, dailyStreak, dailyCount, leaderboard, onBack }: ProfileScreenProps) {
+export function ProfileScreen({
+  stats,
+  achievementProgress,
+  dailyStreak,
+  dailyCount,
+  leaderboard,
+  globalLeaderboard,
+  currentUid,
+  authUser,
+  authDisplayName,
+  authLoading,
+  onSignIn,
+  onSignOut,
+  onBack,
+}: ProfileScreenProps) {
   const [activeTab, setActiveTab] = useState<Tab>('stats');
 
   return (
     <div className="profile-screen">
       <h2 className="profile-title">Profile</h2>
+
+      <AuthStrip
+        user={authUser}
+        displayName={authDisplayName}
+        loading={authLoading}
+        onSignIn={onSignIn}
+        onSignOut={onSignOut}
+      />
 
       <div className="profile-tabs">
         {TABS.map((tab) => (
@@ -54,7 +85,11 @@ export function ProfileScreen({ stats, achievementProgress, dailyStreak, dailyCo
           />
         )}
         {activeTab === 'leaderboard' && (
-          <LeaderboardContent entries={leaderboard} />
+          <LeaderboardContent
+            entries={leaderboard}
+            globalEntries={globalLeaderboard}
+            currentUid={currentUid}
+          />
         )}
       </div>
 

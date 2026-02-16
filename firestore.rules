@@ -1,0 +1,25 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Leaderboard: anyone can read, authenticated users can create (no update/delete)
+    match /leaderboard/{entryId} {
+      allow read: if true;
+      allow create: if request.auth != null
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.score is int
+        && request.resource.data.score > 0
+        && request.resource.data.score <= 999999
+        && request.resource.data.mode in ['classic', 'daily']
+        && request.resource.data.displayName is string
+        && request.resource.data.displayName.size() <= 30;
+      allow update, delete: if false;
+    }
+
+    // User profiles: only the owner can read/write their own doc
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+  }
+}

@@ -3,7 +3,7 @@
 ## Project
 
 **Name:** Gridlock
-**Stack:** React 19, TypeScript, Vite 7, CSS (no UI library)
+**Stack:** React 19, TypeScript, Vite 7, CSS (no UI library), Firebase (Auth + Firestore)
 **Repo:** github.com/nunpdsantos/gridlock
 **Live:** gridlock-gilt.vercel.app
 **PWA:** Installable on mobile via manifest.json + vite-plugin-pwa
@@ -17,13 +17,22 @@
 ### Game engine (`src/game/`)
 - `constants.ts` — All tunable values: grid size, scoring, DDA thresholds, piece colors, revive limit. `CELL_SIZE`/`CELL_GAP`/`FINGER_OFFSET` remain as static max/fallback values — runtime sizing comes from CSS vars
 - `responsive.ts` — `getCSSPx(name)` reads resolved CSS custom property values from `:root`
-- `types.ts` — Board, PieceShape, GameState, GameAction, UndoSnapshot, GameMode, DailyResult, LeaderboardEntry, PlayerStats, AchievementProgress, DailyStreak
+- `types.ts` — Board, PieceShape, GameState, GameAction, UndoSnapshot, GameMode, DailyResult, LeaderboardEntry, GlobalLeaderboardEntry, PlayerStats, AchievementProgress, DailyStreak
 - `logic.ts` — Pure functions: placement, line clearing, scoring, revive cell removal
 - `pieces.ts` — 15 piece families (37 orientations), weighted random selection with DDA, piece-fit validation (20 retries + 1×1 fallback), `generateDailyPieces` for seeded daily mode, `generateRevivePieces` for pity-weighted selection without fit-check (revive carves its own space)
 - `reducer.ts` — useReducer state machine: PLACE_PIECE, NEW_GAME, NEW_DAILY_GAME, REVIVE, DISMISS_CELEBRATION (UNDO action exists but disabled via UNDOS_PER_GAME=0)
 - `themes.ts` — 5 color themes (Classic, Midnight, Ocean, Sunset, Neon) with per-theme CSS variables, background palettes, and optional `requiredAchievement` for unlock gating
 - `random.ts` — Mulberry32 seeded PRNG, date-to-seed conversion, day number utilities, `getYesterdayDateStr()`
 - `achievements.ts` — 20 achievement definitions (bronze/silver/gold tiers) with optional `progress()` for trackable indicators, `checkAchievements()` returns newly unlocked IDs, `getAchievementById()` lookup. Endgame tier: Mythic (50k), Line Legend (1k lines), Veteran (100 games), Daily Legend (30-day streak), Unstoppable (15-streak)
+
+### Firebase (`src/firebase/`)
+- `config.ts` — Firebase init (`initializeApp`, `getAuth`, `initializeFirestore` with `persistentLocalCache` for offline PWA support). Exports `auth` + `db`. Emulator support via `VITE_USE_EMULATORS=true` env var.
+- `leaderboard.ts` — `submitScore(uid, displayName, score, mode)` writes to `leaderboard` collection; `onTopScoresChanged(callback)` returns real-time listener unsubscribe for top 20 scores.
+- `names.ts` — `generateDisplayName()` returns `Adjective_Noun` pattern (30x30 = 900 combos) for anonymous players.
+
+### Auth (`src/hooks/useAuth.ts`)
+- Auto signs in anonymously on first load (persistent UID). Optional Google sign-in via `linkWithPopup` upgrades anonymous account, preserving UID and scores. Falls back to `signInWithPopup` if linking fails (e.g. Google account already linked elsewhere). Sign-out creates a new anonymous account automatically.
+- Display names stored in Firestore `users/{uid}` doc. Google users get their Google display name; anonymous users get a generated name.
 
 ### Audio (`src/audio/`)
 - `synth.ts` — Web Audio API synthesizer using sine/triangle waves, pentatonic scale (C5-E6), ADSR envelopes. Master `GainNode` for volume control via `setMasterVolume()`.
@@ -44,6 +53,7 @@
 - `pieceGeneration` counter in game state drives piece tray entrance animations (React key change → remount → CSS animation)
 - Undo system: disabled (UNDOS_PER_GAME=0). Infrastructure remains — PLACE_PIECE snapshots only when undosRemaining > 0, UNDO restores snapshot. Re-enable by setting constant > 0.
 - Daily challenge: seeded PRNG (mulberry32) ensures identical piece sequence per date, no DDA/revive/undo. Resets at local midnight.
+- Score saving: `handleGameOver` in `App.tsx` saves to local leaderboard and submits to global Firestore leaderboard in one pass. `Game.tsx` no longer has `saveScore` or `onSaveScore` — all score persistence is in App.
 - Stats system: `App.tsx` owns `PlayerStats` via `useLocalStorage('gridlock-stats')`. `Game.tsx` reports events upward via `onStatsUpdate` (pieces placed, lines cleared, streak, all-clear in `handleDrop`) and `onGameOver` (games played, total score, revives used, no-revive high score).
 - Achievement system: centralized in `App.tsx`. A `useEffect` watching `stats` + `dailyStreak` runs `checkAchievements()` from `achievements.ts`. Newly unlocked achievements queue as toasts. `AchievementProgress` stored in `gridlock-achievements` (Record of id → timestamp).
 - Daily streak: updated in `handleDailySaveResult` — compares `lastPlayedDate` to today/yesterday to increment or reset. Stored in `gridlock-daily-streak`. Stale streaks reset to 0 on app mount if `lastPlayedDate` is neither today nor yesterday.
@@ -57,10 +67,11 @@ App (screen state + leaderboard + theme + daily results + stats + achievements +
 │   ├── DailyStreakBadge (flame icon + count, 3 visual tiers: warm/hot/fire)
 │   └── Install App button (Android: triggers beforeinstallprompt, iOS: shows share instructions, hidden when installed)
 ├── Tutorial → Paginated 4-step stepper with dots + back/next
-├── ProfileScreen → Tabbed container (Stats | Achievements | Leaderboard)
+├── ProfileScreen → AuthStrip + Tabbed container (Stats | Achievements | Leaderboard)
+│   ├── AuthStrip → Shows display name + Google sign-in/sign-out button
 │   ├── StatsContent → 8 stat cards in 2-col grid
 │   ├── AchievementsContent → 20 achievements gallery (locked/unlocked, tiers, progress bars)
-│   └── LeaderboardContent → Top 5 local scores table
+│   └── LeaderboardContent → Global/Local toggle; global shows top 20 with player names + current user highlight
 ├── DailyCalendar → Completed daily challenges list with share
 └── Game (mode: classic | daily) → Board, PieceTray, DragOverlay, ScoreDisplay
     ├── PauseMenu overlay (volume slider + theme picker with lock states + restart/quit)
@@ -88,3 +99,8 @@ AchievementToast (global, renders across all screens)
 - `gridlock-stats` stores cumulative `PlayerStats`; `gridlock-achievements` stores `AchievementProgress` (id → timestamp); `gridlock-daily-streak` stores `DailyStreak` — all initialize to defaults for existing users (no migration)
 - Achievement checks run on every `stats` or `dailyStreak` change via `useEffect` — in-game achievements (score thresholds, combo_king, survivor) rely on `gameContextRef` being updated by `Game.tsx` before the stats update triggers the check
 - `DailyStreakBadge` returns `null` when `currentStreak <= 0` — no empty space on main menu for new users
+- Firebase config uses `VITE_` prefixed env vars (Vite exposes only `VITE_` vars to client). Create `.env` from `.env.example` with real Firebase project values. Vercel needs the same vars in project settings.
+- `useAuth` auto-creates anonymous accounts — every visitor gets a UID without any user action. Google sign-in `linkWithPopup` preserves the anonymous UID so all prior scores stay attached.
+- `authRef` in `App.tsx` avoids re-creating `handleGameOver` on every auth state change — reads uid/displayName from a ref instead of closing over `user`/`displayName` state.
+- Firestore `persistentLocalCache` with `persistentSingleTabManager` handles offline writes — scores submitted offline queue automatically and sync when back online.
+- `firestore.rules` at project root — deploy via `firebase deploy --only firestore:rules`. Leaderboard entries are create-only (no updates/deletes), uid must match auth, score 1-999999.

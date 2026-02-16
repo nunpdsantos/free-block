@@ -1,12 +1,14 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import type { LeaderboardEntry, DailyResult, PlayerStats, AchievementProgress, DailyStreak } from './game/types';
+import type { LeaderboardEntry, DailyResult, PlayerStats, AchievementProgress, DailyStreak, GlobalLeaderboardEntry } from './game/types';
 import { useLocalStorage } from './hooks/useLocalStorage';
+import { useAuth } from './hooks/useAuth';
 import { getThemeById, applyTheme } from './game/themes';
 import { dateToSeed, getTodayDateStr, getDayNumber, getYesterdayDateStr } from './game/random';
 import { checkAchievements, getAchievementById } from './game/achievements';
 import type { Achievement, AchievementContext } from './game/achievements';
 import { REVIVES_PER_GAME } from './game/constants';
 import { playAchievement } from './audio/sounds';
+import { submitScore, onTopScoresChanged } from './firebase/leaderboard';
 import { Game } from './components/Game';
 import { MainMenu } from './components/MainMenu';
 import { Tutorial } from './components/Tutorial';
@@ -85,6 +87,17 @@ export default function App() {
     DEFAULT_STREAK
   );
   const { state: installState, install: installApp } = useInstallPrompt();
+
+  // --- Firebase auth ---
+  const { user, displayName, loading: authLoading, signInWithGoogle, signOut } = useAuth();
+
+  // --- Global leaderboard (real-time from Firestore) ---
+  const [globalLeaderboard, setGlobalLeaderboard] = useState<GlobalLeaderboardEntry[]>([]);
+
+  useEffect(() => {
+    const unsub = onTopScoresChanged(setGlobalLeaderboard);
+    return unsub;
+  }, []);
 
   // Reset stale streak on app load — if last played date isn't today or yesterday, streak is broken
   useEffect(() => {
@@ -253,6 +266,10 @@ export default function App() {
     [setDailyResults, setDailyStreak]
   );
 
+  // Ref to hold auth state for use in handleGameOver without re-creating the callback
+  const authRef = useRef<{ uid: string | null; displayName: string | null }>({ uid: null, displayName: null });
+  authRef.current = { uid: user?.uid ?? null, displayName };
+
   const handleGameOver = useCallback(
     (score: number, revivesRemaining: number, mode: 'classic' | 'daily') => {
       setStats(prev => {
@@ -267,8 +284,19 @@ export default function App() {
         }
         return next;
       });
+
+      // Save to local leaderboard
+      handleSaveScore(score);
+
+      // Submit to global Firestore leaderboard
+      const { uid, displayName: name } = authRef.current;
+      if (uid && name && score > 0) {
+        submitScore(uid, name, score, mode).catch(() => {
+          // Firestore offline persistence will queue this
+        });
+      }
     },
-    [setStats]
+    [setStats, handleSaveScore]
   );
 
   const dailySeed = dateToSeed(todayStr);
@@ -298,6 +326,13 @@ export default function App() {
           dailyStreak={dailyStreak}
           dailyCount={dailyCount}
           leaderboard={leaderboard}
+          globalLeaderboard={globalLeaderboard}
+          currentUid={user?.uid ?? null}
+          authUser={user}
+          authDisplayName={displayName}
+          authLoading={authLoading}
+          onSignIn={signInWithGoogle}
+          onSignOut={signOut}
           onBack={() => setScreen('menu')}
         />
       )}
@@ -308,7 +343,6 @@ export default function App() {
           themeId={themeId}
           onThemeChange={setThemeId}
           onQuit={() => setScreen('menu')}
-          onSaveScore={handleSaveScore}
           onStatsUpdate={handleStatsUpdate}
           onGameContextUpdate={handleGameContextUpdate}
           onGameOver={handleGameOver}
@@ -323,7 +357,6 @@ export default function App() {
           themeId={themeId}
           onThemeChange={setThemeId}
           onQuit={() => setScreen('menu')}
-          onSaveScore={handleSaveScore}
           onDailyComplete={handleDailySaveResult}
           onViewCalendar={() => setScreen('daily-calendar')}
           onStatsUpdate={handleStatsUpdate}
