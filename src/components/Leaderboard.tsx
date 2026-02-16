@@ -26,7 +26,11 @@ export function Leaderboard({ entries, onBack }: LeaderboardProps) {
           </thead>
           <tbody>
             {entries.map((entry, i) => (
-              <tr key={i} className={i === 0 ? 'leaderboard-row--top' : ''}>
+              <tr
+                key={i}
+                className={i === 0 ? 'leaderboard-row--top' : ''}
+                style={{ animationDelay: `${i * 80}ms` }}
+              >
                 <td className="leaderboard-rank">#{i + 1}</td>
                 <td className="leaderboard-score">{entry.score.toLocaleString()}</td>
                 <td className="leaderboard-date">{entry.date}</td>

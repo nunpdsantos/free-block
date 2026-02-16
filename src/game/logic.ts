@@ -213,6 +213,10 @@ export function clearCellsForRevive(board: Board): Board {
   return newBoard;
 }
 
+export function isBoardEmpty(board: Board): boolean {
+  return board.every(row => row.every(cell => cell === null));
+}
+
 export function getCelebrationText(linesCleared: number): string | null {
   let text: string | null = null;
   for (const entry of CELEBRATION_TEXTS) {

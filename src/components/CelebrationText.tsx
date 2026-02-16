@@ -15,9 +15,16 @@ export function CelebrationText({ text, onDismiss }: CelebrationTextProps) {
 
   if (!text) return null;
 
+  const isAllClear = text === 'ALL CLEAR!';
+  const isRainbow = text !== 'Good Work!';
+
+  let className = 'celebration-text';
+  if (isRainbow) className += ' celebration-text--rainbow';
+  if (isAllClear) className += ' celebration-text--allclear';
+
   return (
     <div className="celebration" key={text + Date.now()}>
-      <span className="celebration-text">{text}</span>
+      <span className={className}>{text}</span>
     </div>
   );
 }

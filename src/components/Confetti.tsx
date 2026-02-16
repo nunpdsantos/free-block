@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { PIECE_COLORS } from '../game/constants';
 import './Confetti.css';
 
 const COLORS = Object.values(PIECE_COLORS);
-const PARTICLE_COUNT = 12;
+const DEFAULT_COUNT = 12;
 
 type Particle = {
   id: number;
@@ -14,8 +14,8 @@ type Particle = {
   size: number;
 };
 
-function createParticles(): Particle[] {
-  return Array.from({ length: PARTICLE_COUNT }, (_, i) => ({
+function createParticles(count: number): Particle[] {
+  return Array.from({ length: count }, (_, i) => ({
     id: i,
     x: 10 + Math.random() * 80, // % from left
     color: COLORS[Math.floor(Math.random() * COLORS.length)],
@@ -27,15 +27,18 @@ function createParticles(): Particle[] {
 
 type ConfettiProps = {
   trigger: number; // increment to trigger new burst
+  particleCount?: number;
 };
 
-export function Confetti({ trigger }: ConfettiProps) {
+export function Confetti({ trigger, particleCount = DEFAULT_COUNT }: ConfettiProps) {
   const [particles, setParticles] = useState<Particle[]>([]);
   const [key, setKey] = useState(0);
+  const countRef = useRef(particleCount);
+  countRef.current = particleCount;
 
   useEffect(() => {
     if (trigger > 0) {
-      setParticles(createParticles());
+      setParticles(createParticles(countRef.current));
       setKey(k => k + 1);
     }
   }, [trigger]);

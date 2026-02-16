@@ -36,6 +36,7 @@ export type GameState = {
   revivesRemaining: number;
   movesSinceLastClear: number;
   pieceGeneration: number;
+  lastMilestone: number;
 };
 
 export type GameAction =

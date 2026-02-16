@@ -1,4 +1,4 @@
-import { memo, useCallback } from 'react';
+import { memo, useCallback, useState, useEffect, useRef } from 'react';
 import type { PieceShape } from '../game/types';
 import { getPieceBounds } from '../game/pieces';
 import './PiecePreview.css';
@@ -24,6 +24,19 @@ export const PiecePreview = memo(function PiecePreview({
   onPointerDown,
   isDragging,
 }: PiecePreviewProps) {
+  const [exiting, setExiting] = useState(false);
+  const prevPieceRef = useRef(piece);
+
+  useEffect(() => {
+    if (prevPieceRef.current && !piece) {
+      setExiting(true);
+      const timer = setTimeout(() => setExiting(false), 200);
+      prevPieceRef.current = piece;
+      return () => clearTimeout(timer);
+    }
+    prevPieceRef.current = piece;
+  }, [piece]);
+
   const handlePointerDown = useCallback(
     (e: React.PointerEvent) => {
       if (!piece) return;
@@ -32,6 +45,10 @@ export const PiecePreview = memo(function PiecePreview({
     },
     [piece, pieceIndex, onPointerDown]
   );
+
+  if (exiting) {
+    return <div className="piece-preview piece-preview--exiting" />;
+  }
 
   if (!piece) {
     return <div className="piece-preview piece-preview--empty" />;

@@ -53,3 +53,19 @@
     opacity: 1;
   }
 }
+
+/* Piece exit when placed */
+.piece-preview--exiting {
+  animation: piece-exit 0.2s ease-in forwards;
+}
+
+@keyframes piece-exit {
+  from {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+  to {
+    transform: scale(0.5);
+    opacity: 0;
+  }
+}

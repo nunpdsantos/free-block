@@ -75,3 +75,50 @@
   color: var(--text-secondary);
   letter-spacing: 1px;
 }
+
+/* Entrance stagger animations */
+.main-menu-title {
+  animation: menu-title-enter 0.5s ease-out both;
+}
+
+.main-menu-buttons .menu-btn {
+  animation: menu-btn-enter 0.4s ease-out both;
+}
+
+.main-menu-buttons .menu-btn:nth-child(1) {
+  animation-delay: 0.15s;
+}
+
+.main-menu-buttons .menu-btn:nth-child(2) {
+  animation-delay: 0.25s;
+}
+
+.main-menu-buttons .menu-btn:nth-child(3) {
+  animation-delay: 0.35s;
+}
+
+.main-menu-top-score {
+  animation: menu-btn-enter 0.4s ease-out 0.45s both;
+}
+
+@keyframes menu-title-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes menu-btn-enter {
+  from {
+    opacity: 0;
+    transform: translateY(15px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

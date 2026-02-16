@@ -54,6 +54,12 @@ export const BG_PALETTES = [
   { score: 8000, bg: '#2E4272', bgDark: '#1E2D4F' },   // Deep Navy
 ] as const;
 
+// All-clear bonus
+export const ALL_CLEAR_BONUS = 500;
+
+// Score milestones
+export const SCORE_MILESTONES = [1000, 2500, 5000, 10000, 25000, 50000] as const;
+
 // Celebration text thresholds
 export const CELEBRATION_TEXTS = [
   { minLines: 1, text: 'Good Work!' },

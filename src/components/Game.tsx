@@ -1,9 +1,24 @@
 import { useReducer, useEffect, useCallback, useState, useRef, useMemo } from 'react';
 import { gameReducer, createInitialState } from '../game/reducer';
 import type { Board as BoardType } from '../game/types';
-import { canPlacePiece, placePiece, findCompletedLines, getClearingCells, calculateScore } from '../game/logic';
+import {
+  canPlacePiece,
+  placePiece,
+  findCompletedLines,
+  getClearingCells,
+  calculateScore,
+  clearLines,
+  isBoardEmpty,
+} from '../game/logic';
 import { useDrag } from '../hooks/useDrag';
-import { CLEAR_ANIMATION_MS, CLEAR_STAGGER_MS, GRID_SIZE, BG_PALETTES } from '../game/constants';
+import {
+  CLEAR_ANIMATION_MS,
+  CLEAR_STAGGER_MS,
+  GRID_SIZE,
+  BG_PALETTES,
+  ALL_CLEAR_BONUS,
+  SCORE_MILESTONES,
+} from '../game/constants';
 import { playPlace, playClear, playGameOver, isSoundMuted, setSoundMuted } from '../audio/sounds';
 import { Board } from './Board';
 import { PieceTray } from './PieceTray';
@@ -13,6 +28,8 @@ import { GameOver } from './GameOver';
 import { CelebrationText } from './CelebrationText';
 import { PauseMenu } from './PauseMenu';
 import { Confetti } from './Confetti';
+import { CellParticles } from './CellParticles';
+import { AmbientParticles } from './AmbientParticles';
 import './Game.css';
 
 type GameProps = {
@@ -41,13 +58,20 @@ export function Game({ topScore, onQuit, onSaveScore }: GameProps) {
   const [animPieces, setAnimPieces] = useState<typeof state.currentPieces | null>(null);
   const [isPaused, setIsPaused] = useState(false);
   const [confettiTrigger, setConfettiTrigger] = useState(0);
+  const [confettiCount, setConfettiCount] = useState(12);
   const [muted, setMuted] = useState(isSoundMuted);
   const [scorePop, setScorePop] = useState<number | null>(null);
   const [reviveFlash, setReviveFlash] = useState(false);
+  const [clearedLines, setClearedLines] = useState<{ rows: number[]; cols: number[] } | null>(null);
+  const [isShaking, setIsShaking] = useState(false);
+  const [cellParticleTrigger, setCellParticleTrigger] = useState(0);
+  const [isShattered, setIsShattered] = useState(false);
+  const [showGameOverUI, setShowGameOverUI] = useState(false);
   const gameRef = useRef<HTMLDivElement>(null);
   const scoreSavedRef = useRef(false);
   const prevGameOverRef = useRef(false);
   const scorePopKeyRef = useRef(0);
+  const shakeKeyRef = useRef(0);
 
   // --- Background palette cycling ---
   const bgIndex = useMemo(() => getBgPaletteIndex(state.score), [state.score]);
@@ -72,10 +96,17 @@ export function Game({ topScore, onQuit, onSaveScore }: GameProps) {
     }
   }, [state.isGameOver]);
 
-  // Game over sound
+  // Game over — shatter then show UI
   useEffect(() => {
     if (state.isGameOver && !prevGameOverRef.current) {
       playGameOver();
+      setIsShattered(true);
+      const timer = setTimeout(() => setShowGameOverUI(true), 800);
+      return () => clearTimeout(timer);
+    }
+    if (!state.isGameOver) {
+      setIsShattered(false);
+      setShowGameOverUI(false);
     }
     prevGameOverRef.current = state.isGameOver;
   }, [state.isGameOver]);
@@ -103,10 +134,15 @@ export function Game({ topScore, onQuit, onSaveScore }: GameProps) {
       if (linesCleared > 0) {
         playClear(state.streak, linesCleared);
 
+        // Check for all-clear
+        const boardAfterClear = clearLines(boardAfterPlace, rows, cols);
+        const allClear = isBoardEmpty(boardAfterClear);
+
         // Compute points for score pop display
         const clearCells = getClearingCells(rows, cols);
         const points = calculateScore(clearCells.length, linesCleared, state.streak);
-        setScorePop(points);
+        const totalPoints = points + (allClear ? ALL_CLEAR_BONUS : 0);
+        setScorePop(totalPoints);
         scorePopKeyRef.current += 1;
 
         setAnimBoard(boardAfterPlace);
@@ -135,7 +171,33 @@ export function Game({ topScore, onQuit, onSaveScore }: GameProps) {
 
         setClearingCells(cellMap);
         setIsAnimating(true);
+
+        // Shockwave lines
+        setClearedLines({ rows, cols });
+
+        // Cell particle burst — fires on ALL line clears
+        setCellParticleTrigger(t => t + 1);
+
+        // Screen shake on 2+ line clears
         if (linesCleared >= 2) {
+          shakeKeyRef.current += 1;
+          setIsShaking(true);
+          setTimeout(() => setIsShaking(false), 300);
+        }
+
+        // Confetti — bigger for all-clear
+        if (linesCleared >= 2 || allClear) {
+          setConfettiCount(allClear ? 30 : 12);
+          setConfettiTrigger(t => t + 1);
+        }
+
+        // Milestone confetti (if we crossed a milestone)
+        const newScore = state.score + totalPoints;
+        const crossedMilestone = SCORE_MILESTONES.some(
+          m => state.score < m && newScore >= m
+        );
+        if (crossedMilestone && linesCleared < 2 && !allClear) {
+          setConfettiCount(18);
           setConfettiTrigger(t => t + 1);
         }
 
@@ -145,6 +207,7 @@ export function Game({ topScore, onQuit, onSaveScore }: GameProps) {
 
         setTimeout(() => {
           setClearingCells(new Map());
+          setClearedLines(null);
           setAnimBoard(null);
           setAnimPieces(null);
           setIsAnimating(false);
@@ -155,7 +218,7 @@ export function Game({ topScore, onQuit, onSaveScore }: GameProps) {
         dispatch({ type: 'PLACE_PIECE', pieceIndex, row, col });
       }
     },
-    [state.board, state.currentPieces, state.streak]
+    [state.board, state.currentPieces, state.streak, state.score]
   );
 
   const displayBoard = animBoard ?? state.board;
@@ -226,15 +289,32 @@ export function Game({ topScore, onQuit, onSaveScore }: GameProps) {
   }, []);
 
   const isNewHighScore = state.score > 0 && state.score >= topScore && state.isGameOver;
+  const ghostColor = dragState?.piece.color ?? null;
 
-  // Build board container class
+  // Build board container class with streak intensity
   let boardContainerClass = 'board-container';
-  if (state.streak > 0) boardContainerClass += ' board-container--streak';
-  if (state.isGameOver) boardContainerClass += ' board-container--gameover';
+  if (state.streak > 0) {
+    if (state.streak >= 5) {
+      boardContainerClass += ' board-container--streak-fire';
+    } else if (state.streak >= 3) {
+      boardContainerClass += ' board-container--streak-hot';
+    } else {
+      boardContainerClass += ' board-container--streak';
+    }
+  }
+  if (state.isGameOver && !isShattered) boardContainerClass += ' board-container--gameover';
   if (reviveFlash) boardContainerClass += ' board-container--revive';
+  if (isShaking) boardContainerClass += ' board-container--shake';
+
+  // Shake intensity based on lines cleared
+  const shakeStyle: React.CSSProperties | undefined = isShaking
+    ? { '--shake-px': `${Math.min(state.lastClearCount + 1, 4)}px` } as React.CSSProperties
+    : undefined;
 
   return (
     <div className="game" ref={gameRef} style={{ touchAction: 'none' }}>
+      <AmbientParticles />
+
       <div className="game-header">
         <ScoreDisplay
           score={state.score}
@@ -251,17 +331,30 @@ export function Game({ topScore, onQuit, onSaveScore }: GameProps) {
         )}
       </div>
 
-      <div className={boardContainerClass} ref={boardRef}>
+      <div
+        className={boardContainerClass}
+        ref={boardRef}
+        key={isShaking ? shakeKeyRef.current : 'board'}
+        style={shakeStyle}
+      >
         <Board
           board={displayBoard}
           ghostCells={ghostCells}
           clearingCells={clearingCells}
+          ghostColor={ghostColor}
+          clearedLines={clearedLines}
+          isShattered={isShattered}
         />
         <CelebrationText
           text={state.celebrationText}
           onDismiss={handleDismissCelebration}
         />
-        <Confetti trigger={confettiTrigger} />
+        <Confetti trigger={confettiTrigger} particleCount={confettiCount} />
+        <CellParticles
+          clearingCells={clearingCells}
+          board={displayBoard}
+          trigger={cellParticleTrigger}
+        />
         {scorePop !== null && (
           <div className="score-pop" key={scorePopKeyRef.current}>
             +{scorePop.toLocaleString()}
@@ -288,7 +381,7 @@ export function Game({ topScore, onQuit, onSaveScore }: GameProps) {
         />
       )}
 
-      {state.isGameOver && (
+      {showGameOverUI && (
         <GameOver
           score={state.score}
           highScore={topScore}

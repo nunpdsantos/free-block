@@ -17,6 +17,28 @@
   animation: celebration-anim 1.5s ease-out forwards;
 }
 
+/* Rainbow shimmer for multi-clears and special events */
+.celebration-text--rainbow {
+  background: linear-gradient(
+    90deg,
+    #FF6B6B, #FFD93D, #6BCB77, #4D96FF, #9B59B6, #FF6B6B
+  );
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow: none;
+  animation: celebration-anim 1.5s ease-out forwards,
+             rainbow-shimmer 1s linear infinite;
+  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.5));
+}
+
+/* ALL CLEAR — bigger, bolder */
+.celebration-text--allclear {
+  font-size: 44px;
+  letter-spacing: 3px;
+}
+
 @keyframes celebration-anim {
   0% {
     opacity: 0;
@@ -42,5 +64,14 @@
   100% {
     opacity: 0;
     transform: scale(0.7) translateY(-30px) rotate(-5deg);
+  }
+}
+
+@keyframes rainbow-shimmer {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 200% 50%;
   }
 }

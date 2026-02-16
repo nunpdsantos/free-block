@@ -51,10 +51,27 @@
   transition: filter 0.5s ease;
 }
 
+/* Streak glow — level 1 (streak 1-2) */
 .board-container--streak {
   outline: 2px solid var(--streak-glow);
   outline-offset: 2px;
   animation: streak-glow 1.2s ease-in-out infinite alternate;
+}
+
+/* Streak glow — level 2 (streak 3-4) */
+.board-container--streak-hot {
+  outline: 2.5px solid #FF9800;
+  outline-offset: 2px;
+  box-shadow: 0 0 20px rgba(255, 152, 0, 0.25);
+  animation: streak-glow-hot 0.9s ease-in-out infinite alternate;
+}
+
+/* Streak glow — level 3 (streak 5+) */
+.board-container--streak-fire {
+  outline: 3px solid #EF5350;
+  outline-offset: 2px;
+  box-shadow: 0 0 30px rgba(239, 83, 80, 0.35);
+  animation: streak-glow-fire 0.6s ease-in-out infinite alternate;
 }
 
 /* Board dims when game is over */
@@ -65,6 +82,11 @@
 /* Brightness pulse when revive clears cells */
 .board-container--revive {
   animation: revive-flash 0.6s ease-out;
+}
+
+/* Screen shake on combos */
+.board-container--shake {
+  animation: board-shake 0.3s ease-out;
 }
 
 /* Floating score points indicator */
@@ -93,6 +115,28 @@
   }
 }
 
+@keyframes streak-glow-hot {
+  from {
+    outline-color: rgba(255, 152, 0, 0.5);
+    box-shadow: 0 0 15px rgba(255, 152, 0, 0.2);
+  }
+  to {
+    outline-color: rgba(255, 152, 0, 1);
+    box-shadow: 0 0 25px rgba(255, 152, 0, 0.4);
+  }
+}
+
+@keyframes streak-glow-fire {
+  from {
+    outline-color: rgba(239, 83, 80, 0.6);
+    box-shadow: 0 0 20px rgba(239, 83, 80, 0.25);
+  }
+  to {
+    outline-color: rgba(239, 83, 80, 1);
+    box-shadow: 0 0 35px rgba(239, 83, 80, 0.5);
+  }
+}
+
 @keyframes revive-flash {
   0% {
     filter: brightness(1);
@@ -103,6 +147,16 @@
   100% {
     filter: brightness(1);
   }
+}
+
+@keyframes board-shake {
+  0% { transform: translateX(0); }
+  15% { transform: translateX(var(--shake-px, 2px)); }
+  30% { transform: translateX(calc(-1 * var(--shake-px, 2px))); }
+  45% { transform: translateX(var(--shake-px, 2px)); }
+  60% { transform: translateX(calc(-0.5 * var(--shake-px, 2px))); }
+  75% { transform: translateX(calc(0.3 * var(--shake-px, 2px))); }
+  100% { transform: translateX(0); }
 }
 
 @keyframes score-pop-anim {

@@ -70,3 +70,19 @@
   width: 100%;
   max-width: 280px;
 }
+
+/* Row cascade entrance */
+.leaderboard-table tbody tr {
+  animation: leaderboard-row-enter 0.35s ease-out both;
+}
+
+@keyframes leaderboard-row-enter {
+  from {
+    opacity: 0;
+    transform: translateX(-15px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
