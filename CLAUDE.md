@@ -31,7 +31,7 @@
 
 ### Key patterns
 - Game state is a `useReducer` — all mutations go through `reducer.ts`
-- Responsive scaling: CSS custom properties in `:root` (`--cell-size`, `--cell-gap`, `--board-padding`, `--preview-cell`, `--finger-offset`) drive all board/piece/drag sizing. `--cell-size: min(48px, calc((100vw - 58px) / 8))` caps at 48px on viewports ≥458px, scales down on narrower screens. JS reads resolved values via `getCSSPx()` from `responsive.ts`. Board, Cell, PiecePreview, PieceTray CSS all use `var()` references — no hardcoded pixel sizes for layout.
+- Responsive scaling: CSS custom properties in `:root` (`--cell-size`, `--cell-gap`, `--board-padding`, `--preview-cell`, `--finger-offset`) drive all board/piece/drag sizing. `--cell-size: min(48px, calc((100vw - 58px) / 8), calc((100dvh - 170px) / 10))` caps at 48px on large viewports, scales down on narrow screens AND short viewports (the `/10` accounts for board + tray height together). JS reads resolved values via `getCSSPx()` from `responsive.ts` — uses a persistent hidden element to resolve CSS expressions (`calc`, `min`, `clamp`) that `parseFloat` can't parse. Board, Cell, PiecePreview, PieceTray CSS all use `var()` references — no hardcoded pixel sizes for layout.
 - Drag system (`hooks/useDrag.ts`) caches `getBoundingClientRect` + computed padding + responsive CSS values (`totalCellRef`, `fingerOffsetRef`) once per drag start, batches updates via `requestAnimationFrame`, skips redundant ghost re-renders
 - Line-clear animations use a two-phase approach: visual animation plays first (via `clearingCells` Map with per-cell stagger delays + CSS), then `dispatch` fires after animation completes
 - Piece generation uses 5 multiplicative DDA systems: score ramp, pity timer, solution boost, streak pushback, board-state awareness
@@ -77,7 +77,7 @@ AchievementToast (global, renders across all screens)
 - `clearCellsForRevive(board, pieces)` is deterministic for a given board+pieces — it always picks the position with the fewest blocking cells for each piece. The randomness comes from `generateRevivePieces` piece selection, not from the clearing algorithm
 - The DragOverlay renders via `createPortal` to document.body (outside React tree)
 - CSS variables defined in `:root` in `App.css` — theme system overrides color vars via `applyTheme()` in `themes.ts`. Sizing vars (`--cell-size`, `--cell-gap`, etc.) are not theme-dependent
-- `DragOverlay.tsx` and `PiecePreview.tsx` call `getCSSPx()` on every render (not cached) since they re-render on pointer move / piece change — values resolve from live CSS so orientation changes work automatically
+- `DragOverlay.tsx` and `PiecePreview.tsx` call `getCSSPx()` on every render (not cached) since they re-render on pointer move / piece change — values resolve from live CSS so orientation changes work automatically. `getCSSPx` uses a persistent hidden `<div>` to resolve CSS expressions (calc/min/clamp) that `parseFloat` alone cannot parse
 - Background palette effect sets `--bg`/`--bg-dark` on `document.documentElement` during gameplay (may use `color-mix(in oklch, ...)` when tension > 0); resets to theme default on game exit
 - `clearingCells` is a `Map<string, number>` (key → delay in ms), not a Set — the delay drives staggered cascade animation via `animation-delay` on each cell
 - `CLEAR_ANIMATION_MS` (600ms) is the per-cell animation duration; total clear time = `CLEAR_ANIMATION_MS + (GRID_SIZE - 1) * CLEAR_STAGGER_MS`

@@ -13,10 +13,11 @@
   background: linear-gradient(145deg, var(--card-bg-light), var(--card-bg));
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 20px;
-  padding: 32px 40px;
+  padding: 32px clamp(20px, 6vw, 40px);
   text-align: center;
   box-shadow: 0 12px 48px rgba(0, 0, 0, 0.5);
   animation: slide-up 0.3s ease-out;
+  max-width: calc(100vw - 48px);
 }
 
 .pause-title {
