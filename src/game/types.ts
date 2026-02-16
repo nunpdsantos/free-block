@@ -57,6 +57,7 @@ export type GameState = {
   lastMilestone: number;
   undoSnapshot: UndoSnapshot | null;
   undosRemaining: number;
+  postReviveGrace: boolean;
   mode: GameMode;
   dailySeed?: number;
 };

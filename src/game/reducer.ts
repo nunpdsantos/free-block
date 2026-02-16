@@ -32,6 +32,7 @@ export function createInitialState(): GameState {
     lastMilestone: 0,
     undoSnapshot: null,
     undosRemaining: UNDOS_PER_GAME,
+    postReviveGrace: false,
     mode: 'classic',
   };
 }
@@ -54,6 +55,7 @@ export function createDailyState(seed: number): GameState {
     lastMilestone: 0,
     undoSnapshot: null,
     undosRemaining: 0,
+    postReviveGrace: false,
     mode: 'daily',
     dailySeed: seed,
   };
@@ -147,6 +149,12 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       // Check game over
       const isGameOver = !canAnyPieceFit(newBoard, finalPieces);
 
+      // Post-revive grace: if player can't survive the first tray after revive, no more revives
+      const postReviveGrace = allPlaced ? false : state.postReviveGrace;
+      const revivesRemaining = (isGameOver && state.postReviveGrace)
+        ? 0
+        : state.revivesRemaining;
+
       // Celebration text — priority: ALL CLEAR > line clear > milestone
       let celebrationText: string | null = null;
       if (boardEmpty) {
@@ -167,6 +175,8 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         isGameOver,
         lastClearCount: linesCleared,
         celebrationText,
+        revivesRemaining,
+        postReviveGrace,
         movesSinceLastClear: newMovesSinceLastClear,
         pieceGeneration: newPieceGeneration,
         lastMilestone: newLastMilestone,
@@ -207,6 +217,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         movesSinceLastClear: PITY_THRESHOLD,
         streak: 0,
         revivesRemaining: state.revivesRemaining - 1,
+        postReviveGrace: true,
         celebrationText: null,
         pieceGeneration: state.pieceGeneration + 1,
       };
