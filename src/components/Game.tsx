@@ -23,7 +23,7 @@ import {
   SCORE_MILESTONES,
   SOLUTION_THRESHOLD,
 } from '../game/constants';
-import { playPlace, playClear, playAllClear, playGameOver, getVolume, setVolume } from '../audio/sounds';
+import { playPlace, playClear, playAllClear, playGameOver, playRevive, getVolume, setVolume } from '../audio/sounds';
 import { Board } from './Board';
 import { PieceTray } from './PieceTray';
 import { DragOverlay } from './DragOverlay';
@@ -400,6 +400,7 @@ export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit
   }, [saveScore]);
 
   const handleRevive = useCallback(() => {
+    playRevive();
     dispatch({ type: 'REVIVE' });
     setReviveFlash(true);
     setTimeout(() => setReviveFlash(false), 600);

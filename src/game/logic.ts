@@ -228,38 +228,6 @@ export function getBoardFillRatio(board: Board): number {
   return filled / (GRID_SIZE * GRID_SIZE);
 }
 
-/** Find empty cells in lines that are 7/8 filled (one cell from completion) */
-export function findNearCompleteEmptyCells(board: Board): Set<string> {
-  const cells = new Set<string>();
-
-  for (let r = 0; r < GRID_SIZE; r++) {
-    let emptyCount = 0;
-    let emptyCol = -1;
-    for (let c = 0; c < GRID_SIZE; c++) {
-      if (board[r][c] === null) {
-        emptyCount++;
-        emptyCol = c;
-        if (emptyCount > 1) break;
-      }
-    }
-    if (emptyCount === 1) cells.add(`${r},${emptyCol}`);
-  }
-
-  for (let c = 0; c < GRID_SIZE; c++) {
-    let emptyCount = 0;
-    let emptyRow = -1;
-    for (let r = 0; r < GRID_SIZE; r++) {
-      if (board[r][c] === null) {
-        emptyCount++;
-        emptyRow = r;
-        if (emptyCount > 1) break;
-      }
-    }
-    if (emptyCount === 1) cells.add(`${emptyRow},${c}`);
-  }
-
-  return cells;
-}
 
 export function getCelebrationText(linesCleared: number): string | null {
   let text: string | null = null;

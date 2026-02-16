@@ -1,4 +1,4 @@
-import { synthPlace, synthClear, synthAllClear, synthGameOver, setMasterVolume } from './synth';
+import { synthPlace, synthClear, synthAllClear, synthGameOver, synthRevive, setMasterVolume } from './synth';
 
 let volume = 80; // 0-100
 let lastClearTime = 0;
@@ -23,8 +23,9 @@ try {
 // Apply initial volume to synth master
 try { setMasterVolume(volume / 100); } catch { /* AudioContext may not exist yet */ }
 
-/** Haptic pulse — always fires (independent of sound volume) */
+/** Haptic pulse — suppressed when volume is 0 (muted = silent + no vibration) */
 function vibrate(pattern: number | number[]) {
+  if (volume === 0) return;
   try {
     navigator?.vibrate?.(pattern);
   } catch { /* unsupported */ }
@@ -72,4 +73,11 @@ export function playGameOver() {
   vibrate([40, 60, 80]);
   if (volume === 0) return;
   synthGameOver();
+}
+
+/** Hopeful ascending tone on revive */
+export function playRevive() {
+  vibrate([10, 20, 10]);
+  if (volume === 0) return;
+  synthRevive();
 }

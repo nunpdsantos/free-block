@@ -297,3 +297,23 @@ export function synthGameOver(): void {
     tone(freq * 0.5, 'sine', 0.03, 0.025, 0.15, 0.3, d);
   });
 }
+
+/**
+ * Hopeful ascending tone on revive — "second chance" feel.
+ * C5 → E5 → G5 — rising major arpeggio, bright and quick.
+ * Each voice gets a shimmer overtone. Warm sweep at the end.
+ * Total duration: ~500ms.
+ */
+export function synthRevive(): void {
+  const notes = [523.25, 659.25, 783.99]; // C5 E5 G5
+  notes.forEach((freq, i) => {
+    const d = i * 0.08;
+    const v = 0.09 + i * 0.015; // crescendo — gets brighter
+    tone(freq, 'triangle', v, 0.008, 0.12, 0.25, d);
+    // Shimmer overtone — capped for phone speakers
+    const shimmerFreq = Math.min(freq * 2, 2000);
+    tone(shimmerFreq, 'sine', 0.02, 0.01, 0.08, 0.15, d + 0.01);
+  });
+  // Warm resolve sweep
+  noiseBurst(0.02, 0.04, 1600, 0.2);
+}
