@@ -135,18 +135,24 @@ function noiseBurst(
  * ±10 cents random detune prevents ear fatigue from repetition.
  * Total duration: ~110ms.
  */
-export function synthPlace(): void {
+export function synthPlace(dangerLevel: number = 0): void {
   const drift = (Math.random() - 0.5) * 30; // ±15 cents variation
   const volVar = 0.94 + Math.random() * 0.12; // ±1.5 dB volume variation
   // Warm noise burst — bandpass at 1200Hz for woody "contact" texture
   noiseBurst(0.08 * volVar, 0.03, 1200);
   // Triangle body — 350Hz is in the low-mid "weight" range, audible on phones
-  tone(350, 'triangle', 0.1 * volVar, 0.004, 0.05, 0.06, 0, drift);
-  // Sine body — raised from 220Hz to 330Hz so fundamental reaches phone speakers
-  tone(330, 'sine', 0.055 * volVar, 0.003, 0.03, 0.04, 0, drift);
-  // Locking snap — low-pitched mechanical click (piece snapping into place)
+  tone(350, 'triangle', 0.1 * volVar, 0.004, 0.05, dangerLevel >= 2 ? 0.03 : 0.06, 0, drift);
+
+  // Sub layer — drop entirely when board is critical (danger 2), thin at warning (danger 1)
+  if (dangerLevel < 1) {
+    tone(330, 'sine', 0.055 * volVar, 0.003, 0.03, 0.04, 0, drift);
+  } else if (dangerLevel < 2) {
+    tone(330, 'sine', 0.03 * volVar, 0.003, 0.02, 0.02, 0, drift);
+  }
+
+  // Locking snap — unchanged, always present
   noiseBurst(0.06 * volVar, 0.012, 600, 0.005);
-  tone(420, 'triangle', 0.07 * volVar, 0.002, 0.015, 0.025, 0.004, drift);
+  tone(420, 'triangle', 0.07 * volVar, 0.002, 0.015, dangerLevel >= 2 ? 0.012 : 0.025, 0.004, drift);
 }
 
 /**

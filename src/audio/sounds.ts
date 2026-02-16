@@ -1,6 +1,8 @@
 import { synthPlace, synthClear, synthAllClear, synthGameOver } from './synth';
 
 let muted = false;
+let lastClearTime = 0;
+const PLACE_SILENCE_GAP = 250; // ms of silence after a clear before placement sounds resume
 
 try {
   const stored = localStorage.getItem('gridlock-muted');
@@ -27,15 +29,17 @@ export function setSoundMuted(m: boolean) {
   } catch { /* ignore */ }
 }
 
-/** Soft woody thock on piece placement */
-export function playPlace() {
+/** Soft woody thock on piece placement — suppressed briefly after clears */
+export function playPlace(dangerLevel: number = 0) {
   vibrate(8);
   if (muted) return;
-  synthPlace();
+  if (performance.now() - lastClearTime < PLACE_SILENCE_GAP) return;
+  synthPlace(dangerLevel);
 }
 
 /** Crystalline chime on line clear — ascending pentatonic with combo */
 export function playClear(combo: number = 0, linesCleared: number = 1) {
+  lastClearTime = performance.now();
   vibrate(linesCleared >= 2 ? [15, 30, 15] : 15);
   if (muted) return;
   synthClear(combo, linesCleared);

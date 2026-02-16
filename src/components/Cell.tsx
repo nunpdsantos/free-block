@@ -12,6 +12,8 @@ type CellProps = {
   isPreClearing?: boolean;
   isShattered?: boolean;
   shatterStyle?: React.CSSProperties;
+  isNearComplete?: boolean;
+  isSettling?: boolean;
 };
 
 export const Cell = memo(function Cell({
@@ -25,6 +27,8 @@ export const Cell = memo(function Cell({
   isPreClearing,
   isShattered,
   shatterStyle,
+  isNearComplete,
+  isSettling,
 }: CellProps) {
   let className = 'cell';
   if (color) className += ' cell--filled';
@@ -33,6 +37,8 @@ export const Cell = memo(function Cell({
   if (isPreClearing) className += ' cell--pre-clear';
   if (isClearing) className += ' cell--clearing';
   if (isShattered && color) className += ' cell--shattered';
+  if (isNearComplete && !color && !isGhost) className += ' cell--near-complete';
+  if (isSettling && color) className += ' cell--settling';
 
   const style: React.CSSProperties = {};
   if (color) style.backgroundColor = color;

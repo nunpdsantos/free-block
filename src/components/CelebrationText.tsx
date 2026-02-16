@@ -6,6 +6,15 @@ type CelebrationTextProps = {
   onDismiss: () => void;
 };
 
+/** Derive visual intensity level from celebration text */
+function getLevel(text: string): number {
+  if (text === 'ALL CLEAR!') return 5;
+  if (text === 'Perfect!') return 4;
+  if (text === 'Amazing!') return 3;
+  if (text === 'Excellent!') return 2;
+  return 1;
+}
+
 export function CelebrationText({ text, onDismiss }: CelebrationTextProps) {
   useEffect(() => {
     if (!text) return;
@@ -15,10 +24,12 @@ export function CelebrationText({ text, onDismiss }: CelebrationTextProps) {
 
   if (!text) return null;
 
-  const isAllClear = text === 'ALL CLEAR!';
-  const isRainbow = text !== 'Good Work!';
+  const level = getLevel(text);
+  const isAllClear = level === 5;
+  const isRainbow = level >= 3;
 
   let className = 'celebration-text';
+  className += ` celebration-text--level-${Math.min(level, 4)}`;
   if (isRainbow) className += ' celebration-text--rainbow';
   if (isAllClear) className += ' celebration-text--allclear';
 

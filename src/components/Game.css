@@ -144,6 +144,25 @@
   }
 }
 
+/* Screen flash on multi-clear */
+.screen-flash {
+  position: fixed;
+  inset: 0;
+  background: white;
+  pointer-events: none;
+  z-index: 100;
+  animation: screen-flash-anim 150ms ease-out forwards;
+}
+
+@keyframes screen-flash-anim {
+  0% {
+    opacity: 0.1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
 @keyframes score-pop-anim {
   0% {
     opacity: 0;

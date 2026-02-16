@@ -41,6 +41,23 @@ function useAnimatedNumber(target: number, duration = 300): number {
 
 export function ScoreDisplay({ score, topScore, streak }: ScoreDisplayProps) {
   const animatedScore = useAnimatedNumber(score);
+  const scoreElRef = useRef<HTMLDivElement>(null);
+  const prevScoreBump = useRef(score);
+
+  // Scale bump on score increase via WAAPI
+  useEffect(() => {
+    if (score > prevScoreBump.current && scoreElRef.current) {
+      scoreElRef.current.animate(
+        [
+          { transform: 'scale(1)' },
+          { transform: 'scale(1.08)' },
+          { transform: 'scale(1)' },
+        ],
+        { duration: 200, easing: 'ease-out' },
+      );
+    }
+    prevScoreBump.current = score;
+  }, [score]);
   const multiplier = Math.min(1 + streak * STREAK_MULTIPLIER_INCREMENT, STREAK_MULTIPLIER_CAP);
   const fillPct = Math.min(streak / 5, 1) * 100;
 
@@ -55,7 +72,7 @@ export function ScoreDisplay({ score, topScore, streak }: ScoreDisplayProps) {
       <div className="score-row">
         <div className="score-section">
           <div className="score-label">Score</div>
-          <div className="score-value">{animatedScore.toLocaleString()}</div>
+          <div className="score-value" ref={scoreElRef}>{animatedScore.toLocaleString()}</div>
         </div>
         {streak > 0 && (
           <div className="streak-badge">{streak}x</div>

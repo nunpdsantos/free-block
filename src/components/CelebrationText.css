@@ -33,9 +33,28 @@
   filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.5));
 }
 
-/* ALL CLEAR — bigger, bolder */
+/* Level-based size escalation */
+.celebration-text--level-1 {
+  font-size: 28px;
+}
+
+.celebration-text--level-2 {
+  font-size: 34px;
+}
+
+.celebration-text--level-3 {
+  font-size: 40px;
+}
+
+.celebration-text--level-4 {
+  font-size: 46px;
+  filter: drop-shadow(0 0 16px rgba(255, 215, 64, 0.5))
+          drop-shadow(0 2px 8px rgba(0, 0, 0, 0.5));
+}
+
+/* ALL CLEAR — biggest, bolder */
 .celebration-text--allclear {
-  font-size: 44px;
+  font-size: 50px;
   letter-spacing: 3px;
 }
 

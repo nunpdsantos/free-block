@@ -87,11 +87,13 @@ body {
   min-height: 100dvh;
 }
 
-/* Respect OS-level reduced motion preference */
+/* Respect OS-level reduced motion preference — tiered approach:
+   Kill all animations (vestibular triggers) but cap transitions
+   at 150ms so UI state changes (color, width) remain visible */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
+    transition-duration: 0.15s !important;
   }
 }

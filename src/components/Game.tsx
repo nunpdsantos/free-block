@@ -10,6 +10,7 @@ import {
   clearLines,
   isBoardEmpty,
   getBoardFillRatio,
+  findNearCompleteEmptyCells,
 } from '../game/logic';
 import { useDrag } from '../hooks/useDrag';
 import {
@@ -73,6 +74,8 @@ export function Game({ topScore, onQuit, onSaveScore }: GameProps) {
   const [placedCells, setPlacedCells] = useState<PlacedCell[]>([]);
   const [placeTrigger, setPlaceTrigger] = useState(0);
   const [preClearCells, setPreClearCells] = useState<Set<string>>(new Set());
+  const [screenFlash, setScreenFlash] = useState(false);
+  const [settleCells, setSettleCells] = useState<Set<string>>(new Set());
   const gameRef = useRef<HTMLDivElement>(null);
   const scoreSavedRef = useRef(false);
   const prevGameOverRef = useRef(false);
@@ -131,7 +134,10 @@ export function Game({ topScore, onQuit, onSaveScore }: GameProps) {
       if (!piece) return;
       if (!canPlacePiece(state.board, piece, row, col)) return;
 
-      playPlace();
+      // Danger level for audio thinning — compute from current board
+      const fr = getBoardFillRatio(state.board);
+      const dl = fr >= 0.85 ? 2 : fr >= 0.75 ? 1 : 0;
+      playPlace(dl);
 
       // Sparkle particles at placed cell positions
       const sparkCells = piece.coords.map(c => ({
@@ -215,6 +221,12 @@ export function Game({ topScore, onQuit, onSaveScore }: GameProps) {
             ], { duration: dur, easing: 'ease-out' });
           }
 
+          // Screen flash on multi-clears
+          if (linesCleared >= 2 || allClear) {
+            setScreenFlash(true);
+            setTimeout(() => setScreenFlash(false), 200);
+          }
+
           // Confetti — bigger for all-clear
           if (linesCleared >= 2 || allClear) {
             setConfettiCount(allClear ? 30 : 12);
@@ -237,6 +249,25 @@ export function Game({ topScore, onQuit, onSaveScore }: GameProps) {
         const totalMs = CLEAR_ANTICIPATION_MS + CLEAR_ANIMATION_MS + maxDelay;
 
         setTimeout(() => {
+          // Post-clear settle bounce: cells adjacent to cleared cells that survived
+          const boardAfterClear = clearLines(boardAfterPlace, rows, cols);
+          const settleSet = new Set<string>();
+          for (const key of cellMap.keys()) {
+            const [cr, cc] = key.split(',').map(Number);
+            for (const [dr, dc] of [[-1,0],[1,0],[0,-1],[0,1]] as const) {
+              const nr = cr + dr;
+              const nc = cc + dc;
+              if (nr >= 0 && nr < GRID_SIZE && nc >= 0 && nc < GRID_SIZE) {
+                const nk = `${nr},${nc}`;
+                if (!cellMap.has(nk) && boardAfterClear[nr][nc] !== null) {
+                  settleSet.add(nk);
+                }
+              }
+            }
+          }
+          setSettleCells(settleSet);
+          setTimeout(() => setSettleCells(new Set()), 350);
+
           setClearingCells(new Map());
           setClearedLines(null);
           setAnimBoard(null);
@@ -345,6 +376,12 @@ export function Game({ topScore, onQuit, onSaveScore }: GameProps) {
     return completing.size > 0 ? completing : undefined;
   }, [dragState, displayBoard, ghostCells]);
 
+  // Near-complete lines — empty cells that would complete a 7/8-filled line
+  const nearCompleteCells = useMemo(
+    () => findNearCompleteEmptyCells(displayBoard),
+    [displayBoard],
+  );
+
   // Build board container class with streak intensity
   let boardContainerClass = 'board-container';
   if (state.streak > 0) {
@@ -396,6 +433,8 @@ export function Game({ topScore, onQuit, onSaveScore }: GameProps) {
           clearedLines={clearedLines}
           isShattered={isShattered}
           dangerLevel={dangerLevel}
+          nearCompleteCells={nearCompleteCells}
+          settleCells={settleCells}
         />
         <CelebrationText
           text={state.celebrationText}
@@ -423,6 +462,8 @@ export function Game({ topScore, onQuit, onSaveScore }: GameProps) {
       />
 
       <DragOverlay dragState={dragState} />
+
+      {screenFlash && <div className="screen-flash" />}
 
       {isPaused && !state.isGameOver && (
         <PauseMenu

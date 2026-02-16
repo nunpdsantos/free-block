@@ -14,6 +14,8 @@ type BoardProps = {
   clearedLines?: { rows: number[]; cols: number[] } | null;
   isShattered?: boolean;
   dangerLevel?: number;
+  nearCompleteCells?: Set<string>;
+  settleCells?: Set<string>;
 };
 
 /** Compute deterministic shatter offsets from cell position */
@@ -41,6 +43,8 @@ export const Board = memo(function Board({
   clearedLines,
   isShattered,
   dangerLevel = 0,
+  nearCompleteCells,
+  settleCells,
 }: BoardProps) {
   const cells = [];
   for (let r = 0; r < GRID_SIZE; r++) {
@@ -61,6 +65,8 @@ export const Board = memo(function Board({
           isPreClearing={preClearCells?.has(key)}
           isShattered={isShattered}
           shatterStyle={isShattered ? getShatterStyle(r, c) : undefined}
+          isNearComplete={nearCompleteCells?.has(key)}
+          isSettling={settleCells?.has(key)}
         />
       );
     }
