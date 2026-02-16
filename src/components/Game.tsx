@@ -178,20 +178,25 @@ export function Game({ topScore, onQuit, onSaveScore }: GameProps) {
         // Cell particle burst — fires on ALL line clears
         setCellParticleTrigger(t => t + 1);
 
-        // Screen shake on 2+ line clears (WAAPI — no remount)
-        if (linesCleared >= 2) {
+        // Screen shake — intensity scales with lines cleared
+        {
           const el = boardElRef.current;
           if (el) {
-            const px = Math.min(linesCleared + 1, 4);
+            let px: number, py: number, dur: number;
+            if (allClear)                      { px = 6;   py = 3;   dur = 450; }
+            else if (linesCleared >= 4)         { px = 5;   py = 2;   dur = 380; }
+            else if (linesCleared >= 3)         { px = 3.5; py = 1;   dur = 320; }
+            else if (linesCleared >= 2)         { px = 2.5; py = 0.5; dur = 280; }
+            else                                { px = 1;   py = 0;   dur = 200; }
             el.animate([
-              { transform: 'translateX(0)' },
-              { transform: `translateX(${px}px)` },
-              { transform: `translateX(${-px}px)` },
-              { transform: `translateX(${px}px)` },
-              { transform: `translateX(${-0.5 * px}px)` },
-              { transform: `translateX(${0.3 * px}px)` },
-              { transform: 'translateX(0)' },
-            ], { duration: 300, easing: 'ease-out' });
+              { transform: 'translate(0, 0)' },
+              { transform: `translate(${px}px, ${-py}px)` },
+              { transform: `translate(${-px}px, ${py * 0.5}px)` },
+              { transform: `translate(${px * 0.7}px, ${-py * 0.3}px)` },
+              { transform: `translate(${-px * 0.4}px, ${py * 0.2}px)` },
+              { transform: `translate(${px * 0.15}px, 0)` },
+              { transform: 'translate(0, 0)' },
+            ], { duration: dur, easing: 'ease-out' });
           }
         }
 

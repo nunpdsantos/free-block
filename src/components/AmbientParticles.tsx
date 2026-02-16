@@ -1,8 +1,6 @@
 import { useMemo } from 'react';
 import './AmbientParticles.css';
 
-const PARTICLE_COUNT = 15;
-
 type AmbientParticle = {
   id: number;
   x: number;
@@ -10,16 +8,26 @@ type AmbientParticle = {
   duration: number;
   delay: number;
   opacity: number;
+  drift: number;
 };
 
+function getParticleCount(): number {
+  if (typeof window === 'undefined') return 18;
+  const area = window.innerWidth * window.innerHeight;
+  // ~18 on phones, ~30 on tablets, ~45 on desktop
+  return Math.max(18, Math.min(50, Math.round(area / 20000)));
+}
+
 function generateParticles(): AmbientParticle[] {
-  return Array.from({ length: PARTICLE_COUNT }, (_, i) => ({
+  const count = getParticleCount();
+  return Array.from({ length: count }, (_, i) => ({
     id: i,
     x: Math.random() * 100,
     size: 3 + Math.random() * 4,
-    duration: 8 + Math.random() * 12,
-    delay: Math.random() * 10,
-    opacity: 0.12 + Math.random() * 0.12,
+    duration: 10 + Math.random() * 14,
+    delay: Math.random() * 12,
+    opacity: 0.1 + Math.random() * 0.14,
+    drift: -20 + Math.random() * 40,
   }));
 }
 
@@ -39,7 +47,8 @@ export function AmbientParticles() {
             animationDuration: `${p.duration}s`,
             animationDelay: `${p.delay}s`,
             opacity: p.opacity,
-          }}
+            '--drift': `${p.drift}px`,
+          } as React.CSSProperties}
         />
       ))}
     </div>
