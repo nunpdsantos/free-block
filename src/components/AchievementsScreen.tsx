@@ -1,10 +1,13 @@
-import type { AchievementProgress } from '../game/types';
+import type { AchievementProgress, PlayerStats, DailyStreak } from '../game/types';
 import { ACHIEVEMENTS } from '../game/achievements';
-import type { AchievementTier } from '../game/achievements';
+import type { AchievementTier, AchievementContext } from '../game/achievements';
 import './AchievementsScreen.css';
 
 type AchievementsScreenProps = {
   progress: AchievementProgress;
+  stats: PlayerStats;
+  dailyStreak: DailyStreak;
+  dailyCount: number;
   onBack: () => void;
 };
 
@@ -20,8 +23,21 @@ const TIER_ICONS: Record<AchievementTier, string> = {
   gold: '\u2605\u2605\u2605',
 };
 
-export function AchievementsScreen({ progress, onBack }: AchievementsScreenProps) {
+function formatNumber(n: number): string {
+  return n >= 1000 ? n.toLocaleString() : String(n);
+}
+
+export function AchievementsScreen({ progress, stats, dailyStreak, dailyCount, onBack }: AchievementsScreenProps) {
   const unlockedCount = Object.keys(progress).length;
+
+  const ctx: AchievementContext = {
+    stats,
+    dailyStreak,
+    dailyCount,
+    currentGameScore: null,
+    currentGameRevivesRemaining: null,
+    lastClearCount: null,
+  };
 
   return (
     <div className="achievements-screen">
@@ -33,6 +49,11 @@ export function AchievementsScreen({ progress, onBack }: AchievementsScreenProps
       <div className="achievements-list">
         {ACHIEVEMENTS.map((a, i) => {
           const unlocked = !!progress[a.id];
+          const progressInfo = !unlocked && a.progress ? a.progress(ctx) : null;
+          const progressPct = progressInfo
+            ? Math.min(1, progressInfo.current / progressInfo.target)
+            : null;
+
           return (
             <div
               key={a.id}
@@ -47,11 +68,24 @@ export function AchievementsScreen({ progress, onBack }: AchievementsScreenProps
               </div>
               <div className="achievement-info">
                 <div className="achievement-name">
-                  {unlocked ? a.title : a.title}
+                  {a.title}
                 </div>
                 <div className="achievement-desc">
                   {a.description}
                 </div>
+                {progressInfo && progressPct !== null && (
+                  <div className="achievement-progress">
+                    <div className="achievement-progress-bar">
+                      <div
+                        className="achievement-progress-fill"
+                        style={{ width: `${Math.max(progressPct * 100, 2)}%` }}
+                      />
+                    </div>
+                    <div className="achievement-progress-text">
+                      {formatNumber(progressInfo.current)} / {formatNumber(progressInfo.target)}
+                    </div>
+                  </div>
+                )}
               </div>
               {unlocked && <div className="achievement-check">&#10003;</div>}
             </div>

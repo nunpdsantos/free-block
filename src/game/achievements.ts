@@ -2,12 +2,15 @@ import type { PlayerStats, DailyStreak, AchievementProgress } from './types';
 
 export type AchievementTier = 'bronze' | 'silver' | 'gold';
 
+export type AchievementProgressInfo = { current: number; target: number };
+
 export type Achievement = {
   id: string;
   title: string;
   description: string;
   tier: AchievementTier;
   check: (ctx: AchievementContext) => boolean;
+  progress?: (ctx: AchievementContext) => AchievementProgressInfo;
 };
 
 export type AchievementContext = {
@@ -26,6 +29,7 @@ export const ACHIEVEMENTS: Achievement[] = [
     description: 'Complete your first game',
     tier: 'bronze',
     check: (ctx) => ctx.stats.gamesPlayed >= 1,
+    progress: (ctx) => ({ current: ctx.stats.gamesPlayed, target: 1 }),
   },
   {
     id: 'century',
@@ -40,6 +44,7 @@ export const ACHIEVEMENTS: Achievement[] = [
     description: 'Reach a 5-streak',
     tier: 'silver',
     check: (ctx) => ctx.stats.bestStreak >= 5,
+    progress: (ctx) => ({ current: ctx.stats.bestStreak, target: 5 }),
   },
   {
     id: 'inferno',
@@ -47,6 +52,7 @@ export const ACHIEVEMENTS: Achievement[] = [
     description: 'Reach a 10-streak',
     tier: 'gold',
     check: (ctx) => ctx.stats.bestStreak >= 10,
+    progress: (ctx) => ({ current: ctx.stats.bestStreak, target: 10 }),
   },
   {
     id: 'clean_slate',
@@ -54,6 +60,7 @@ export const ACHIEVEMENTS: Achievement[] = [
     description: 'Get an all-clear',
     tier: 'silver',
     check: (ctx) => ctx.stats.allClearCount >= 1,
+    progress: (ctx) => ({ current: ctx.stats.allClearCount, target: 1 }),
   },
   {
     id: 'no_safety_net',
@@ -61,6 +68,7 @@ export const ACHIEVEMENTS: Achievement[] = [
     description: 'Score 5,000+ without using any revives',
     tier: 'gold',
     check: (ctx) => ctx.stats.highestScoreWithoutRevive >= 5000,
+    progress: (ctx) => ({ current: ctx.stats.highestScoreWithoutRevive, target: 5000 }),
   },
   {
     id: 'marathon',
@@ -68,6 +76,7 @@ export const ACHIEVEMENTS: Achievement[] = [
     description: 'Play 50 games',
     tier: 'bronze',
     check: (ctx) => ctx.stats.gamesPlayed >= 50,
+    progress: (ctx) => ({ current: ctx.stats.gamesPlayed, target: 50 }),
   },
   {
     id: 'daily_devotee',
@@ -75,6 +84,7 @@ export const ACHIEVEMENTS: Achievement[] = [
     description: 'Complete 7 daily challenges',
     tier: 'silver',
     check: (ctx) => ctx.dailyCount >= 7,
+    progress: (ctx) => ({ current: ctx.dailyCount, target: 7 }),
   },
   {
     id: 'daily_warrior',
@@ -82,6 +92,7 @@ export const ACHIEVEMENTS: Achievement[] = [
     description: 'Reach a 7-day daily streak',
     tier: 'gold',
     check: (ctx) => ctx.dailyStreak.bestStreak >= 7,
+    progress: (ctx) => ({ current: ctx.dailyStreak.bestStreak, target: 7 }),
   },
   {
     id: 'perfectionist',
@@ -103,6 +114,7 @@ export const ACHIEVEMENTS: Achievement[] = [
     description: 'Clear 500 lines total',
     tier: 'silver',
     check: (ctx) => ctx.stats.totalLinesCleared >= 500,
+    progress: (ctx) => ({ current: ctx.stats.totalLinesCleared, target: 500 }),
   },
   {
     id: 'piece_prodigy',
@@ -110,6 +122,7 @@ export const ACHIEVEMENTS: Achievement[] = [
     description: 'Place 1,000 pieces total',
     tier: 'bronze',
     check: (ctx) => ctx.stats.totalPiecesPlaced >= 1000,
+    progress: (ctx) => ({ current: ctx.stats.totalPiecesPlaced, target: 1000 }),
   },
   {
     id: 'combo_king',

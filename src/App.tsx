@@ -294,7 +294,7 @@ export default function App() {
         <StatsScreen stats={stats} onBack={() => setScreen('menu')} />
       )}
       {screen === 'achievements' && (
-        <AchievementsScreen progress={achievementProgress} onBack={() => setScreen('menu')} />
+        <AchievementsScreen progress={achievementProgress} stats={stats} dailyStreak={dailyStreak} dailyCount={dailyCount} onBack={() => setScreen('menu')} />
       )}
       {screen === 'playing' && (
         <Game
