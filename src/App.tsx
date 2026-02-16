@@ -85,6 +85,17 @@ export default function App() {
     DEFAULT_STREAK
   );
 
+  // Reset stale streak on app load — if last played date isn't today or yesterday, streak is broken
+  useEffect(() => {
+    if (dailyStreak.currentStreak > 0 && dailyStreak.lastPlayedDate) {
+      const today = getTodayDateStr();
+      const yesterday = getYesterdayDateStr();
+      if (dailyStreak.lastPlayedDate !== today && dailyStreak.lastPlayedDate !== yesterday) {
+        setDailyStreak(prev => ({ ...prev, currentStreak: 0 }));
+      }
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps -- intentionally run once on mount
+
   // Toast queue for achievement notifications
   const [toastQueue, setToastQueue] = useState<Achievement[]>([]);
   const currentToast = toastQueue.length > 0 ? toastQueue[0] : null;
