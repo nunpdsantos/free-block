@@ -89,7 +89,7 @@ export default function App() {
   const { state: installState, install: installApp } = useInstallPrompt();
 
   // --- Firebase auth ---
-  const { user, displayName, loading: authLoading, signInWithGoogle, signOut } = useAuth();
+  const { user, displayName, loading: authLoading, signInWithGoogle, signOut, updateDisplayName } = useAuth();
 
   // --- Global leaderboard (real-time from Firestore) ---
   const [globalLeaderboard, setGlobalLeaderboard] = useState<GlobalLeaderboardEntry[]>([]);
@@ -333,6 +333,7 @@ export default function App() {
           authLoading={authLoading}
           onSignIn={signInWithGoogle}
           onSignOut={signOut}
+          onUpdateDisplayName={updateDisplayName}
           onBack={() => setScreen('menu')}
         />
       )}

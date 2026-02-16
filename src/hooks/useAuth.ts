@@ -23,6 +23,7 @@ export type AuthState = {
   loading: boolean;
   signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
+  updateDisplayName: (name: string) => Promise<void>;
 };
 
 async function ensureUserDoc(user: User): Promise<string> {
@@ -139,10 +140,22 @@ export function useAuth(): AuthState {
     setUser(googleUser);
   }, [user, displayName]);
 
+  const updateDisplayName = useCallback(async (name: string) => {
+    if (!user) return;
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    setDisplayName(trimmed);
+    try {
+      await setDoc(doc(db, 'users', user.uid), { displayName: trimmed }, { merge: true });
+    } catch {
+      // Firestore write will retry when online
+    }
+  }, [user]);
+
   const handleSignOut = useCallback(async () => {
     await firebaseSignOut(auth);
     // onAuthStateChanged will fire → auto-creates a new anonymous account
   }, []);
 
-  return { user, displayName, loading, signInWithGoogle, signOut: handleSignOut };
+  return { user, displayName, loading, signInWithGoogle, signOut: handleSignOut, updateDisplayName };
 }

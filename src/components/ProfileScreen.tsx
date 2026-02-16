@@ -28,6 +28,7 @@ type ProfileScreenProps = {
   authLoading: boolean;
   onSignIn: () => void;
   onSignOut: () => void;
+  onUpdateDisplayName: (name: string) => Promise<void>;
   onBack: () => void;
 };
 
@@ -44,6 +45,7 @@ export function ProfileScreen({
   authLoading,
   onSignIn,
   onSignOut,
+  onUpdateDisplayName,
   onBack,
 }: ProfileScreenProps) {
   const [activeTab, setActiveTab] = useState<Tab>('stats');
@@ -58,6 +60,7 @@ export function ProfileScreen({
         loading={authLoading}
         onSignIn={onSignIn}
         onSignOut={onSignOut}
+        onUpdateDisplayName={onUpdateDisplayName}
       />
 
       <div className="profile-tabs">

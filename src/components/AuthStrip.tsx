@@ -1,3 +1,4 @@
+import { useState, useRef, useEffect } from 'react';
 import type { User } from 'firebase/auth';
 import './AuthStrip.css';
 
@@ -7,20 +8,65 @@ type AuthStripProps = {
   loading: boolean;
   onSignIn: () => void;
   onSignOut: () => void;
+  onUpdateDisplayName: (name: string) => Promise<void>;
 };
 
-export function AuthStrip({ user, displayName, loading, onSignIn, onSignOut }: AuthStripProps) {
+export function AuthStrip({ user, displayName, loading, onSignIn, onSignOut, onUpdateDisplayName }: AuthStripProps) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState('');
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (editing) inputRef.current?.focus();
+  }, [editing]);
+
   if (loading) {
     return <div className="auth-strip auth-strip--loading">Loading...</div>;
   }
 
   const isAnonymous = user?.isAnonymous ?? true;
 
+  const handleStartEdit = () => {
+    setDraft(displayName ?? '');
+    setEditing(true);
+  };
+
+  const handleSave = async () => {
+    const trimmed = draft.trim();
+    if (trimmed && trimmed !== displayName) {
+      await onUpdateDisplayName(trimmed);
+    }
+    setEditing(false);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') handleSave();
+    if (e.key === 'Escape') setEditing(false);
+  };
+
   return (
     <div className="auth-strip">
-      <span className="auth-strip__name">
-        {displayName ?? 'Anonymous'}
-      </span>
+      {editing ? (
+        <div className="auth-strip__edit">
+          <input
+            ref={inputRef}
+            className="auth-strip__input"
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onKeyDown={handleKeyDown}
+            onBlur={handleSave}
+            maxLength={20}
+            placeholder="Enter name"
+          />
+        </div>
+      ) : (
+        <span className="auth-strip__name" onClick={handleStartEdit} title="Tap to edit name">
+          {displayName ?? 'Anonymous'}
+          <svg className="auth-strip__edit-icon" viewBox="0 0 24 24" width="14" height="14">
+            <path fill="currentColor" d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" />
+          </svg>
+        </span>
+      )}
       {isAnonymous ? (
         <button className="auth-strip__btn" onClick={onSignIn}>
           <svg className="auth-strip__icon" viewBox="0 0 24 24" width="16" height="16">
