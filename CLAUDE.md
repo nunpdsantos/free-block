@@ -22,7 +22,7 @@
 - `reducer.ts` — useReducer state machine: PLACE_PIECE, NEW_GAME, NEW_DAILY_GAME, REVIVE, DISMISS_CELEBRATION (UNDO action exists but disabled via UNDOS_PER_GAME=0)
 - `themes.ts` — 5 color themes (Classic, Midnight, Ocean, Sunset, Neon) with per-theme CSS variables, background palettes, and optional `requiredAchievement` for unlock gating
 - `random.ts` — Mulberry32 seeded PRNG, date-to-seed conversion, day number utilities, `getYesterdayDateStr()`
-- `achievements.ts` — 15 achievement definitions (bronze/silver/gold tiers) with optional `progress()` for trackable indicators, `checkAchievements()` returns newly unlocked IDs, `getAchievementById()` lookup
+- `achievements.ts` — 20 achievement definitions (bronze/silver/gold tiers) with optional `progress()` for trackable indicators, `checkAchievements()` returns newly unlocked IDs, `getAchievementById()` lookup. Endgame tier: Mythic (50k), Line Legend (1k lines), Veteran (100 games), Daily Legend (30-day streak), Unstoppable (15-streak)
 
 ### Audio (`src/audio/`)
 - `synth.ts` — Web Audio API synthesizer using sine/triangle waves, pentatonic scale (C5-E6), ADSR envelopes. Master `GainNode` for volume control via `setMasterVolume()`.
@@ -57,7 +57,7 @@ App (screen state + leaderboard + theme + daily results + stats + achievements +
 ├── Leaderboard → Top 5 local scores
 ├── DailyCalendar → Completed daily challenges list with share
 ├── StatsScreen → 8 stat cards in 2-col grid (games, score, lines, pieces, streak, all-clears, revives, no-revive best)
-├── AchievementsScreen → 15 achievements gallery (locked/unlocked, bronze/silver/gold tiers, progress bars on trackable locked achievements)
+├── AchievementsScreen → 20 achievements gallery (locked/unlocked, bronze/silver/gold tiers, progress bars on trackable locked achievements)
 └── Game (mode: classic | daily) → Board, PieceTray, DragOverlay, ScoreDisplay
     ├── PauseMenu overlay (volume slider + theme picker with lock states + restart/quit)
     ├── GameOver overlay (classic: Revive/Play Again/Menu; daily: Share/Calendar/Menu)
