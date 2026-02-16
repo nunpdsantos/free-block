@@ -15,7 +15,8 @@
 ## Architecture
 
 ### Game engine (`src/game/`)
-- `constants.ts` — All tunable values: grid size, scoring, DDA thresholds, piece colors, revive limit
+- `constants.ts` — All tunable values: grid size, scoring, DDA thresholds, piece colors, revive limit. `CELL_SIZE`/`CELL_GAP`/`FINGER_OFFSET` remain as static max/fallback values — runtime sizing comes from CSS vars
+- `responsive.ts` — `getCSSPx(name)` reads resolved CSS custom property values from `:root`
 - `types.ts` — Board, PieceShape, GameState, GameAction, UndoSnapshot, GameMode, DailyResult, LeaderboardEntry, PlayerStats, AchievementProgress, DailyStreak
 - `logic.ts` — Pure functions: placement, line clearing, scoring, revive cell removal
 - `pieces.ts` — 15 piece families (37 orientations), weighted random selection with DDA, piece-fit validation (20 retries + 1×1 fallback), `generateDailyPieces` for seeded daily mode
@@ -30,7 +31,8 @@
 
 ### Key patterns
 - Game state is a `useReducer` — all mutations go through `reducer.ts`
-- Drag system (`hooks/useDrag.ts`) caches `getBoundingClientRect` + computed padding once per drag, batches updates via `requestAnimationFrame`, skips redundant ghost re-renders
+- Responsive scaling: CSS custom properties in `:root` (`--cell-size`, `--cell-gap`, `--board-padding`, `--preview-cell`, `--finger-offset`) drive all board/piece/drag sizing. `--cell-size: min(48px, calc((100vw - 58px) / 8))` caps at 48px on viewports ≥458px, scales down on narrower screens. JS reads resolved values via `getCSSPx()` from `responsive.ts`. Board, Cell, PiecePreview, PieceTray CSS all use `var()` references — no hardcoded pixel sizes for layout.
+- Drag system (`hooks/useDrag.ts`) caches `getBoundingClientRect` + computed padding + responsive CSS values (`totalCellRef`, `fingerOffsetRef`) once per drag start, batches updates via `requestAnimationFrame`, skips redundant ghost re-renders
 - Line-clear animations use a two-phase approach: visual animation plays first (via `clearingCells` Map with per-cell stagger delays + CSS), then `dispatch` fires after animation completes
 - Piece generation uses 5 multiplicative DDA systems: score ramp, pity timer, solution boost, streak pushback, board-state awareness
 - Revive (3 per game) removes individual cells weighted by local congestion (not full rows), resets streak to 0 and sets movesSinceLastClear to PITY_THRESHOLD so post-revive DDA produces fair pieces
@@ -74,7 +76,8 @@ AchievementToast (global, renders across all screens)
 - Piece-fit validation in `generateThreePieces` validates each piece independently against the current board (not sequential simulation)
 - `clearCellsForRevive` uses weighted random selection — results differ each time
 - The DragOverlay renders via `createPortal` to document.body (outside React tree)
-- CSS variables defined in `:root` in `App.css` — theme system overrides them via `applyTheme()` in `themes.ts`
+- CSS variables defined in `:root` in `App.css` — theme system overrides color vars via `applyTheme()` in `themes.ts`. Sizing vars (`--cell-size`, `--cell-gap`, etc.) are not theme-dependent
+- `DragOverlay.tsx` and `PiecePreview.tsx` call `getCSSPx()` on every render (not cached) since they re-render on pointer move / piece change — values resolve from live CSS so orientation changes work automatically
 - Background palette effect sets `--bg`/`--bg-dark` on `document.documentElement` during gameplay (may use `color-mix(in oklch, ...)` when tension > 0); resets to theme default on game exit
 - `clearingCells` is a `Map<string, number>` (key → delay in ms), not a Set — the delay drives staggered cascade animation via `animation-delay` on each cell
 - `CLEAR_ANIMATION_MS` (600ms) is the per-cell animation duration; total clear time = `CLEAR_ANIMATION_MS + (GRID_SIZE - 1) * CLEAR_STAGGER_MS`
