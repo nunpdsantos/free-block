@@ -14,7 +14,6 @@ type BoardProps = {
   clearedLines?: { rows: number[]; cols: number[] } | null;
   isShattered?: boolean;
   dangerLevel?: number;
-  nearCompleteCells?: Set<string>;
   settleCells?: Set<string>;
 };
 
@@ -43,7 +42,6 @@ export const Board = memo(function Board({
   clearedLines,
   isShattered,
   dangerLevel = 0,
-  nearCompleteCells,
   settleCells,
 }: BoardProps) {
   const cells = [];
@@ -65,7 +63,6 @@ export const Board = memo(function Board({
           isPreClearing={preClearCells?.has(key)}
           isShattered={isShattered}
           shatterStyle={isShattered ? getShatterStyle(r, c) : undefined}
-          isNearComplete={nearCompleteCells?.has(key)}
           isSettling={settleCells?.has(key)}
         />
       );

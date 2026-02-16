@@ -12,7 +12,6 @@ import {
   clearLines,
   isBoardEmpty,
   getBoardFillRatio,
-  findNearCompleteEmptyCells,
 } from '../game/logic';
 import { useDrag } from '../hooks/useDrag';
 import {
@@ -450,12 +449,6 @@ export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit
     return completing.size > 0 ? completing : undefined;
   }, [dragState, displayBoard, ghostCells]);
 
-  // Near-complete lines — empty cells that would complete a 7/8-filled line
-  const nearCompleteCells = useMemo(
-    () => findNearCompleteEmptyCells(displayBoard),
-    [displayBoard],
-  );
-
   // Build board container class with streak intensity (5 tiers)
   let boardContainerClass = 'board-container';
   if (state.streak > 0) {
@@ -517,7 +510,6 @@ export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit
           clearedLines={clearedLines}
           isShattered={isShattered}
           dangerLevel={dangerLevel}
-          nearCompleteCells={nearCompleteCells}
           settleCells={settleCells}
         />
         <CelebrationText
