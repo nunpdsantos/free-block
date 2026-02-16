@@ -131,13 +131,25 @@ export function useDrag(
     [computeGridPos, updateGhost]
   );
 
-  const onPointerUp = useCallback(() => {
+  const onPointerUp = useCallback((clientX?: number, clientY?: number) => {
     if (rafRef.current) cancelAnimationFrame(rafRef.current);
     const current = dragRef.current;
     if (!current) return;
 
-    if (current.boardRow !== null && current.boardCol !== null && current.isValid) {
-      onDrop(current.pieceIndex, current.boardRow, current.boardCol);
+    // Recompute grid position synchronously from final pointer coords
+    // to avoid stale rAF data on fast flicks
+    let finalRow = current.boardRow;
+    let finalCol = current.boardCol;
+    let finalValid = current.isValid;
+    if (clientX !== undefined && clientY !== undefined) {
+      const { row, col, isValid } = computeGridPos(clientX, clientY, current.piece);
+      finalRow = row;
+      finalCol = col;
+      finalValid = isValid;
+    }
+
+    if (finalRow !== null && finalCol !== null && finalValid) {
+      onDrop(current.pieceIndex, finalRow, finalCol);
     }
 
     dragRef.current = null;
@@ -148,7 +160,7 @@ export function useDrag(
     lastGridRef.current = { row: null, col: null };
     setDragState(null);
     setGhostCells(new Map());
-  }, [onDrop]);
+  }, [onDrop, computeGridPos]);
 
   const cancelDrag = useCallback(() => {
     if (rafRef.current) cancelAnimationFrame(rafRef.current);

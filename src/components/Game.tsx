@@ -406,8 +406,8 @@ export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit
     const handleMove = (e: PointerEvent) => {
       onPointerMove(e.clientX, e.clientY);
     };
-    const handleUp = () => {
-      onPointerUp();
+    const handleUp = (e: PointerEvent) => {
+      onPointerUp(e.clientX, e.clientY);
     };
     const handleCancel = () => {
       cancelDrag();

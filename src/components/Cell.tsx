@@ -48,7 +48,7 @@ export const Cell = memo(function Cell({
     const r = parseInt(ghostColor.slice(1, 3), 16);
     const g = parseInt(ghostColor.slice(3, 5), 16);
     const b = parseInt(ghostColor.slice(5, 7), 16);
-    (style as Record<string, string>)['--ghost-color'] = `rgba(${r}, ${g}, ${b}, 0.3)`;
+    (style as Record<string, string>)['--ghost-color'] = `rgba(${r}, ${g}, ${b}, 0.5)`;
   }
 
   // Shatter CSS vars
