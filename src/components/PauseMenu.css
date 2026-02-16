@@ -162,6 +162,18 @@
   transform: none;
 }
 
+.pause-theme-hint {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  animation: fade-in 0.2s ease-out;
+}
+
 .pause-buttons {
   display: flex;
   flex-direction: column;

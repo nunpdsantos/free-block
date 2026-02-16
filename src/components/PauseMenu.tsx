@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { THEMES } from '../game/themes';
 import { getAchievementById } from '../game/achievements';
 import type { AchievementProgress } from '../game/types';
@@ -40,6 +41,8 @@ export function PauseMenu({
   onResume, onRestart, onQuit,
   unlockedAchievements,
 }: PauseMenuProps) {
+  const [lockHint, setLockHint] = useState<string | null>(null);
+
   return (
     <div className="pause-overlay">
       <div className="pause-card">
@@ -67,20 +70,28 @@ export function PauseMenu({
             {THEMES.map((t) => {
               const locked = !!t.requiredAchievement && !unlockedAchievements[t.requiredAchievement];
               const achievement = t.requiredAchievement ? getAchievementById(t.requiredAchievement) : null;
-              const tooltip = locked && achievement ? `Unlock: ${achievement.title}` : t.name;
               return (
                 <button
                   key={t.id}
                   className={`pause-theme-swatch ${t.id === themeId ? 'pause-theme-swatch--active' : ''} ${locked ? 'pause-theme-swatch--locked' : ''}`}
                   style={{ background: `linear-gradient(135deg, ${t.swatchFrom}, ${t.swatchTo})` }}
-                  onClick={locked ? undefined : () => onThemeChange(t.id)}
-                  aria-label={tooltip}
-                  title={tooltip}
-                  disabled={locked}
+                  onClick={locked ? () => setLockHint(
+                    achievement ? achievement.description : 'Locked'
+                  ) : () => { setLockHint(null); onThemeChange(t.id); }}
+                  aria-label={locked && achievement ? `Locked: ${achievement.description}` : t.name}
                 />
               );
             })}
           </div>
+          {lockHint && (
+            <div className="pause-theme-hint">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+              </svg>
+              {lockHint}
+            </div>
+          )}
         </div>
 
         <div className="pause-buttons">
