@@ -44,6 +44,12 @@ export function ScoreDisplay({ score, topScore, streak }: ScoreDisplayProps) {
   const multiplier = Math.min(1 + streak * STREAK_MULTIPLIER_INCREMENT, STREAK_MULTIPLIER_CAP);
   const fillPct = Math.min(streak / 5, 1) * 100;
 
+  // Progress toward personal best
+  const progressPct = topScore > 0
+    ? Math.min((score / topScore) * 100, 100)
+    : 0;
+  const showProgress = topScore > 0 && score <= topScore;
+
   return (
     <div className="score-display">
       <div className="score-row">
@@ -64,6 +70,16 @@ export function ScoreDisplay({ score, topScore, streak }: ScoreDisplayProps) {
           </div>
         </div>
       </div>
+      {showProgress && (
+        <div className="best-progress">
+          <div className="best-progress-track">
+            <div
+              className={`best-progress-fill${progressPct >= 90 ? ' best-progress-fill--close' : ''}`}
+              style={{ width: `${progressPct}%` }}
+            />
+          </div>
+        </div>
+      )}
       {streak > 0 && (
         <div className="combo-bar">
           <div className="combo-bar-label">

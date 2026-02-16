@@ -217,6 +217,17 @@ export function isBoardEmpty(board: Board): boolean {
   return board.every(row => row.every(cell => cell === null));
 }
 
+/** Ratio of filled cells (0 = empty, 1 = full) */
+export function getBoardFillRatio(board: Board): number {
+  let filled = 0;
+  for (let r = 0; r < GRID_SIZE; r++) {
+    for (let c = 0; c < GRID_SIZE; c++) {
+      if (board[r][c] !== null) filled++;
+    }
+  }
+  return filled / (GRID_SIZE * GRID_SIZE);
+}
+
 export function getCelebrationText(linesCleared: number): string | null {
   let text: string | null = null;
   for (const entry of CELEBRATION_TEXTS) {

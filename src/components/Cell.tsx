@@ -8,6 +8,7 @@ type CellProps = {
   ghostColor?: string;
   isClearing: boolean;
   clearDelay: number;
+  isPreClearing?: boolean;
   isShattered?: boolean;
   shatterStyle?: React.CSSProperties;
 };
@@ -19,12 +20,14 @@ export const Cell = memo(function Cell({
   ghostColor,
   isClearing,
   clearDelay,
+  isPreClearing,
   isShattered,
   shatterStyle,
 }: CellProps) {
   let className = 'cell';
   if (color) className += ' cell--filled';
   if (isGhost) className += ghostValid ? ' cell--ghost-valid' : ' cell--ghost-invalid';
+  if (isPreClearing) className += ' cell--pre-clear';
   if (isClearing) className += ' cell--clearing';
   if (isShattered && color) className += ' cell--shattered';
 

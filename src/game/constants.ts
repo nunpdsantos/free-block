@@ -4,6 +4,7 @@ export const CELL_GAP = 2; // px
 export const FINGER_OFFSET = 40; // px upward on mobile
 export const CLEAR_ANIMATION_MS = 600;
 export const CLEAR_STAGGER_MS = 30; // delay per cell in cascade
+export const CLEAR_ANTICIPATION_MS = 120; // hit-stop + anticipation pulse before cascade
 
 export const PIECE_COLORS = {
   blue: '#5B8DEF',

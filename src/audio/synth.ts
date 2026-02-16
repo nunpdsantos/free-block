@@ -136,16 +136,17 @@ function noiseBurst(
  * Total duration: ~110ms.
  */
 export function synthPlace(): void {
-  const drift = (Math.random() - 0.5) * 20; // ±10 cents variation
+  const drift = (Math.random() - 0.5) * 30; // ±15 cents variation
+  const volVar = 0.94 + Math.random() * 0.12; // ±1.5 dB volume variation
   // Warm noise burst — bandpass at 1200Hz for woody "contact" texture
-  noiseBurst(0.08, 0.03, 1200);
+  noiseBurst(0.08 * volVar, 0.03, 1200);
   // Triangle body — 350Hz is in the low-mid "weight" range, audible on phones
-  tone(350, 'triangle', 0.1, 0.004, 0.05, 0.06, 0, drift);
-  // Sine sub-body for warmth (harmonics at 440/660Hz reach phone speakers)
-  tone(220, 'sine', 0.06, 0.003, 0.03, 0.04, 0, drift);
+  tone(350, 'triangle', 0.1 * volVar, 0.004, 0.05, 0.06, 0, drift);
+  // Sine body — raised from 220Hz to 330Hz so fundamental reaches phone speakers
+  tone(330, 'sine', 0.055 * volVar, 0.003, 0.03, 0.04, 0, drift);
   // Locking snap — low-pitched mechanical click (piece snapping into place)
-  noiseBurst(0.06, 0.012, 600, 0.005);
-  tone(420, 'triangle', 0.07, 0.002, 0.015, 0.025, 0.004, drift);
+  noiseBurst(0.06 * volVar, 0.012, 600, 0.005);
+  tone(420, 'triangle', 0.07 * volVar, 0.002, 0.015, 0.025, 0.004, drift);
 }
 
 /**
@@ -158,6 +159,8 @@ export function synthPlace(): void {
  */
 export function synthClear(combo: number, linesCleared: number): void {
   const baseIdx = Math.min(combo, CLEAR_SCALE.length - 3);
+  // Volume variation per call (+/- ~1 dB) to prevent mechanical repetition
+  const volVar = 0.95 + Math.random() * 0.1;
 
   if (linesCleared >= 2) {
     // Ascending arpeggio — one note per line cleared, 60ms apart
@@ -168,35 +171,59 @@ export function synthClear(combo: number, linesCleared: number): void {
       const freq = CLEAR_SCALE[idx];
 
       // Main chime: triangle wave for warm body
-      tone(freq, 'triangle', 0.14, 0.006, 0.14, 0.22, d);
+      tone(freq, 'triangle', 0.14 * volVar, 0.006, 0.14, 0.22, d);
       // Shimmer: capped at 2kHz to avoid harshness, volume fades as freq rises
       const shimmerFreq = Math.min(freq * 2, 2000);
       const shimmerVol = freq > 800 ? 0.015 : 0.03;
-      tone(shimmerFreq, 'sine', shimmerVol, 0.01, 0.08, 0.14, d);
+      tone(shimmerFreq, 'sine', shimmerVol * volVar, 0.01, 0.08, 0.14, d);
       // Warmth: slight 6-cent detune for chorus effect
-      tone(freq, 'sine', 0.02, 0.01, 0.1, 0.16, d, 6);
+      tone(freq, 'sine', 0.02 * volVar, 0.01, 0.1, 0.16, d, 6);
+
+      // Combo 3+: wider chorus (second detuned voice)
+      if (combo >= 3) {
+        tone(freq, 'sine', 0.015 * volVar, 0.01, 0.1, 0.16, d, -8);
+      }
     }
     // Warm sweep noise — bandpass at 1800Hz for a "whoosh" texture
     noiseBurst(0.03, 0.06, 1800);
     // Soft high sparkle — gentle, not piercing
     noiseBurst(0.015, 0.03, 2800, 0.04);
+
+    // Combo 5+: sparkle noise burst for extra brilliance
+    if (combo >= 5) {
+      noiseBurst(0.02, 0.035, 2200, 0.08);
+    }
+    // Combo 7+: bass foundation — one octave below root for depth
+    if (combo >= 7) {
+      const bassFreq = CLEAR_SCALE[baseIdx] * 0.5;
+      tone(bassFreq, 'triangle', 0.06 * volVar, 0.01, 0.15, 0.25);
+    }
   } else {
     // Single clear: ascending 2-note pair (root → one step up)
     const freq1 = CLEAR_SCALE[baseIdx];
     const freq2 = CLEAR_SCALE[Math.min(baseIdx + 1, CLEAR_SCALE.length - 1)];
 
     // First note — warm body
-    tone(freq1, 'triangle', 0.12, 0.006, 0.1, 0.16);
-    tone(freq1, 'sine', 0.02, 0.01, 0.08, 0.12, 0, 5);
+    tone(freq1, 'triangle', 0.12 * volVar, 0.006, 0.1, 0.16);
+    tone(freq1, 'sine', 0.02 * volVar, 0.01, 0.08, 0.12, 0, 5);
 
     // Second note — brighter, resolves upward (feels like completion)
-    tone(freq2, 'triangle', 0.13, 0.006, 0.12, 0.2, 0.07);
+    tone(freq2, 'triangle', 0.13 * volVar, 0.006, 0.12, 0.2, 0.07);
     const shimmerFreq = Math.min(freq2 * 2, 2000);
-    tone(shimmerFreq, 'sine', 0.025, 0.01, 0.06, 0.1, 0.07);
-    tone(freq2, 'sine', 0.018, 0.01, 0.09, 0.13, 0.07, 5);
+    tone(shimmerFreq, 'sine', 0.025 * volVar, 0.01, 0.06, 0.1, 0.07);
+    tone(freq2, 'sine', 0.018 * volVar, 0.01, 0.09, 0.13, 0.07, 5);
 
     // Subtle sweep for satisfying texture
     noiseBurst(0.018, 0.04, 1500, 0.02);
+
+    // Combo 3+: wider chorus on the resolution note
+    if (combo >= 3) {
+      tone(freq2, 'sine', 0.012 * volVar, 0.01, 0.08, 0.12, 0.07, -8);
+    }
+    // Combo 5+: sparkle noise
+    if (combo >= 5) {
+      noiseBurst(0.015, 0.025, 2200, 0.1);
+    }
   }
 }
 

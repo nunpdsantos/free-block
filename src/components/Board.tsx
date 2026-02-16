@@ -8,9 +8,11 @@ type BoardProps = {
   board: BoardType;
   ghostCells: GhostCells;
   clearingCells: Map<string, number>;
+  preClearCells?: Set<string>;
   ghostColor?: string | null;
   clearedLines?: { rows: number[]; cols: number[] } | null;
   isShattered?: boolean;
+  dangerLevel?: number;
 };
 
 /** Compute deterministic shatter offsets from cell position */
@@ -32,9 +34,11 @@ export const Board = memo(function Board({
   board,
   ghostCells,
   clearingCells,
+  preClearCells,
   ghostColor,
   clearedLines,
   isShattered,
+  dangerLevel = 0,
 }: BoardProps) {
   const cells = [];
   for (let r = 0; r < GRID_SIZE; r++) {
@@ -51,6 +55,7 @@ export const Board = memo(function Board({
           ghostColor={ghostColor ?? undefined}
           isClearing={clearDelay !== undefined}
           clearDelay={clearDelay ?? 0}
+          isPreClearing={preClearCells?.has(key)}
           isShattered={isShattered}
           shatterStyle={isShattered ? getShatterStyle(r, c) : undefined}
         />
@@ -88,8 +93,12 @@ export const Board = memo(function Board({
     return elements;
   }, [clearedLines]);
 
+  let boardClass = 'board';
+  if (dangerLevel >= 2) boardClass += ' board--danger';
+  else if (dangerLevel >= 1) boardClass += ' board--warning';
+
   return (
-    <div className="board">
+    <div className={boardClass}>
       {cells}
       {shockwaves}
     </div>

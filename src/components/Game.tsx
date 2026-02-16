@@ -9,11 +9,13 @@ import {
   calculateScore,
   clearLines,
   isBoardEmpty,
+  getBoardFillRatio,
 } from '../game/logic';
 import { useDrag } from '../hooks/useDrag';
 import {
   CLEAR_ANIMATION_MS,
   CLEAR_STAGGER_MS,
+  CLEAR_ANTICIPATION_MS,
   GRID_SIZE,
   BG_PALETTES,
   ALL_CLEAR_BONUS,
@@ -70,6 +72,7 @@ export function Game({ topScore, onQuit, onSaveScore }: GameProps) {
   const [showGameOverUI, setShowGameOverUI] = useState(false);
   const [placedCells, setPlacedCells] = useState<PlacedCell[]>([]);
   const [placeTrigger, setPlaceTrigger] = useState(0);
+  const [preClearCells, setPreClearCells] = useState<Set<string>>(new Set());
   const gameRef = useRef<HTMLDivElement>(null);
   const scoreSavedRef = useRef(false);
   const prevGameOverRef = useRef(false);
@@ -144,26 +147,16 @@ export function Game({ topScore, onQuit, onSaveScore }: GameProps) {
       const linesCleared = rows.length + cols.length;
 
       if (linesCleared > 0) {
-        playClear(state.streak, linesCleared);
-
         // Check for all-clear
         const boardAfterClear = clearLines(boardAfterPlace, rows, cols);
         const allClear = isBoardEmpty(boardAfterClear);
-        if (allClear) playAllClear();
 
         // Compute points for score pop display
         const clearCells = getClearingCells(rows, cols);
         const points = calculateScore(clearCells.length, linesCleared, state.streak);
         const totalPoints = points + (allClear ? ALL_CLEAR_BONUS : 0);
-        setScorePop(totalPoints);
-        scorePopKeyRef.current += 1;
 
-        setAnimBoard(boardAfterPlace);
-        const newPieces = [...state.currentPieces];
-        newPieces[pieceIndex] = null;
-        setAnimPieces(newPieces);
-
-        // Build staggered delay map
+        // Build staggered delay map (used in phase 2)
         const cellMap = new Map<string, number>();
         for (const rowIdx of rows) {
           for (let c = 0; c < GRID_SIZE; c++) {
@@ -182,17 +175,27 @@ export function Game({ topScore, onQuit, onSaveScore }: GameProps) {
           }
         }
 
-        setClearingCells(cellMap);
+        // --- Phase 1: Anticipation (all cells pulse simultaneously) ---
+        playClear(state.streak, linesCleared);
+        if (allClear) playAllClear();
+
+        setPreClearCells(new Set(cellMap.keys()));
+        setAnimBoard(boardAfterPlace);
+        const newPieces = [...state.currentPieces];
+        newPieces[pieceIndex] = null;
+        setAnimPieces(newPieces);
         setIsAnimating(true);
+        setScorePop(totalPoints);
+        scorePopKeyRef.current += 1;
 
-        // Shockwave lines
-        setClearedLines({ rows, cols });
+        // --- Phase 2: After anticipation, fire cascade + effects ---
+        setTimeout(() => {
+          setPreClearCells(new Set());
+          setClearingCells(cellMap);
+          setClearedLines({ rows, cols });
+          setCellParticleTrigger(t => t + 1);
 
-        // Cell particle burst — fires on ALL line clears
-        setCellParticleTrigger(t => t + 1);
-
-        // Screen shake — intensity scales with lines cleared
-        {
+          // Screen shake — intensity scales with lines cleared
           const el = boardElRef.current;
           if (el) {
             let px: number, py: number, dur: number;
@@ -211,27 +214,27 @@ export function Game({ topScore, onQuit, onSaveScore }: GameProps) {
               { transform: 'translate(0, 0)' },
             ], { duration: dur, easing: 'ease-out' });
           }
-        }
 
-        // Confetti — bigger for all-clear
-        if (linesCleared >= 2 || allClear) {
-          setConfettiCount(allClear ? 30 : 12);
-          setConfettiTrigger(t => t + 1);
-        }
+          // Confetti — bigger for all-clear
+          if (linesCleared >= 2 || allClear) {
+            setConfettiCount(allClear ? 30 : 12);
+            setConfettiTrigger(t => t + 1);
+          }
 
-        // Milestone confetti (if we crossed a milestone)
-        const newScore = state.score + totalPoints;
-        const crossedMilestone = SCORE_MILESTONES.some(
-          m => state.score < m && newScore >= m
-        );
-        if (crossedMilestone && linesCleared < 2 && !allClear) {
-          setConfettiCount(18);
-          setConfettiTrigger(t => t + 1);
-        }
+          // Milestone confetti (if we crossed a milestone)
+          const newScore = state.score + totalPoints;
+          const crossedMilestone = SCORE_MILESTONES.some(
+            m => state.score < m && newScore >= m
+          );
+          if (crossedMilestone && linesCleared < 2 && !allClear) {
+            setConfettiCount(18);
+            setConfettiTrigger(t => t + 1);
+          }
+        }, CLEAR_ANTICIPATION_MS);
 
-        // Total time = max stagger delay + cell animation duration
+        // --- Phase 3: Animation complete, dispatch ---
         const maxDelay = (GRID_SIZE - 1) * CLEAR_STAGGER_MS;
-        const totalMs = CLEAR_ANIMATION_MS + maxDelay;
+        const totalMs = CLEAR_ANTICIPATION_MS + CLEAR_ANIMATION_MS + maxDelay;
 
         setTimeout(() => {
           setClearingCells(new Map());
@@ -319,6 +322,10 @@ export function Game({ topScore, onQuit, onSaveScore }: GameProps) {
   const isNewHighScore = state.score > 0 && state.score >= topScore && state.isGameOver;
   const ghostColor = dragState?.piece.color ?? null;
 
+  // Board danger level based on fill ratio
+  const fillRatio = useMemo(() => getBoardFillRatio(displayBoard), [displayBoard]);
+  const dangerLevel = fillRatio >= 0.85 ? 2 : fillRatio >= 0.75 ? 1 : 0;
+
   // Build board container class with streak intensity
   let boardContainerClass = 'board-container';
   if (state.streak > 0) {
@@ -364,9 +371,11 @@ export function Game({ topScore, onQuit, onSaveScore }: GameProps) {
           board={displayBoard}
           ghostCells={ghostCells}
           clearingCells={clearingCells}
+          preClearCells={preClearCells}
           ghostColor={ghostColor}
           clearedLines={clearedLines}
           isShattered={isShattered}
+          dangerLevel={dangerLevel}
         />
         <CelebrationText
           text={state.celebrationText}
