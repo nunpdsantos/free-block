@@ -3,14 +3,19 @@ import {
   onAuthStateChanged,
   signInAnonymously,
   signInWithPopup,
+  signInWithRedirect,
   GoogleAuthProvider,
   linkWithPopup,
+  linkWithRedirect,
+  getRedirectResult,
   signOut as firebaseSignOut,
   type User,
 } from 'firebase/auth';
 import { doc, getDoc, setDoc, getDocFromServer } from 'firebase/firestore';
 import { auth, db } from '../firebase/config';
 import { generateDisplayName } from '../firebase/names';
+
+const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
 export type AuthState = {
   user: User | null;
@@ -53,6 +58,19 @@ export function useAuth(): AuthState {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Handle redirect result from mobile Google sign-in
+    getRedirectResult(auth).then(async (result) => {
+      if (result?.user) {
+        const u = result.user;
+        const name = u.displayName ?? generateDisplayName();
+        try {
+          await setDoc(doc(db, 'users', u.uid), { displayName: name }, { merge: true });
+        } catch { /* Firestore write will retry when online */ }
+        setDisplayName(name);
+        setUser(u);
+      }
+    }).catch(() => { /* redirect had no result or failed — onAuthStateChanged handles it */ });
+
     const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
         // Set user + fallback name immediately so UI never blocks on Firestore
@@ -84,6 +102,17 @@ export function useAuth(): AuthState {
   const signInWithGoogle = useCallback(async () => {
     const provider = new GoogleAuthProvider();
 
+    if (isMobile) {
+      // Mobile: use redirect (popups are blocked on mobile browsers)
+      if (user?.isAnonymous) {
+        linkWithRedirect(user, provider);
+      } else {
+        signInWithRedirect(auth, provider);
+      }
+      return;
+    }
+
+    // Desktop: use popup
     if (user?.isAnonymous) {
       // Link anonymous account to Google — preserves UID and scores
       try {
@@ -102,7 +131,6 @@ export function useAuth(): AuthState {
       }
     }
 
-    // Regular Google sign-in (non-anonymous or link failed)
     const result = await signInWithPopup(auth, provider);
     const googleUser = result.user;
     const name = googleUser.displayName ?? generateDisplayName();
