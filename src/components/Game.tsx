@@ -29,6 +29,8 @@ import { CelebrationText } from './CelebrationText';
 import { PauseMenu } from './PauseMenu';
 import { Confetti } from './Confetti';
 import { CellParticles } from './CellParticles';
+import { PlaceSparkles } from './PlaceSparkles';
+import type { PlacedCell } from './PlaceSparkles';
 import { AmbientParticles } from './AmbientParticles';
 import './Game.css';
 
@@ -66,6 +68,8 @@ export function Game({ topScore, onQuit, onSaveScore }: GameProps) {
   const [cellParticleTrigger, setCellParticleTrigger] = useState(0);
   const [isShattered, setIsShattered] = useState(false);
   const [showGameOverUI, setShowGameOverUI] = useState(false);
+  const [placedCells, setPlacedCells] = useState<PlacedCell[]>([]);
+  const [placeTrigger, setPlaceTrigger] = useState(0);
   const gameRef = useRef<HTMLDivElement>(null);
   const scoreSavedRef = useRef(false);
   const prevGameOverRef = useRef(false);
@@ -125,6 +129,15 @@ export function Game({ topScore, onQuit, onSaveScore }: GameProps) {
       if (!canPlacePiece(state.board, piece, row, col)) return;
 
       playPlace();
+
+      // Sparkle particles at placed cell positions
+      const sparkCells = piece.coords.map(c => ({
+        row: row + c.row,
+        col: col + c.col,
+        color: piece.color,
+      }));
+      setPlacedCells(sparkCells);
+      setPlaceTrigger(t => t + 1);
 
       const boardAfterPlace = placePiece(state.board, piece, row, col);
       const { rows, cols } = findCompletedLines(boardAfterPlace);
@@ -365,6 +378,7 @@ export function Game({ topScore, onQuit, onSaveScore }: GameProps) {
           board={displayBoard}
           trigger={cellParticleTrigger}
         />
+        <PlaceSparkles cells={placedCells} trigger={placeTrigger} />
         {scorePop !== null && (
           <div className="score-pop" key={scorePopKeyRef.current}>
             +{scorePop.toLocaleString()}

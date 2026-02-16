@@ -151,41 +151,52 @@ export function synthPlace(): void {
 /**
  * Crystalline chime on line clear.
  * Uses C major pentatonic starting at C5 (523Hz) — phone speaker sweet spot.
- * Single clear: one clean note + shimmer overtone.
- * Multi-clear: rapid ascending arpeggio (Candy Crush technique).
+ * Single clear: ascending 2-note pair (root → next) — signals "success" better than a lone note.
+ * Multi-clear: rapid ascending arpeggio (Candy Crush technique) with a warm sweep.
  * Combo streak: starts higher on the scale each consecutive clear.
- * Total duration: single ~300ms, multi ~400ms.
+ * Total duration: single ~350ms, multi ~450ms.
  */
 export function synthClear(combo: number, linesCleared: number): void {
   const baseIdx = Math.min(combo, CLEAR_SCALE.length - 3);
 
   if (linesCleared >= 2) {
-    // Ascending arpeggio — one note per line cleared, 55ms apart
+    // Ascending arpeggio — one note per line cleared, 60ms apart
     const noteCount = Math.min(linesCleared + 1, 5);
     for (let i = 0; i < noteCount; i++) {
       const idx = Math.min(baseIdx + i, CLEAR_SCALE.length - 1);
-      const d = i * 0.055;
+      const d = i * 0.06;
       const freq = CLEAR_SCALE[idx];
 
       // Main chime: triangle wave for warm body
-      tone(freq, 'triangle', 0.15, 0.006, 0.14, 0.22, d);
+      tone(freq, 'triangle', 0.14, 0.006, 0.14, 0.22, d);
       // Shimmer: capped at 2kHz to avoid harshness, volume fades as freq rises
       const shimmerFreq = Math.min(freq * 2, 2000);
-      const shimmerVol = freq > 800 ? 0.02 : 0.035;
+      const shimmerVol = freq > 800 ? 0.015 : 0.03;
       tone(shimmerFreq, 'sine', shimmerVol, 0.01, 0.08, 0.14, d);
       // Warmth: slight 6-cent detune for chorus effect
-      tone(freq, 'sine', 0.025, 0.01, 0.1, 0.16, d, 6);
+      tone(freq, 'sine', 0.02, 0.01, 0.1, 0.16, d, 6);
     }
-    // Soft noise sparkle — lowered from 5kHz to 3kHz for warmth
-    noiseBurst(0.025, 0.035, 3000);
+    // Warm sweep noise — bandpass at 1800Hz for a "whoosh" texture
+    noiseBurst(0.03, 0.06, 1800);
+    // Soft high sparkle — gentle, not piercing
+    noiseBurst(0.015, 0.03, 2800, 0.04);
   } else {
-    // Single clear: one clean chime
-    const freq = CLEAR_SCALE[baseIdx];
-    tone(freq, 'triangle', 0.13, 0.006, 0.13, 0.2);
-    // Shimmer capped and softened
-    const shimmerFreq = Math.min(freq * 2, 2000);
-    tone(shimmerFreq, 'sine', 0.03, 0.01, 0.08, 0.12);
-    tone(freq, 'sine', 0.02, 0.01, 0.09, 0.13, 0, 5);
+    // Single clear: ascending 2-note pair (root → one step up)
+    const freq1 = CLEAR_SCALE[baseIdx];
+    const freq2 = CLEAR_SCALE[Math.min(baseIdx + 1, CLEAR_SCALE.length - 1)];
+
+    // First note — warm body
+    tone(freq1, 'triangle', 0.12, 0.006, 0.1, 0.16);
+    tone(freq1, 'sine', 0.02, 0.01, 0.08, 0.12, 0, 5);
+
+    // Second note — brighter, resolves upward (feels like completion)
+    tone(freq2, 'triangle', 0.13, 0.006, 0.12, 0.2, 0.07);
+    const shimmerFreq = Math.min(freq2 * 2, 2000);
+    tone(shimmerFreq, 'sine', 0.025, 0.01, 0.06, 0.1, 0.07);
+    tone(freq2, 'sine', 0.018, 0.01, 0.09, 0.13, 0.07, 5);
+
+    // Subtle sweep for satisfying texture
+    noiseBurst(0.018, 0.04, 1500, 0.02);
   }
 }
 
