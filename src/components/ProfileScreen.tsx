@@ -29,6 +29,7 @@ type ProfileScreenProps = {
   onSignIn: () => void;
   onSignOut: () => void;
   onUpdateDisplayName: (name: string) => Promise<void>;
+  onLeaderboardRefresh: () => void;
   onBack: () => void;
 };
 
@@ -46,6 +47,7 @@ export function ProfileScreen({
   onSignIn,
   onSignOut,
   onUpdateDisplayName,
+  onLeaderboardRefresh,
   onBack,
 }: ProfileScreenProps) {
   const [activeTab, setActiveTab] = useState<Tab>('stats');
@@ -92,6 +94,7 @@ export function ProfileScreen({
             entries={leaderboard}
             globalEntries={globalLeaderboard}
             currentUid={currentUid}
+            onRefresh={onLeaderboardRefresh}
           />
         )}
       </div>

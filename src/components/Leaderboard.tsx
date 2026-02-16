@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import type { LeaderboardEntry, GlobalLeaderboardEntry } from '../game/types';
 import './Leaderboard.css';
 
@@ -6,28 +6,51 @@ type LeaderboardContentProps = {
   entries: LeaderboardEntry[];
   globalEntries: GlobalLeaderboardEntry[];
   currentUid: string | null;
+  onRefresh?: () => void;
 };
 
 type LeaderboardTab = 'global' | 'local';
 
-export function LeaderboardContent({ entries, globalEntries, currentUid }: LeaderboardContentProps) {
+export function LeaderboardContent({ entries, globalEntries, currentUid, onRefresh }: LeaderboardContentProps) {
   const [tab, setTab] = useState<LeaderboardTab>('global');
+  const [spinning, setSpinning] = useState(false);
+
+  const handleRefresh = useCallback(() => {
+    if (!onRefresh || spinning) return;
+    setSpinning(true);
+    onRefresh();
+    setTimeout(() => setSpinning(false), 800);
+  }, [onRefresh, spinning]);
 
   return (
     <div className="leaderboard-wrapper">
-      <div className="leaderboard-toggle">
-        <button
-          className={`leaderboard-toggle__btn ${tab === 'global' ? 'leaderboard-toggle__btn--active' : ''}`}
-          onClick={() => setTab('global')}
-        >
-          Global
-        </button>
-        <button
-          className={`leaderboard-toggle__btn ${tab === 'local' ? 'leaderboard-toggle__btn--active' : ''}`}
-          onClick={() => setTab('local')}
-        >
-          Local
-        </button>
+      <div className="leaderboard-header">
+        <div className="leaderboard-toggle">
+          <button
+            className={`leaderboard-toggle__btn ${tab === 'global' ? 'leaderboard-toggle__btn--active' : ''}`}
+            onClick={() => setTab('global')}
+          >
+            Global
+          </button>
+          <button
+            className={`leaderboard-toggle__btn ${tab === 'local' ? 'leaderboard-toggle__btn--active' : ''}`}
+            onClick={() => setTab('local')}
+          >
+            Local
+          </button>
+        </div>
+        {tab === 'global' && onRefresh && (
+          <button
+            className={`leaderboard-refresh${spinning ? ' leaderboard-refresh--spinning' : ''}`}
+            onClick={handleRefresh}
+            aria-label="Refresh leaderboard"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="23 4 23 10 17 10" />
+              <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+            </svg>
+          </button>
+        )}
       </div>
 
       {tab === 'global' ? (

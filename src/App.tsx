@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
+import { useRegisterSW } from 'virtual:pwa-register/react';
 import type { LeaderboardEntry, DailyResult, PlayerStats, AchievementProgress, DailyStreak, GlobalLeaderboardEntry } from './game/types';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { useAuth } from './hooks/useAuth';
@@ -15,6 +16,7 @@ import { Tutorial } from './components/Tutorial';
 import { DailyCalendar } from './components/DailyCalendar';
 import { ProfileScreen } from './components/ProfileScreen';
 import { AchievementToast } from './components/AchievementToast';
+import { UpdateBanner } from './components/UpdateBanner';
 import { useInstallPrompt } from './hooks/useInstallPrompt';
 import './App.css';
 
@@ -88,15 +90,23 @@ export default function App() {
   );
   const { state: installState, install: installApp } = useInstallPrompt();
 
+  // --- PWA update detection ---
+  const { needRefresh: [needRefresh], updateServiceWorker } = useRegisterSW();
+
   // --- Firebase auth ---
   const { user, displayName, loading: authLoading, signInWithGoogle, signOut, updateDisplayName } = useAuth();
 
   // --- Global leaderboard (real-time from Firestore) ---
   const [globalLeaderboard, setGlobalLeaderboard] = useState<GlobalLeaderboardEntry[]>([]);
+  const [leaderboardRefresh, setLeaderboardRefresh] = useState(0);
 
   useEffect(() => {
     const unsub = onTopScoresChanged(setGlobalLeaderboard);
     return unsub;
+  }, [leaderboardRefresh]);
+
+  const handleLeaderboardRefresh = useCallback(() => {
+    setLeaderboardRefresh(n => n + 1);
   }, []);
 
   // Reset stale streak on app load — if last played date isn't today or yesterday, streak is broken
@@ -334,6 +344,7 @@ export default function App() {
           onSignIn={signInWithGoogle}
           onSignOut={signOut}
           onUpdateDisplayName={updateDisplayName}
+          onLeaderboardRefresh={handleLeaderboardRefresh}
           onBack={() => setScreen('menu')}
         />
       )}
@@ -379,6 +390,10 @@ export default function App() {
           achievement={currentToast}
           onDismiss={dismissToast}
         />
+      )}
+
+      {needRefresh && (
+        <UpdateBanner onUpdate={() => updateServiceWorker(true)} />
       )}
     </div>
   );

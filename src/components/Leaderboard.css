@@ -6,6 +6,44 @@
   gap: 16px;
 }
 
+.leaderboard-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.leaderboard-refresh {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.leaderboard-refresh:active {
+  transform: scale(0.9);
+}
+
+.leaderboard-refresh:hover {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.leaderboard-refresh--spinning svg {
+  animation: leaderboard-spin 0.6s ease-in-out;
+}
+
+@keyframes leaderboard-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 .leaderboard-toggle {
   display: flex;
   gap: 0;
