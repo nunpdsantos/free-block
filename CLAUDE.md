@@ -19,7 +19,7 @@
 - `responsive.ts` — `getCSSPx(name)` reads resolved CSS custom property values from `:root`
 - `types.ts` — Board, PieceShape, GameState, GameAction, UndoSnapshot, GameMode, DailyResult, LeaderboardEntry, PlayerStats, AchievementProgress, DailyStreak
 - `logic.ts` — Pure functions: placement, line clearing, scoring, revive cell removal
-- `pieces.ts` — 15 piece families (37 orientations), weighted random selection with DDA, piece-fit validation (20 retries + 1×1 fallback), `generateDailyPieces` for seeded daily mode
+- `pieces.ts` — 15 piece families (37 orientations), weighted random selection with DDA, piece-fit validation (20 retries + 1×1 fallback), `generateDailyPieces` for seeded daily mode, `generateRevivePieces` for pity-weighted selection without fit-check (revive carves its own space)
 - `reducer.ts` — useReducer state machine: PLACE_PIECE, NEW_GAME, NEW_DAILY_GAME, REVIVE, DISMISS_CELEBRATION (UNDO action exists but disabled via UNDOS_PER_GAME=0)
 - `themes.ts` — 5 color themes (Classic, Midnight, Ocean, Sunset, Neon) with per-theme CSS variables, background palettes, and optional `requiredAchievement` for unlock gating
 - `random.ts` — Mulberry32 seeded PRNG, date-to-seed conversion, day number utilities, `getYesterdayDateStr()`
@@ -35,7 +35,7 @@
 - Drag system (`hooks/useDrag.ts`) caches `getBoundingClientRect` + computed padding + responsive CSS values (`totalCellRef`, `fingerOffsetRef`) once per drag start, batches updates via `requestAnimationFrame`, skips redundant ghost re-renders
 - Line-clear animations use a two-phase approach: visual animation plays first (via `clearingCells` Map with per-cell stagger delays + CSS), then `dispatch` fires after animation completes
 - Piece generation uses 5 multiplicative DDA systems: score ramp, pity timer, solution boost, streak pushback, board-state awareness
-- Revive (3 per game) removes individual cells weighted by local congestion (not full rows), resets streak to 0 and sets movesSinceLastClear to PITY_THRESHOLD so post-revive DDA produces fair pieces
+- Revive (3 per game) uses piece-aware surgical clearing: generates 3 pity-weighted pieces first (`generateRevivePieces`), then `clearCellsForRevive` finds the minimum cells to remove so each piece can fit (greedy sequential — clears for piece 1, then piece 2 may already fit from piece 1's clearing, etc.). Typical removal: 5-12 cells vs old approach of 16-24. Resets streak to 0 and sets movesSinceLastClear to PITY_THRESHOLD. `postReviveGrace` flag means if player can't place all 3 post-revive pieces, remaining revives are forfeited
 - Theme system: `App.tsx` stores `themeId` in localStorage, applies CSS vars via `applyTheme()`, passes to Game → PauseMenu. 3 themes locked behind achievements: Ocean (Clean Slate), Sunset (Inferno), Neon (No Safety Net). Classic + Midnight always free. Falls back to Classic if selected theme is locked. PauseMenu swatches show lock icon + tooltip on locked themes.
 - Background palette cycles through 6 theme-specific colors as score increases, using CSS variable transitions. Each palette has tense variants (`bgTense`/`bgDarkTense`); tension signal interpolates toward them via `color-mix(in oklch, ...)`
 - Tension-reactive visuals: `tension` (0-1) derived from `movesSinceLastClear` (60%) + `fillRatio` (40%) drives background desaturation, ambient particle speed/opacity/hue shift, and clear burst particles. `pressure` (0-1, with dead zone) drives board-edge vignette via `--pressure` CSS var
@@ -74,7 +74,7 @@ AchievementToast (global, renders across all screens)
 
 - `PIECE_COLORS` keys are used as the color pool — adding/removing colors changes piece variety
 - Piece-fit validation in `generateThreePieces` validates each piece independently against the current board (not sequential simulation)
-- `clearCellsForRevive` uses weighted random selection — results differ each time
+- `clearCellsForRevive(board, pieces)` is deterministic for a given board+pieces — it always picks the position with the fewest blocking cells for each piece. The randomness comes from `generateRevivePieces` piece selection, not from the clearing algorithm
 - The DragOverlay renders via `createPortal` to document.body (outside React tree)
 - CSS variables defined in `:root` in `App.css` — theme system overrides color vars via `applyTheme()` in `themes.ts`. Sizing vars (`--cell-size`, `--cell-gap`, etc.) are not theme-dependent
 - `DragOverlay.tsx` and `PiecePreview.tsx` call `getCSSPx()` on every render (not cached) since they re-render on pointer move / piece change — values resolve from live CSS so orientation changes work automatically
