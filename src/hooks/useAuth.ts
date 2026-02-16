@@ -55,15 +55,19 @@ export function useAuth(): AuthState {
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
+        // Set user + fallback name immediately so UI never blocks on Firestore
+        const fallbackName = firebaseUser.displayName ?? generateDisplayName();
         setUser(firebaseUser);
+        setDisplayName(fallbackName);
+        setLoading(false);
+
+        // Then try to fetch/create the Firestore display name in the background
         try {
           const name = await ensureUserDoc(firebaseUser);
-          setDisplayName(name);
+          if (name !== fallbackName) setDisplayName(name);
         } catch {
-          // Firestore unavailable — use a local fallback name
-          setDisplayName(firebaseUser.displayName ?? generateDisplayName());
+          // Firestore unavailable — fallback name already set above
         }
-        setLoading(false);
       } else {
         // No user — auto sign in anonymously
         try {
