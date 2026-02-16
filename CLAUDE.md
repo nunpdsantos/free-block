@@ -35,7 +35,7 @@
 - Drag system (`hooks/useDrag.ts`) caches `getBoundingClientRect` + computed padding + responsive CSS values (`totalCellRef`, `fingerOffsetRef`) once per drag start, batches updates via `requestAnimationFrame`, skips redundant ghost re-renders
 - Line-clear animations use a two-phase approach: visual animation plays first (via `clearingCells` Map with per-cell stagger delays + CSS), then `dispatch` fires after animation completes
 - Piece generation uses 5 multiplicative DDA systems: score ramp, pity timer, solution boost, streak pushback, board-state awareness
-- Revive (3 per game) uses piece-aware surgical clearing: generates 3 pity-weighted pieces first (`generateRevivePieces`), then `clearCellsForRevive` finds the minimum cells to remove so each piece can fit (greedy sequential — clears for piece 1, then piece 2 may already fit from piece 1's clearing, etc.). Typical removal: 5-12 cells vs old approach of 16-24. Resets streak to 0 and sets movesSinceLastClear to PITY_THRESHOLD. `postReviveGrace` flag means if player can't place all 3 post-revive pieces, remaining revives are forfeited
+- Revive (3 per game) uses piece-aware surgical clearing: generates 3 pity-weighted pieces first (`generateRevivePieces`), then `clearCellsForRevive` finds the minimum cells to remove so each piece can fit (greedy sequential — clears for piece 1, then piece 2 may already fit from piece 1's clearing, etc.). Typical removal: 5-12 cells vs old approach of 16-24. Resets streak to 0 and sets movesSinceLastClear to PITY_THRESHOLD. `postReviveGrace` penalty: if player can't place all 3 post-revive pieces, loses 1 extra revive (not all). GameOver button shows remaining count: "Revive (2 left)"
 - Theme system: `App.tsx` stores `themeId` in localStorage, applies CSS vars via `applyTheme()`, passes to Game → PauseMenu. 3 themes locked behind achievements: Ocean (Clean Slate), Sunset (Inferno), Neon (No Safety Net). Classic + Midnight always free. Falls back to Classic if selected theme is locked. PauseMenu swatches show lock icon + tooltip on locked themes.
 - Background palette cycles through 6 theme-specific colors as score increases, using CSS variable transitions. Each palette has tense variants (`bgTense`/`bgDarkTense`); tension signal interpolates toward them via `color-mix(in oklch, ...)`
 - Tension-reactive visuals: `tension` (0-1) derived from `movesSinceLastClear` (60%) + `fillRatio` (40%) drives background desaturation, ambient particle speed/opacity/hue shift, and clear burst particles. `pressure` (0-1, with dead zone) drives board-edge vignette via `--pressure` CSS var
@@ -54,7 +54,8 @@
 ```
 App (screen state + leaderboard + theme + daily results + stats + achievements + streak + toast queue)
 ├── MainMenu → Play, Daily Challenge, Profile, How to Play
-│   └── DailyStreakBadge (flame icon + count, 3 visual tiers: warm/hot/fire)
+│   ├── DailyStreakBadge (flame icon + count, 3 visual tiers: warm/hot/fire)
+│   └── Install App button (Android: triggers beforeinstallprompt, iOS: shows share instructions, hidden when installed)
 ├── Tutorial → Paginated 4-step stepper with dots + back/next
 ├── ProfileScreen → Tabbed container (Stats | Achievements | Leaderboard)
 │   ├── StatsContent → 8 stat cards in 2-col grid

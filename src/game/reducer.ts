@@ -149,10 +149,10 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       // Check game over
       const isGameOver = !canAnyPieceFit(newBoard, finalPieces);
 
-      // Post-revive grace: if player can't survive the first tray after revive, no more revives
+      // Post-revive grace: if player can't survive the first tray after revive, lose one extra revive
       const postReviveGrace = allPlaced ? false : state.postReviveGrace;
       const revivesRemaining = (isGameOver && state.postReviveGrace)
-        ? 0
+        ? Math.max(0, state.revivesRemaining - 1)
         : state.revivesRemaining;
 
       // Celebration text — priority: ALL CLEAR > line clear > milestone

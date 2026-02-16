@@ -13,6 +13,7 @@ import { Tutorial } from './components/Tutorial';
 import { DailyCalendar } from './components/DailyCalendar';
 import { ProfileScreen } from './components/ProfileScreen';
 import { AchievementToast } from './components/AchievementToast';
+import { useInstallPrompt } from './hooks/useInstallPrompt';
 import './App.css';
 
 type Screen = 'menu' | 'tutorial' | 'playing' | 'daily' | 'daily-calendar' | 'profile';
@@ -83,6 +84,7 @@ export default function App() {
     'gridlock-daily-streak',
     DEFAULT_STREAK
   );
+  const { state: installState, install: installApp } = useInstallPrompt();
 
   // Reset stale streak on app load — if last played date isn't today or yesterday, streak is broken
   useEffect(() => {
@@ -282,6 +284,8 @@ export default function App() {
           onTutorial={() => setScreen('tutorial')}
           onProfile={() => setScreen('profile')}
           dailyStreak={dailyStreak}
+          installState={installState}
+          onInstall={installApp}
         />
       )}
       {screen === 'tutorial' && (

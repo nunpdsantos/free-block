@@ -175,3 +175,39 @@
     transform: translateY(0);
   }
 }
+
+/* Install button */
+.install-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: none;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 20px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 700;
+  font-family: inherit;
+  padding: 8px 20px;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+  animation: menu-btn-enter 0.4s ease-out 0.55s both;
+}
+
+.install-btn:hover {
+  color: var(--text-primary);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.install-ios-hint {
+  font-size: 12px;
+  color: var(--text-secondary);
+  text-align: center;
+  animation: fade-in 0.2s ease-out;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
