@@ -3,14 +3,6 @@ import { ACHIEVEMENTS } from '../game/achievements';
 import type { AchievementTier, AchievementContext } from '../game/achievements';
 import './AchievementsScreen.css';
 
-type AchievementsScreenProps = {
-  progress: AchievementProgress;
-  stats: PlayerStats;
-  dailyStreak: DailyStreak;
-  dailyCount: number;
-  onBack: () => void;
-};
-
 const TIER_COLORS: Record<AchievementTier, string> = {
   bronze: '#CD7F32',
   silver: '#C0C0C0',
@@ -27,7 +19,14 @@ function formatNumber(n: number): string {
   return n >= 1000 ? n.toLocaleString() : String(n);
 }
 
-export function AchievementsScreen({ progress, stats, dailyStreak, dailyCount, onBack }: AchievementsScreenProps) {
+type AchievementsContentProps = {
+  progress: AchievementProgress;
+  stats: PlayerStats;
+  dailyStreak: DailyStreak;
+  dailyCount: number;
+};
+
+export function AchievementsContent({ progress, stats, dailyStreak, dailyCount }: AchievementsContentProps) {
   const unlockedCount = Object.keys(progress).length;
 
   const ctx: AchievementContext = {
@@ -40,8 +39,7 @@ export function AchievementsScreen({ progress, stats, dailyStreak, dailyCount, o
   };
 
   return (
-    <div className="achievements-screen">
-      <h2 className="achievements-title">Achievements</h2>
+    <>
       <div className="achievements-count">
         {unlockedCount} / {ACHIEVEMENTS.length} Unlocked
       </div>
@@ -92,10 +90,6 @@ export function AchievementsScreen({ progress, stats, dailyStreak, dailyCount, o
           );
         })}
       </div>
-
-      <button className="menu-btn menu-btn--secondary achievements-back-btn" onClick={onBack}>
-        Back
-      </button>
-    </div>
+    </>
   );
 }

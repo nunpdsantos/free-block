@@ -1,16 +1,13 @@
 import type { LeaderboardEntry } from '../game/types';
 import './Leaderboard.css';
 
-type LeaderboardProps = {
+type LeaderboardContentProps = {
   entries: LeaderboardEntry[];
-  onBack: () => void;
 };
 
-export function Leaderboard({ entries, onBack }: LeaderboardProps) {
+export function LeaderboardContent({ entries }: LeaderboardContentProps) {
   return (
-    <div className="leaderboard">
-      <h2 className="leaderboard-title">Top Scores</h2>
-
+    <>
       {entries.length === 0 ? (
         <div className="leaderboard-empty">
           No scores yet — play a game!
@@ -39,10 +36,6 @@ export function Leaderboard({ entries, onBack }: LeaderboardProps) {
           </tbody>
         </table>
       )}
-
-      <button className="menu-btn menu-btn--secondary leaderboard-back-btn" onClick={onBack}>
-        Back
-      </button>
-    </div>
+    </>
   );
 }

@@ -1,11 +1,6 @@
 import type { PlayerStats } from '../game/types';
 import './StatsScreen.css';
 
-type StatsScreenProps = {
-  stats: PlayerStats;
-  onBack: () => void;
-};
-
 const STAT_CARDS: { key: keyof PlayerStats; label: string; format?: (v: number) => string }[] = [
   { key: 'gamesPlayed', label: 'Games Played' },
   { key: 'totalScore', label: 'Total Score', format: (v) => v.toLocaleString() },
@@ -17,13 +12,15 @@ const STAT_CARDS: { key: keyof PlayerStats; label: string; format?: (v: number) 
   { key: 'highestScoreWithoutRevive', label: 'Best No-Revive', format: (v) => v.toLocaleString() },
 ];
 
-export function StatsScreen({ stats, onBack }: StatsScreenProps) {
+type StatsContentProps = {
+  stats: PlayerStats;
+};
+
+export function StatsContent({ stats }: StatsContentProps) {
   const hasPlayed = stats.gamesPlayed > 0;
 
   return (
-    <div className="stats-screen">
-      <h2 className="stats-title">Stats</h2>
-
+    <>
       {!hasPlayed ? (
         <div className="stats-empty">
           No stats yet — play a game!
@@ -46,10 +43,6 @@ export function StatsScreen({ stats, onBack }: StatsScreenProps) {
           })}
         </div>
       )}
-
-      <button className="menu-btn menu-btn--secondary stats-back-btn" onClick={onBack}>
-        Back
-      </button>
-    </div>
+    </>
   );
 }

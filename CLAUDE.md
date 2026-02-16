@@ -51,13 +51,14 @@
 ### Screen flow
 ```
 App (screen state + leaderboard + theme + daily results + stats + achievements + streak + toast queue)
-├── MainMenu → Play, Daily Challenge, Stats, Achievements, How to Play, Leaderboard
+├── MainMenu → Play, Daily Challenge, Profile, How to Play
 │   └── DailyStreakBadge (flame icon + count, 3 visual tiers: warm/hot/fire)
 ├── Tutorial → Paginated 4-step stepper with dots + back/next
-├── Leaderboard → Top 5 local scores
+├── ProfileScreen → Tabbed container (Stats | Achievements | Leaderboard)
+│   ├── StatsContent → 8 stat cards in 2-col grid
+│   ├── AchievementsContent → 20 achievements gallery (locked/unlocked, tiers, progress bars)
+│   └── LeaderboardContent → Top 5 local scores table
 ├── DailyCalendar → Completed daily challenges list with share
-├── StatsScreen → 8 stat cards in 2-col grid (games, score, lines, pieces, streak, all-clears, revives, no-revive best)
-├── AchievementsScreen → 20 achievements gallery (locked/unlocked, bronze/silver/gold tiers, progress bars on trackable locked achievements)
 └── Game (mode: classic | daily) → Board, PieceTray, DragOverlay, ScoreDisplay
     ├── PauseMenu overlay (volume slider + theme picker with lock states + restart/quit)
     ├── GameOver overlay (classic: Revive/Play Again/Menu; daily: Share/Calendar/Menu)

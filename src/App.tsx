@@ -10,14 +10,12 @@ import { playAchievement } from './audio/sounds';
 import { Game } from './components/Game';
 import { MainMenu } from './components/MainMenu';
 import { Tutorial } from './components/Tutorial';
-import { Leaderboard } from './components/Leaderboard';
 import { DailyCalendar } from './components/DailyCalendar';
-import { StatsScreen } from './components/StatsScreen';
-import { AchievementsScreen } from './components/AchievementsScreen';
+import { ProfileScreen } from './components/ProfileScreen';
 import { AchievementToast } from './components/AchievementToast';
 import './App.css';
 
-type Screen = 'menu' | 'tutorial' | 'leaderboard' | 'playing' | 'daily' | 'daily-calendar' | 'stats' | 'achievements';
+type Screen = 'menu' | 'tutorial' | 'playing' | 'daily' | 'daily-calendar' | 'profile';
 
 const MAX_LEADERBOARD = 5;
 
@@ -282,23 +280,22 @@ export default function App() {
           onDaily={handleDailyPlay}
           todayCompleted={todayCompleted}
           onTutorial={() => setScreen('tutorial')}
-          onLeaderboard={() => setScreen('leaderboard')}
-          onStats={() => setScreen('stats')}
-          onAchievements={() => setScreen('achievements')}
+          onProfile={() => setScreen('profile')}
           dailyStreak={dailyStreak}
         />
       )}
       {screen === 'tutorial' && (
         <Tutorial onBack={() => setScreen('menu')} />
       )}
-      {screen === 'leaderboard' && (
-        <Leaderboard entries={leaderboard} onBack={() => setScreen('menu')} />
-      )}
-      {screen === 'stats' && (
-        <StatsScreen stats={stats} onBack={() => setScreen('menu')} />
-      )}
-      {screen === 'achievements' && (
-        <AchievementsScreen progress={achievementProgress} stats={stats} dailyStreak={dailyStreak} dailyCount={dailyCount} onBack={() => setScreen('menu')} />
+      {screen === 'profile' && (
+        <ProfileScreen
+          stats={stats}
+          achievementProgress={achievementProgress}
+          dailyStreak={dailyStreak}
+          dailyCount={dailyCount}
+          leaderboard={leaderboard}
+          onBack={() => setScreen('menu')}
+        />
       )}
       {screen === 'playing' && (
         <Game

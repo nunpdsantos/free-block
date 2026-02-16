@@ -150,16 +150,8 @@
   animation-delay: 0.36s;
 }
 
-.main-menu-buttons .menu-btn:nth-child(5) {
-  animation-delay: 0.43s;
-}
-
-.main-menu-buttons .menu-btn:nth-child(6) {
-  animation-delay: 0.50s;
-}
-
 .main-menu-top-score {
-  animation: menu-btn-enter 0.4s ease-out 0.60s both;
+  animation: menu-btn-enter 0.4s ease-out 0.46s both;
 }
 
 @keyframes menu-title-enter {

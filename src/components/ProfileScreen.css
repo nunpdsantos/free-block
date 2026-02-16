@@ -1,0 +1,64 @@
+.profile-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100dvh;
+  padding: 32px 24px;
+  max-width: 420px;
+  margin: 0 auto;
+  gap: 24px;
+  justify-content: center;
+}
+
+.profile-title {
+  font-size: 28px;
+  font-weight: 900;
+  color: var(--text-primary);
+  letter-spacing: 2px;
+}
+
+.profile-tabs {
+  display: flex;
+  gap: 0;
+  width: 100%;
+  max-width: 340px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.profile-tab {
+  flex: 1;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 10px 8px;
+  font-size: 14px;
+  font-weight: 700;
+  font-family: inherit;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.profile-tab:hover {
+  color: var(--text-primary);
+}
+
+.profile-tab--active {
+  color: var(--text-primary);
+  border-bottom-color: var(--accent);
+}
+
+.profile-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  min-height: 0;
+  flex: 1;
+}
+
+.profile-back-btn {
+  width: 100%;
+  max-width: 280px;
+  flex-shrink: 0;
+}
