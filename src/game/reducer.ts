@@ -12,7 +12,7 @@ import {
   clearCellsForRevive,
   isBoardEmpty,
 } from './logic';
-import { generateThreePieces, generateDailyPieces } from './pieces';
+import { generateThreePieces, generateDailyPieces, generateRevivePieces } from './pieces';
 import { REVIVES_PER_GAME, ALL_CLEAR_BONUS, SCORE_MILESTONES, UNDOS_PER_GAME, PITY_THRESHOLD } from './constants';
 import { mulberry32 } from './random';
 
@@ -201,13 +201,9 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
     case 'REVIVE': {
       if (state.revivesRemaining <= 0 || !state.isGameOver) return state;
 
-      const newBoard = clearCellsForRevive(state.board);
-      const newPieces = generateThreePieces(
-        newBoard,
-        PITY_THRESHOLD,
-        state.score,
-        0
-      );
+      // Generate pieces first, then carve minimum space for them
+      const newPieces = generateRevivePieces(state.score);
+      const newBoard = clearCellsForRevive(state.board, newPieces);
 
       return {
         ...state,

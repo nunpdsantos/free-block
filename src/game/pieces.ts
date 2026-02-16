@@ -340,6 +340,41 @@ export function generateDailyPieces(board: Board, rng: () => number): PieceShape
   return pieces;
 }
 
+/**
+ * Generate 3 pieces for revive — pity-weighted (easy/medium favored),
+ * no fit-check since we'll carve space for them on the board.
+ */
+export function generateRevivePieces(score: number): PieceShape[] {
+  const ctx: DDAContext = {
+    board: null,
+    score,
+    streak: 0,
+    movesSinceLastClear: PITY_THRESHOLD,
+  };
+
+  // Compute weights with pity active but no board context
+  // Then additionally boost easy/medium and penalize hard to keep revive fair
+  const weights = computeAdaptiveWeights(ctx);
+  for (const def of PIECE_DEFS) {
+    const w = weights.get(def.id) ?? def.weight;
+    if (def.tier === 'easy') weights.set(def.id, w * 2);
+    else if (def.tier === 'hard') weights.set(def.id, w * 0.3);
+  }
+
+  const used = new Set<string>();
+  const pieces: PieceShape[] = [];
+  for (let i = 0; i < 3; i++) {
+    const def = pickWeightedPiece(used, weights);
+    used.add(def.id);
+    pieces.push({
+      id: def.id + '-' + Date.now() + '-' + i,
+      coords: def.coords,
+      color: pickRandomColor(),
+    });
+  }
+  return pieces;
+}
+
 export function getPieceBounds(coords: Coord[]): { rows: number; cols: number } {
   let maxR = 0, maxC = 0;
   for (const { row, col } of coords) {

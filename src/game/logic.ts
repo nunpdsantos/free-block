@@ -154,59 +154,44 @@ export function canAnyPieceFit(
   return false;
 }
 
-export function clearCellsForRevive(board: Board): Board {
-  // Collect all filled cells
-  const filledCells: { row: number; col: number }[] = [];
-  for (let r = 0; r < GRID_SIZE; r++) {
-    for (let c = 0; c < GRID_SIZE; c++) {
-      if (board[r][c] !== null) filledCells.push({ row: r, col: c });
-    }
-  }
-
-  // Clear ~2-3 rows worth of cells (16-24 cells), targeting congested areas
-  // More cells removed when board is more full
-  const fillRatio = filledCells.length / (GRID_SIZE * GRID_SIZE);
-  const targetCells = fillRatio > 0.5
-    ? GRID_SIZE * 3  // 24 cells (~3 rows worth) when packed
-    : GRID_SIZE * 2; // 16 cells (~2 rows worth) otherwise
-  const toRemove = Math.min(targetCells, filledCells.length);
-
-  // Weight cells by local congestion — cells surrounded by more filled neighbors
-  // are more likely to be removed, creating gaps in crowded areas
-  const weighted = filledCells.map(cell => {
-    let neighbors = 0;
-    for (let dr = -1; dr <= 1; dr++) {
-      for (let dc = -1; dc <= 1; dc++) {
-        if (dr === 0 && dc === 0) continue;
-        const nr = cell.row + dr;
-        const nc = cell.col + dc;
-        if (nr >= 0 && nr < GRID_SIZE && nc >= 0 && nc < GRID_SIZE && board[nr][nc] !== null) {
-          neighbors++;
-        }
-      }
-    }
-    return { ...cell, weight: neighbors + 1 };
-  });
-
-  // Shuffle using weighted random selection (higher congestion = more likely picked)
-  const selected = new Set<string>();
+export function clearCellsForRevive(board: Board, pieces: PieceShape[]): Board {
   const newBoard = board.map(row => [...row]);
 
-  while (selected.size < toRemove && weighted.length > 0) {
-    const totalWeight = weighted.reduce((sum, c) => sum + c.weight, 0);
-    let roll = Math.random() * totalWeight;
-    for (let i = 0; i < weighted.length; i++) {
-      roll -= weighted[i].weight;
-      if (roll <= 0) {
-        const cell = weighted[i];
-        const key = `${cell.row},${cell.col}`;
-        if (!selected.has(key)) {
-          selected.add(key);
-          newBoard[cell.row][cell.col] = null;
+  for (const piece of pieces) {
+    // If piece already fits somewhere, no clearing needed
+    if (canPieceFitAnywhere(newBoard, piece)) continue;
+
+    // Find the position requiring the fewest cell removals
+    let bestRow = 0;
+    let bestCol = 0;
+    let bestCost = Infinity;
+
+    for (let r = 0; r < GRID_SIZE; r++) {
+      for (let c = 0; c < GRID_SIZE; c++) {
+        let cost = 0;
+        let inBounds = true;
+        for (const coord of piece.coords) {
+          const cr = r + coord.row;
+          const cc = c + coord.col;
+          if (cr < 0 || cr >= GRID_SIZE || cc < 0 || cc >= GRID_SIZE) {
+            inBounds = false;
+            break;
+          }
+          if (newBoard[cr][cc] !== null) cost++;
         }
-        weighted.splice(i, 1);
-        break;
+        if (inBounds && cost < bestCost) {
+          bestCost = cost;
+          bestRow = r;
+          bestCol = c;
+        }
       }
+    }
+
+    // Clear the cells at the best position
+    for (const coord of piece.coords) {
+      const cr = bestRow + coord.row;
+      const cc = bestCol + coord.col;
+      newBoard[cr][cc] = null;
     }
   }
 
