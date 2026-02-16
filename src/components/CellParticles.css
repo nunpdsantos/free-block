@@ -9,19 +9,22 @@
 .cell-particle {
   position: absolute;
   border-radius: 50%;
-  animation: cell-particle-burst 0.65s ease-out forwards;
+  animation: cell-particle-burst 0.4s ease-out forwards;
   opacity: 0;
 }
 
 @keyframes cell-particle-burst {
   0% {
-    transform: translate(-50%, -50%) scale(1);
-    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.2);
+    opacity: 0.9;
+  }
+  60% {
+    opacity: 0.5;
   }
   100% {
     transform: translate(
       calc(-50% + var(--tx)),
-      calc(-50% + var(--ty) + 15px)
+      calc(-50% + var(--ty) + 10px)
     ) scale(0);
     opacity: 0;
   }

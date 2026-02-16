@@ -326,6 +326,25 @@ export function Game({ topScore, onQuit, onSaveScore }: GameProps) {
   const fillRatio = useMemo(() => getBoardFillRatio(displayBoard), [displayBoard]);
   const dangerLevel = fillRatio >= 0.85 ? 2 : fillRatio >= 0.75 ? 1 : 0;
 
+  // Ghost cells that would complete a line — glow brighter as anticipation cue
+  const ghostCompletingCells = useMemo(() => {
+    if (!dragState || !dragState.isValid || dragState.boardRow === null || dragState.boardCol === null) {
+      return undefined;
+    }
+    const simBoard = placePiece(displayBoard, dragState.piece, dragState.boardRow, dragState.boardCol);
+    const { rows, cols } = findCompletedLines(simBoard);
+    if (rows.length === 0 && cols.length === 0) return undefined;
+
+    const completing = new Set<string>();
+    for (const key of ghostCells.keys()) {
+      const [r, c] = key.split(',').map(Number);
+      if (rows.includes(r) || cols.includes(c)) {
+        completing.add(key);
+      }
+    }
+    return completing.size > 0 ? completing : undefined;
+  }, [dragState, displayBoard, ghostCells]);
+
   // Build board container class with streak intensity
   let boardContainerClass = 'board-container';
   if (state.streak > 0) {
@@ -370,6 +389,7 @@ export function Game({ topScore, onQuit, onSaveScore }: GameProps) {
         <Board
           board={displayBoard}
           ghostCells={ghostCells}
+          ghostCompletingCells={ghostCompletingCells}
           clearingCells={clearingCells}
           preClearCells={preClearCells}
           ghostColor={ghostColor}

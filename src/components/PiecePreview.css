@@ -39,6 +39,20 @@
   background: transparent;
 }
 
+/* Gentle idle float on piece grid — sine wave bob */
+.preview-grid {
+  animation: piece-idle-float 3s ease-in-out infinite;
+}
+
+@keyframes piece-idle-float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-2px);
+  }
+}
+
 @keyframes piece-enter {
   0% {
     transform: scale(0.5);

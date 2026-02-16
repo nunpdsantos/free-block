@@ -4,8 +4,8 @@ import './CellParticles.css';
 
 const CELL_TOTAL = 50; // 48px cell + 2px gap
 const BOARD_PAD = 6;
-const PARTICLES_PER_CELL = 4;
-const MAX_PARTICLES = 100;
+const PARTICLES_PER_CELL = 6;
+const MAX_PARTICLES = 120;
 
 type Particle = {
   id: number;
@@ -34,7 +34,7 @@ function createParticles(
 
     for (let i = 0; i < PARTICLES_PER_CELL; i++) {
       const angle = Math.random() * Math.PI * 2;
-      const distance = 30 + Math.random() * 55;
+      const distance = 15 + Math.random() * 35;
       particles.push({
         id: id++,
         x: cx,
@@ -42,7 +42,7 @@ function createParticles(
         color,
         tx: Math.cos(angle) * distance,
         ty: Math.sin(angle) * distance,
-        size: 4 + Math.random() * 4,
+        size: 2 + Math.random() * 3,
         delay,
       });
     }

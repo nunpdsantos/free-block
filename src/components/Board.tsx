@@ -7,6 +7,7 @@ import './Board.css';
 type BoardProps = {
   board: BoardType;
   ghostCells: GhostCells;
+  ghostCompletingCells?: Set<string>;
   clearingCells: Map<string, number>;
   preClearCells?: Set<string>;
   ghostColor?: string | null;
@@ -33,6 +34,7 @@ function getShatterStyle(row: number, col: number): React.CSSProperties {
 export const Board = memo(function Board({
   board,
   ghostCells,
+  ghostCompletingCells,
   clearingCells,
   preClearCells,
   ghostColor,
@@ -53,6 +55,7 @@ export const Board = memo(function Board({
           isGhost={ghost !== undefined}
           ghostValid={ghost === true}
           ghostColor={ghostColor ?? undefined}
+          ghostCompletesLine={ghostCompletingCells?.has(key)}
           isClearing={clearDelay !== undefined}
           clearDelay={clearDelay ?? 0}
           isPreClearing={preClearCells?.has(key)}
