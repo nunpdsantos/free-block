@@ -3,7 +3,7 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Leaderboard: anyone can read, authenticated users can create (no update/delete)
+    // Leaderboard: anyone can read, authenticated users can create or update their own best
     match /leaderboard/{entryId} {
       allow read: if true;
       allow create: if request.auth != null
@@ -14,7 +14,16 @@ service cloud.firestore {
         && request.resource.data.mode in ['classic', 'daily']
         && request.resource.data.displayName is string
         && request.resource.data.displayName.size() <= 30;
-      allow update, delete: if false;
+      allow update: if request.auth != null
+        && resource.data.uid == request.auth.uid
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.score is int
+        && request.resource.data.score > resource.data.score
+        && request.resource.data.score <= 999999
+        && request.resource.data.mode in ['classic', 'daily']
+        && request.resource.data.displayName is string
+        && request.resource.data.displayName.size() <= 30;
+      allow delete: if false;
     }
 
     // User profiles: only the owner can read/write their own doc
