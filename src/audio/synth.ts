@@ -143,6 +143,9 @@ export function synthPlace(): void {
   tone(350, 'triangle', 0.1, 0.004, 0.05, 0.06, 0, drift);
   // Sine sub-body for warmth (harmonics at 440/660Hz reach phone speakers)
   tone(220, 'sine', 0.06, 0.003, 0.03, 0.04, 0, drift);
+  // Locking snap — low-pitched mechanical click (piece snapping into place)
+  noiseBurst(0.06, 0.012, 600, 0.005);
+  tone(420, 'triangle', 0.07, 0.002, 0.015, 0.025, 0.004, drift);
 }
 
 /**
@@ -162,22 +165,27 @@ export function synthClear(combo: number, linesCleared: number): void {
     for (let i = 0; i < noteCount; i++) {
       const idx = Math.min(baseIdx + i, CLEAR_SCALE.length - 1);
       const d = i * 0.055;
+      const freq = CLEAR_SCALE[idx];
 
       // Main chime: triangle wave for warm body
-      tone(CLEAR_SCALE[idx], 'triangle', 0.15, 0.006, 0.14, 0.22, d);
-      // Shimmer: octave above in sine for sparkle
-      tone(CLEAR_SCALE[idx] * 2, 'sine', 0.045, 0.01, 0.1, 0.16, d);
+      tone(freq, 'triangle', 0.15, 0.006, 0.14, 0.22, d);
+      // Shimmer: capped at 2kHz to avoid harshness, volume fades as freq rises
+      const shimmerFreq = Math.min(freq * 2, 2000);
+      const shimmerVol = freq > 800 ? 0.02 : 0.035;
+      tone(shimmerFreq, 'sine', shimmerVol, 0.01, 0.08, 0.14, d);
       // Warmth: slight 6-cent detune for chorus effect
-      tone(CLEAR_SCALE[idx], 'sine', 0.03, 0.01, 0.1, 0.18, d, 6);
+      tone(freq, 'sine', 0.025, 0.01, 0.1, 0.16, d, 6);
     }
-    // Bright noise sparkle on multi-clear
-    noiseBurst(0.03, 0.04, 5000);
+    // Soft noise sparkle — lowered from 5kHz to 3kHz for warmth
+    noiseBurst(0.025, 0.035, 3000);
   } else {
     // Single clear: one clean chime
     const freq = CLEAR_SCALE[baseIdx];
     tone(freq, 'triangle', 0.13, 0.006, 0.13, 0.2);
-    tone(freq * 2, 'sine', 0.04, 0.01, 0.09, 0.14);
-    tone(freq, 'sine', 0.025, 0.01, 0.09, 0.14, 0, 5);
+    // Shimmer capped and softened
+    const shimmerFreq = Math.min(freq * 2, 2000);
+    tone(shimmerFreq, 'sine', 0.03, 0.01, 0.08, 0.12);
+    tone(freq, 'sine', 0.02, 0.01, 0.09, 0.13, 0, 5);
   }
 }
 
@@ -198,15 +206,17 @@ export function synthAllClear(): void {
   chord.forEach((freq, i) => {
     const d = i * 0.035;
     tone(freq, 'triangle', 0.12, 0.01, 0.25, 0.55, d);
-    tone(freq * 2, 'sine', 0.035, 0.015, 0.18, 0.4, d + 0.02);
+    // Shimmer capped — C6*2 would be 2093Hz, keep it gentle
+    const shimmerFreq = Math.min(freq * 2, 2000);
+    tone(shimmerFreq, 'sine', 0.025, 0.015, 0.15, 0.35, d + 0.02);
   });
 
-  // High sparkle notes
-  tone(CLEAR_SCALE[5], 'sine', 0.05, 0.02, 0.15, 0.45, 0.12); // C6
-  tone(CLEAR_SCALE[7], 'sine', 0.03, 0.02, 0.12, 0.35, 0.18); // E6
+  // Sparkle — using triangle instead of sine for softer overtones
+  tone(CLEAR_SCALE[5], 'triangle', 0.04, 0.02, 0.12, 0.4, 0.12); // C6
+  tone(CLEAR_SCALE[7], 'triangle', 0.025, 0.02, 0.1, 0.3, 0.18); // E6
 
-  // Bright noise shimmer
-  noiseBurst(0.025, 0.06, 6000, 0.05);
+  // Warm noise shimmer — lowered from 6kHz to 3.5kHz
+  noiseBurst(0.02, 0.05, 3500, 0.05);
 }
 
 /**
