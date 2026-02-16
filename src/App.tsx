@@ -291,8 +291,8 @@ export default function App() {
       // Submit to global Firestore leaderboard
       const { uid, displayName: name } = authRef.current;
       if (uid && name && score > 0) {
-        submitScore(uid, name, score, mode).catch(() => {
-          // Firestore offline persistence will queue this
+        submitScore(uid, name, score, mode).catch((err) => {
+          console.error('[Gridlock] Score submit failed:', err);
         });
       }
     },
