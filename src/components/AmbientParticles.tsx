@@ -15,7 +15,7 @@ function getParticleCount(): number {
   if (typeof window === 'undefined') return 18;
   const area = window.innerWidth * window.innerHeight;
   // ~18 on phones, ~30 on tablets, ~45 on desktop
-  return Math.max(18, Math.min(50, Math.round(area / 20000)));
+  return Math.max(18, Math.min(25, Math.round(area / 20000)));
 }
 
 function generateParticles(): AmbientParticle[] {
