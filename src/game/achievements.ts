@@ -138,6 +138,46 @@ export const ACHIEVEMENTS: Achievement[] = [
     tier: 'bronze',
     check: (ctx) => ctx.currentGameRevivesRemaining === 0,
   },
+  // --- Endgame ---
+  {
+    id: 'mythic',
+    title: 'Mythic',
+    description: 'Score 50,000+ in a single game',
+    tier: 'gold',
+    check: (ctx) => ctx.currentGameScore !== null && ctx.currentGameScore >= 50000,
+  },
+  {
+    id: 'line_legend',
+    title: 'Line Legend',
+    description: 'Clear 1,000 lines total',
+    tier: 'gold',
+    check: (ctx) => ctx.stats.totalLinesCleared >= 1000,
+    progress: (ctx) => ({ current: ctx.stats.totalLinesCleared, target: 1000 }),
+  },
+  {
+    id: 'veteran',
+    title: 'Veteran',
+    description: 'Play 100 games',
+    tier: 'silver',
+    check: (ctx) => ctx.stats.gamesPlayed >= 100,
+    progress: (ctx) => ({ current: ctx.stats.gamesPlayed, target: 100 }),
+  },
+  {
+    id: 'daily_legend',
+    title: 'Daily Legend',
+    description: 'Reach a 30-day daily streak',
+    tier: 'gold',
+    check: (ctx) => ctx.dailyStreak.bestStreak >= 30,
+    progress: (ctx) => ({ current: ctx.dailyStreak.bestStreak, target: 30 }),
+  },
+  {
+    id: 'unstoppable',
+    title: 'Unstoppable',
+    description: 'Reach a 15-streak',
+    tier: 'gold',
+    check: (ctx) => ctx.stats.bestStreak >= 15,
+    progress: (ctx) => ({ current: ctx.stats.bestStreak, target: 15 }),
+  },
 ];
 
 /** Check all achievements and return IDs of newly unlocked ones. */
