@@ -29,6 +29,9 @@ export const STREAK_MULTIPLIER_CAP = 8.0;
 // Revive
 export const REVIVES_PER_GAME = 1;
 
+// Undo
+export const UNDOS_PER_GAME = 1;
+
 // Adaptive piece generation — mercy (when struggling)
 export const PITY_THRESHOLD = 7;
 export const SOLUTION_THRESHOLD = 15;

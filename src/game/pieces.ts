@@ -99,8 +99,8 @@ const PIECE_DEFS: PieceDef[] = [
   ], weight: 2, tier: 'hard' },
 ];
 
-function pickRandomColor(): string {
-  const key = PIECE_COLOR_KEYS[Math.floor(Math.random() * PIECE_COLOR_KEYS.length)];
+function pickRandomColor(rng: () => number = Math.random): string {
+  const key = PIECE_COLOR_KEYS[Math.floor(rng() * PIECE_COLOR_KEYS.length)];
   return PIECE_COLORS[key];
 }
 
@@ -229,12 +229,13 @@ function computeAdaptiveWeights(ctx: DDAContext): Map<string, number> {
 
 function pickWeightedPiece(
   exclude: Set<string>,
-  weights: Map<string, number>
+  weights: Map<string, number>,
+  rng: () => number = Math.random
 ): PieceDef {
   const available = PIECE_DEFS.filter(p => !exclude.has(p.id));
   const getWeight = (p: PieceDef) => weights.get(p.id) ?? p.weight;
   const totalWeight = available.reduce((sum, p) => sum + getWeight(p), 0);
-  let roll = Math.random() * totalWeight;
+  let roll = rng() * totalWeight;
   for (const piece of available) {
     roll -= getWeight(piece);
     if (roll <= 0) return piece;
@@ -298,6 +299,42 @@ export function generateThreePieces(
       id: def.id + '-' + Date.now() + '-' + i,
       coords: def.coords,
       color: pickRandomColor(),
+    });
+  }
+  return pieces;
+}
+
+/**
+ * Generate 3 pieces for daily challenge mode.
+ * Flat weights (no DDA), seeded RNG for determinism.
+ */
+export function generateDailyPieces(board: Board, rng: () => number): PieceShape[] {
+  // Flat weights — every piece at its base weight, no DDA
+  const weights = new Map<string, number>();
+  for (const def of PIECE_DEFS) {
+    weights.set(def.id, def.weight);
+  }
+
+  const used = new Set<string>();
+  const pieces: PieceShape[] = [];
+  for (let i = 0; i < 3; i++) {
+    let def: PieceDef | null = null;
+
+    // Try up to 20 picks to find a piece that fits
+    for (let attempt = 0; attempt < 20; attempt++) {
+      const candidate = pickWeightedPiece(used, weights, rng);
+      if (pieceFitsOnBoard(board, candidate.coords)) {
+        def = candidate;
+        break;
+      }
+    }
+    if (!def) def = FALLBACK_MONO;
+
+    used.add(def.id);
+    pieces.push({
+      id: def.id + '-daily-' + i,
+      coords: def.coords,
+      color: pickRandomColor(rng),
     });
   }
   return pieces;

@@ -1,4 +1,4 @@
-import type { GameState, GameAction } from './types';
+import type { GameState, GameAction, UndoSnapshot } from './types';
 import {
   createEmptyBoard,
   canPlacePiece,
@@ -12,8 +12,9 @@ import {
   clearCellsForRevive,
   isBoardEmpty,
 } from './logic';
-import { generateThreePieces } from './pieces';
-import { REVIVES_PER_GAME, ALL_CLEAR_BONUS, SCORE_MILESTONES } from './constants';
+import { generateThreePieces, generateDailyPieces } from './pieces';
+import { REVIVES_PER_GAME, ALL_CLEAR_BONUS, SCORE_MILESTONES, UNDOS_PER_GAME } from './constants';
+import { mulberry32 } from './random';
 
 export function createInitialState(): GameState {
   return {
@@ -29,6 +30,44 @@ export function createInitialState(): GameState {
     movesSinceLastClear: 0,
     pieceGeneration: 0,
     lastMilestone: 0,
+    undoSnapshot: null,
+    undosRemaining: UNDOS_PER_GAME,
+    mode: 'classic',
+  };
+}
+
+export function createDailyState(seed: number): GameState {
+  const board = createEmptyBoard();
+  const rng = mulberry32(seed);
+  return {
+    board,
+    currentPieces: generateDailyPieces(board, rng),
+    score: 0,
+    highScore: 0,
+    streak: 0,
+    isGameOver: false,
+    lastClearCount: 0,
+    celebrationText: null,
+    revivesRemaining: 0,
+    movesSinceLastClear: 0,
+    pieceGeneration: 0,
+    lastMilestone: 0,
+    undoSnapshot: null,
+    undosRemaining: 0,
+    mode: 'daily',
+    dailySeed: seed,
+  };
+}
+
+function takeSnapshot(state: GameState): UndoSnapshot {
+  return {
+    board: state.board.map(row => [...row]),
+    currentPieces: [...state.currentPieces],
+    score: state.score,
+    streak: state.streak,
+    movesSinceLastClear: state.movesSinceLastClear,
+    pieceGeneration: state.pieceGeneration,
+    lastMilestone: state.lastMilestone,
   };
 }
 
@@ -39,6 +78,9 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       const piece = state.currentPieces[pieceIndex];
       if (!piece) return state;
       if (!canPlacePiece(state.board, piece, row, col)) return state;
+
+      // Save undo snapshot before mutating
+      const undoSnapshot = state.mode === 'classic' ? takeSnapshot(state) : null;
 
       // Place the piece
       let newBoard = placePiece(state.board, piece, row, col);
@@ -86,9 +128,18 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 
       // If all pieces are placed, generate new set
       const allPlaced = newPieces.every(p => p === null);
-      const finalPieces = allPlaced
-        ? generateThreePieces(newBoard, newMovesSinceLastClear, newScore, newStreak)
-        : newPieces;
+      let finalPieces = newPieces;
+      let newPieceGeneration = state.pieceGeneration;
+
+      if (allPlaced) {
+        newPieceGeneration = state.pieceGeneration + 1;
+        if (state.mode === 'daily' && state.dailySeed !== undefined) {
+          const rng = mulberry32(state.dailySeed + newPieceGeneration);
+          finalPieces = generateDailyPieces(newBoard, rng);
+        } else {
+          finalPieces = generateThreePieces(newBoard, newMovesSinceLastClear, newScore, newStreak);
+        }
+      }
 
       // Check game over
       const isGameOver = !canAnyPieceFit(newBoard, finalPieces);
@@ -114,14 +165,22 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         lastClearCount: linesCleared,
         celebrationText,
         movesSinceLastClear: newMovesSinceLastClear,
-        pieceGeneration: allPlaced ? state.pieceGeneration + 1 : state.pieceGeneration,
+        pieceGeneration: newPieceGeneration,
         lastMilestone: newLastMilestone,
+        undoSnapshot,
       };
     }
 
     case 'NEW_GAME': {
       return {
         ...createInitialState(),
+        highScore: state.highScore,
+      };
+    }
+
+    case 'NEW_DAILY_GAME': {
+      return {
+        ...createDailyState(action.seed),
         highScore: state.highScore,
       };
     }
@@ -141,6 +200,27 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         revivesRemaining: state.revivesRemaining - 1,
         celebrationText: null,
         pieceGeneration: state.pieceGeneration + 1,
+      };
+    }
+
+    case 'UNDO': {
+      if (!state.undoSnapshot || state.undosRemaining <= 0) return state;
+
+      const snap = state.undoSnapshot;
+      return {
+        ...state,
+        board: snap.board,
+        currentPieces: snap.currentPieces,
+        score: snap.score,
+        streak: snap.streak,
+        movesSinceLastClear: snap.movesSinceLastClear,
+        pieceGeneration: snap.pieceGeneration,
+        lastMilestone: snap.lastMilestone,
+        isGameOver: false,
+        lastClearCount: 0,
+        celebrationText: null,
+        undoSnapshot: null,
+        undosRemaining: state.undosRemaining - 1,
       };
     }
 

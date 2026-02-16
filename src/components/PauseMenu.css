@@ -23,7 +23,121 @@
   font-size: 28px;
   font-weight: 900;
   color: var(--text-primary);
-  margin-bottom: 24px;
+  margin-bottom: 20px;
+}
+
+/* Volume control row */
+.pause-volume-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  padding: 0 4px;
+}
+
+.pause-volume-icon {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s, background 0.15s;
+  flex-shrink: 0;
+}
+
+.pause-volume-icon:hover {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.pause-volume-slider {
+  flex: 1;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.15);
+  outline: none;
+  cursor: pointer;
+}
+
+.pause-volume-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  transition: transform 0.15s;
+}
+
+.pause-volume-slider::-webkit-slider-thumb:active {
+  transform: scale(1.15);
+}
+
+.pause-volume-slider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+.pause-volume-value {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  min-width: 28px;
+  text-align: right;
+}
+
+/* Theme section */
+.pause-theme-section {
+  margin-bottom: 20px;
+}
+
+.pause-theme-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 10px;
+}
+
+.pause-theme-swatches {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+
+.pause-theme-swatch {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 3px solid transparent;
+  cursor: pointer;
+  transition: transform 0.15s, border-color 0.2s, box-shadow 0.2s;
+  padding: 0;
+}
+
+.pause-theme-swatch:hover {
+  transform: scale(1.1);
+}
+
+.pause-theme-swatch--active {
+  border-color: rgba(255, 255, 255, 0.8);
+  box-shadow: 0 0 12px rgba(255, 255, 255, 0.3);
+  transform: scale(1.1);
 }
 
 .pause-buttons {

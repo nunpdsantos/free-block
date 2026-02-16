@@ -1,3 +1,6 @@
+import { useState } from 'react';
+import type { GameMode } from '../game/types';
+import { getDayNumber, getTodayDateStr } from '../game/random';
 import './GameOver.css';
 
 type GameOverProps = {
@@ -5,9 +8,11 @@ type GameOverProps = {
   highScore: number;
   isNewHighScore: boolean;
   revivesRemaining: number;
+  mode: GameMode;
   onRevive: () => void;
   onPlayAgain: () => void;
   onQuit: () => void;
+  onViewCalendar?: () => void;
 };
 
 export function GameOver({
@@ -15,14 +20,37 @@ export function GameOver({
   highScore,
   isNewHighScore,
   revivesRemaining,
+  mode,
   onRevive,
   onPlayAgain,
   onQuit,
+  onViewCalendar,
 }: GameOverProps) {
+  const [copied, setCopied] = useState(false);
+
+  const handleShare = () => {
+    const dayNum = getDayNumber(getTodayDateStr());
+    const text = `Gridlock Daily #${dayNum} — ${score.toLocaleString()} pts`;
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }).catch(() => {});
+  };
+
+  const isDaily = mode === 'daily';
+
   return (
     <div className="game-over-overlay">
       <div className="game-over-card">
-        {isNewHighScore ? (
+        {isDaily ? (
+          <>
+            <h2 className="game-over-title">Daily Complete</h2>
+            <div className="game-over-score">
+              <div className="game-over-score-label">Score</div>
+              <div className="game-over-score-value">{score.toLocaleString()}</div>
+            </div>
+          </>
+        ) : isNewHighScore ? (
           <div className="new-best-celebration">
             <div className="new-best-burst" />
             <div className="new-best-crown">&#9813;</div>
@@ -43,17 +71,35 @@ export function GameOver({
           </>
         )}
         <div className="game-over-buttons">
-          {revivesRemaining > 0 && (
-            <button className="game-over-btn game-over-btn--revive" onClick={onRevive}>
-              Revive
-            </button>
+          {isDaily ? (
+            <>
+              <button className="game-over-btn" onClick={handleShare}>
+                {copied ? 'Copied!' : 'Share Result'}
+              </button>
+              {onViewCalendar && (
+                <button className="game-over-btn game-over-btn--secondary" onClick={onViewCalendar}>
+                  View Calendar
+                </button>
+              )}
+              <button className="game-over-btn game-over-btn--secondary" onClick={onQuit}>
+                Menu
+              </button>
+            </>
+          ) : (
+            <>
+              {revivesRemaining > 0 && (
+                <button className="game-over-btn game-over-btn--revive" onClick={onRevive}>
+                  Revive
+                </button>
+              )}
+              <button className="game-over-btn" onClick={onPlayAgain}>
+                Play Again
+              </button>
+              <button className="game-over-btn game-over-btn--secondary" onClick={onQuit}>
+                Menu
+              </button>
+            </>
           )}
-          <button className="game-over-btn" onClick={onPlayAgain}>
-            Play Again
-          </button>
-          <button className="game-over-btn game-over-btn--secondary" onClick={onQuit}>
-            Menu
-          </button>
         </div>
       </div>
     </div>

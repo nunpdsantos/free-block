@@ -2,6 +2,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   min-height: 100dvh;
   padding: 32px 24px;
   max-width: 420px;
@@ -16,19 +17,18 @@
   letter-spacing: 2px;
 }
 
-.tutorial-steps {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
+/* Single step display (paginated) */
+.tutorial-stepper {
   width: 100%;
+  animation: tutorial-step-enter 0.3s ease-out;
 }
 
-.tutorial-step {
+.tutorial-step--single {
   display: flex;
   gap: 16px;
   background: linear-gradient(135deg, var(--card-bg-light), var(--card-bg));
   border-radius: 12px;
-  padding: 16px;
+  padding: 20px;
 }
 
 .tutorial-step-number {
@@ -50,19 +50,59 @@
 }
 
 .tutorial-step-content h3 {
-  font-size: 16px;
-  font-weight: 600;
+  font-size: 18px;
+  font-weight: 700;
   color: var(--text-primary);
-  margin-bottom: 4px;
+  margin-bottom: 6px;
 }
 
 .tutorial-step-content p {
   font-size: 14px;
   color: var(--text-secondary);
-  line-height: 1.4;
-  margin-bottom: 12px;
+  line-height: 1.5;
+  margin-bottom: 16px;
 }
 
+/* Step dots indicator */
+.tutorial-dots {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.tutorial-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.2);
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.2s, transform 0.2s;
+}
+
+.tutorial-dot--active {
+  background: var(--accent);
+  transform: scale(1.3);
+}
+
+.tutorial-dot:hover:not(.tutorial-dot--active) {
+  background: rgba(255, 255, 255, 0.4);
+}
+
+/* Navigation buttons */
+.tutorial-nav {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+  max-width: 280px;
+}
+
+.tutorial-nav-btn {
+  flex: 1;
+}
+
+/* Illustrations */
 .tutorial-illustration {
   display: flex;
   flex-direction: column;
@@ -141,13 +181,18 @@
   text-shadow: 0 0 8px var(--streak-glow);
 }
 
-.tutorial-back-btn {
-  margin-top: 8px;
-  width: 100%;
-  max-width: 280px;
-}
-
 @keyframes flash-line {
   0%, 100% { opacity: 0.3; }
   50% { opacity: 1; }
+}
+
+@keyframes tutorial-step-enter {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }

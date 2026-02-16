@@ -1,6 +1,8 @@
 import { useReducer, useEffect, useCallback, useState, useRef, useMemo } from 'react';
-import { gameReducer, createInitialState } from '../game/reducer';
-import type { Board as BoardType } from '../game/types';
+import { gameReducer, createInitialState, createDailyState } from '../game/reducer';
+import type { Board as BoardType, GameMode } from '../game/types';
+import { getThemeById } from '../game/themes';
+import type { BgPalette } from '../game/themes';
 import {
   canPlacePiece,
   placePiece,
@@ -18,11 +20,10 @@ import {
   CLEAR_STAGGER_MS,
   CLEAR_ANTICIPATION_MS,
   GRID_SIZE,
-  BG_PALETTES,
   ALL_CLEAR_BONUS,
   SCORE_MILESTONES,
 } from '../game/constants';
-import { playPlace, playClear, playAllClear, playGameOver, isSoundMuted, setSoundMuted } from '../audio/sounds';
+import { playPlace, playClear, playAllClear, playGameOver, getVolume, setVolume } from '../audio/sounds';
 import { Board } from './Board';
 import { PieceTray } from './PieceTray';
 import { DragOverlay } from './DragOverlay';
@@ -38,16 +39,22 @@ import { AmbientParticles } from './AmbientParticles';
 import './Game.css';
 
 type GameProps = {
+  mode: GameMode;
+  dailySeed?: number;
   topScore: number;
+  themeId: string;
+  onThemeChange: (id: string) => void;
   onQuit: () => void;
   onSaveScore: (score: number) => void;
+  onDailyComplete?: (score: number) => void;
+  onViewCalendar?: () => void;
 };
 
-/** Determine background palette index from score */
-function getBgPaletteIndex(score: number): number {
+/** Determine background palette index from score using given palettes */
+function getBgPaletteIndex(score: number, palettes: BgPalette[]): number {
   let idx = 0;
-  for (let i = BG_PALETTES.length - 1; i >= 0; i--) {
-    if (score >= BG_PALETTES[i].score) {
+  for (let i = palettes.length - 1; i >= 0; i--) {
+    if (score >= palettes[i].score) {
       idx = i;
       break;
     }
@@ -55,8 +62,12 @@ function getBgPaletteIndex(score: number): number {
   return idx;
 }
 
-export function Game({ topScore, onQuit, onSaveScore }: GameProps) {
-  const [state, dispatch] = useReducer(gameReducer, undefined, createInitialState);
+export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit, onSaveScore, onDailyComplete, onViewCalendar }: GameProps) {
+  const [state, dispatch] = useReducer(
+    gameReducer,
+    undefined,
+    () => mode === 'daily' && dailySeed !== undefined ? createDailyState(dailySeed) : createInitialState()
+  );
   const [clearingCells, setClearingCells] = useState<Map<string, number>>(new Map());
   const [isAnimating, setIsAnimating] = useState(false);
   const [animBoard, setAnimBoard] = useState<BoardType | null>(null);
@@ -64,7 +75,7 @@ export function Game({ topScore, onQuit, onSaveScore }: GameProps) {
   const [isPaused, setIsPaused] = useState(false);
   const [confettiTrigger, setConfettiTrigger] = useState(0);
   const [confettiCount, setConfettiCount] = useState(12);
-  const [muted, setMuted] = useState(isSoundMuted);
+  const [volume, setVolumeState] = useState(getVolume);
   const [scorePop, setScorePop] = useState<number | null>(null);
   const [reviveFlash, setReviveFlash] = useState(false);
   const [clearedLines, setClearedLines] = useState<{ rows: number[]; cols: number[] } | null>(null);
@@ -76,27 +87,42 @@ export function Game({ topScore, onQuit, onSaveScore }: GameProps) {
   const [preClearCells, setPreClearCells] = useState<Set<string>>(new Set());
   const [screenFlash, setScreenFlash] = useState(false);
   const [settleCells, setSettleCells] = useState<Set<string>>(new Set());
+  const [isOffline, setIsOffline] = useState(!navigator.onLine);
   const gameRef = useRef<HTMLDivElement>(null);
   const scoreSavedRef = useRef(false);
   const prevGameOverRef = useRef(false);
   const scorePopKeyRef = useRef(0);
   const boardElRef = useRef<HTMLDivElement>(null);
 
-  // --- Background palette cycling ---
-  const bgIndex = useMemo(() => getBgPaletteIndex(state.score), [state.score]);
+  // --- Offline detection ---
+  useEffect(() => {
+    const goOffline = () => setIsOffline(true);
+    const goOnline = () => setIsOffline(false);
+    window.addEventListener('offline', goOffline);
+    window.addEventListener('online', goOnline);
+    return () => {
+      window.removeEventListener('offline', goOffline);
+      window.removeEventListener('online', goOnline);
+    };
+  }, []);
+
+  // --- Background palette cycling (theme-aware) ---
+  const theme = useMemo(() => getThemeById(themeId), [themeId]);
+  const bgPalettes = theme.bgPalettes;
+  const bgIndex = useMemo(() => getBgPaletteIndex(state.score, bgPalettes), [state.score, bgPalettes]);
 
   useEffect(() => {
-    const palette = BG_PALETTES[bgIndex];
+    const palette = bgPalettes[bgIndex];
     const root = document.documentElement;
     root.style.setProperty('--bg', palette.bg);
     root.style.setProperty('--bg-dark', palette.bgDark);
 
     return () => {
-      // Reset to default when leaving game
-      root.style.setProperty('--bg', BG_PALETTES[0].bg);
-      root.style.setProperty('--bg-dark', BG_PALETTES[0].bgDark);
+      // Reset to theme default when leaving game
+      root.style.setProperty('--bg', bgPalettes[0].bg);
+      root.style.setProperty('--bg-dark', bgPalettes[0].bgDark);
     };
-  }, [bgIndex]);
+  }, [bgIndex, bgPalettes]);
 
   // Reset save flag on new game
   useEffect(() => {
@@ -105,10 +131,13 @@ export function Game({ topScore, onQuit, onSaveScore }: GameProps) {
     }
   }, [state.isGameOver]);
 
-  // Game over — shatter then show UI
+  // Game over — shatter then show UI, save daily result
   useEffect(() => {
     if (state.isGameOver && !prevGameOverRef.current) {
       playGameOver();
+      if (mode === 'daily' && onDailyComplete) {
+        onDailyComplete(state.score);
+      }
       setIsShattered(true);
       const timer = setTimeout(() => setShowGameOverUI(true), 800);
       return () => clearTimeout(timer);
@@ -118,15 +147,25 @@ export function Game({ topScore, onQuit, onSaveScore }: GameProps) {
       setShowGameOverUI(false);
     }
     prevGameOverRef.current = state.isGameOver;
-  }, [state.isGameOver]);
+  }, [state.isGameOver, mode, onDailyComplete, state.score]);
 
-  const toggleMute = useCallback(() => {
-    setMuted(prev => {
-      const next = !prev;
-      setSoundMuted(next);
-      return next;
-    });
+  const prevVolumeRef = useRef(80);
+
+  const handleVolumeChange = useCallback((v: number) => {
+    setVolumeState(v);
+    setVolume(v);
+    if (v > 0) prevVolumeRef.current = v;
   }, []);
+
+  const handleToggleMute = useCallback(() => {
+    if (volume === 0) {
+      const restore = prevVolumeRef.current > 0 ? prevVolumeRef.current : 80;
+      handleVolumeChange(restore);
+    } else {
+      prevVolumeRef.current = volume;
+      handleVolumeChange(0);
+    }
+  }, [volume, handleVolumeChange]);
 
   const handleDrop = useCallback(
     (pieceIndex: number, row: number, col: number) => {
@@ -347,8 +386,12 @@ export function Game({ topScore, onQuit, onSaveScore }: GameProps) {
 
   const handleRestart = useCallback(() => {
     setIsPaused(false);
-    dispatch({ type: 'NEW_GAME' });
-  }, []);
+    if (mode === 'daily' && dailySeed !== undefined) {
+      dispatch({ type: 'NEW_DAILY_GAME', seed: dailySeed });
+    } else {
+      dispatch({ type: 'NEW_GAME' });
+    }
+  }, [mode, dailySeed]);
 
   const isNewHighScore = state.score > 0 && state.score >= topScore && state.isGameOver;
   const ghostColor = dragState?.piece.color ?? null;
@@ -398,6 +441,7 @@ export function Game({ topScore, onQuit, onSaveScore }: GameProps) {
 
   return (
     <div className="game" ref={gameRef} style={{ touchAction: 'none' }}>
+      {isOffline && <div className="offline-badge">Offline</div>}
       <AmbientParticles />
 
       <div className="game-header">
@@ -461,14 +505,27 @@ export function Game({ topScore, onQuit, onSaveScore }: GameProps) {
         generation={state.pieceGeneration}
       />
 
+      {state.mode === 'classic' && state.undoSnapshot && state.undosRemaining > 0 && !isAnimating && !state.isGameOver && (
+        <button className="undo-btn" onClick={() => dispatch({ type: 'UNDO' })} aria-label="Undo">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="1 4 1 10 7 10" />
+            <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
+          </svg>
+          Undo
+        </button>
+      )}
+
       <DragOverlay dragState={dragState} />
 
       {screenFlash && <div className="screen-flash" />}
 
       {isPaused && !state.isGameOver && (
         <PauseMenu
-          isMuted={muted}
-          onToggleSound={toggleMute}
+          volume={volume}
+          onVolumeChange={handleVolumeChange}
+          onToggleMute={handleToggleMute}
+          themeId={themeId}
+          onThemeChange={onThemeChange}
           onResume={() => setIsPaused(false)}
           onRestart={handleRestart}
           onQuit={handleQuit}
@@ -481,9 +538,11 @@ export function Game({ topScore, onQuit, onSaveScore }: GameProps) {
           highScore={topScore}
           isNewHighScore={isNewHighScore}
           revivesRemaining={state.revivesRemaining}
+          mode={mode}
           onRevive={handleRevive}
           onPlayAgain={handlePlayAgain}
           onQuit={handleQuit}
+          onViewCalendar={onViewCalendar}
         />
       )}
     </div>

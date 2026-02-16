@@ -59,6 +59,18 @@
   box-shadow: 0 6px 24px var(--accent-glow);
 }
 
+.menu-btn--daily {
+  background: linear-gradient(135deg, #F59E0B, #D97706);
+  color: white;
+  box-shadow: 0 4px 16px rgba(245, 158, 11, 0.35);
+  font-size: 18px;
+  padding: 16px 32px;
+}
+
+.menu-btn--daily:hover {
+  box-shadow: 0 6px 24px rgba(245, 158, 11, 0.5);
+}
+
 .menu-btn--secondary {
   background: linear-gradient(135deg, var(--card-bg-light), var(--card-bg));
   color: var(--text-primary);
@@ -97,8 +109,12 @@
   animation-delay: 0.35s;
 }
 
+.main-menu-buttons .menu-btn:nth-child(4) {
+  animation-delay: 0.45s;
+}
+
 .main-menu-top-score {
-  animation: menu-btn-enter 0.4s ease-out 0.45s both;
+  animation: menu-btn-enter 0.4s ease-out 0.55s both;
 }
 
 @keyframes menu-title-enter {

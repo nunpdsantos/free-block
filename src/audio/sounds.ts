@@ -1,15 +1,29 @@
-import { synthPlace, synthClear, synthAllClear, synthGameOver } from './synth';
+import { synthPlace, synthClear, synthAllClear, synthGameOver, setMasterVolume } from './synth';
 
-let muted = false;
+let volume = 80; // 0-100
 let lastClearTime = 0;
 const PLACE_SILENCE_GAP = 250; // ms of silence after a clear before placement sounds resume
 
+// Load persisted volume (migrate from old muted key)
 try {
-  const stored = localStorage.getItem('gridlock-muted');
-  if (stored === 'true') muted = true;
+  const storedVol = localStorage.getItem('gridlock-volume');
+  if (storedVol !== null) {
+    volume = Math.max(0, Math.min(100, JSON.parse(storedVol) as number));
+  } else {
+    // Migrate from old muted boolean
+    const storedMuted = localStorage.getItem('gridlock-muted');
+    if (storedMuted === 'true') {
+      volume = 0;
+    }
+    localStorage.removeItem('gridlock-muted');
+    localStorage.setItem('gridlock-volume', JSON.stringify(volume));
+  }
 } catch { /* ignore */ }
 
-/** Haptic pulse — always fires (independent of sound mute) */
+// Apply initial volume to synth master
+try { setMasterVolume(volume / 100); } catch { /* AudioContext may not exist yet */ }
+
+/** Haptic pulse — always fires (independent of sound volume) */
 function vibrate(pattern: number | number[]) {
   try {
     navigator?.vibrate?.(pattern);
@@ -18,21 +32,22 @@ function vibrate(pattern: number | number[]) {
 
 // --- Public API ---
 
-export function isSoundMuted(): boolean {
-  return muted;
+export function getVolume(): number {
+  return volume;
 }
 
-export function setSoundMuted(m: boolean) {
-  muted = m;
+export function setVolume(v: number) {
+  volume = Math.max(0, Math.min(100, v));
+  setMasterVolume(volume / 100);
   try {
-    localStorage.setItem('gridlock-muted', String(m));
+    localStorage.setItem('gridlock-volume', JSON.stringify(volume));
   } catch { /* ignore */ }
 }
 
 /** Soft woody thock on piece placement — suppressed briefly after clears */
 export function playPlace(dangerLevel: number = 0) {
   vibrate(8);
-  if (muted) return;
+  if (volume === 0) return;
   if (performance.now() - lastClearTime < PLACE_SILENCE_GAP) return;
   synthPlace(dangerLevel);
 }
@@ -41,20 +56,20 @@ export function playPlace(dangerLevel: number = 0) {
 export function playClear(combo: number = 0, linesCleared: number = 1) {
   lastClearTime = performance.now();
   vibrate(linesCleared >= 2 ? [15, 30, 15] : 15);
-  if (muted) return;
+  if (volume === 0) return;
   synthClear(combo, linesCleared);
 }
 
 /** Triumphant major chord on all-clear */
 export function playAllClear() {
   vibrate([20, 40, 20, 40, 20]);
-  if (muted) return;
+  if (volume === 0) return;
   synthAllClear();
 }
 
 /** Gentle descending tone on game over */
 export function playGameOver() {
   vibrate([40, 60, 80]);
-  if (muted) return;
+  if (volume === 0) return;
   synthGameOver();
 }

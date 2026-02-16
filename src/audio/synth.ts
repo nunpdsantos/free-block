@@ -16,11 +16,29 @@
  */
 
 let ctx: AudioContext | null = null;
+let masterGain: GainNode | null = null;
 
 function getCtx(): AudioContext {
-  if (!ctx) ctx = new AudioContext();
+  if (!ctx) {
+    ctx = new AudioContext();
+    masterGain = ctx.createGain();
+    masterGain.connect(ctx.destination);
+  }
   if (ctx.state === 'suspended') ctx.resume().catch(() => {});
   return ctx;
+}
+
+function getMaster(): GainNode {
+  getCtx();
+  return masterGain!;
+}
+
+/** Set master volume (0.0 to 1.0). Applies to all subsequent and currently playing sounds. */
+export function setMasterVolume(vol: number): void {
+  getCtx();
+  if (masterGain) {
+    masterGain.gain.setValueAtTime(Math.max(0, Math.min(1, vol)), ctx!.currentTime);
+  }
 }
 
 // Clear/reward scale — C major pentatonic starting at C5 (phone speaker sweet spot)
@@ -78,7 +96,7 @@ function tone(
   );
 
   osc.connect(gain);
-  gain.connect(ac.destination);
+  gain.connect(getMaster());
 
   osc.start(t);
   osc.stop(t + attack + decay + release + 0.05);
@@ -119,7 +137,7 @@ function noiseBurst(
 
   src.connect(filter);
   filter.connect(gain);
-  gain.connect(ac.destination);
+  gain.connect(getMaster());
 
   src.start(t);
   src.stop(t + duration + 0.01);

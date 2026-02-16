@@ -15,15 +15,17 @@
 ## Architecture
 
 ### Game engine (`src/game/`)
-- `constants.ts` — All tunable values: grid size, scoring, DDA thresholds, piece colors, background palettes
-- `types.ts` — Board, PieceShape, GameState, GameAction, LeaderboardEntry
+- `constants.ts` — All tunable values: grid size, scoring, DDA thresholds, piece colors, undo limit
+- `types.ts` — Board, PieceShape, GameState, GameAction, UndoSnapshot, GameMode, DailyResult, LeaderboardEntry
 - `logic.ts` — Pure functions: placement, line clearing, scoring, revive cell removal
-- `pieces.ts` — 14 piece families (40 orientations), weighted random selection with DDA, piece-fit validation (20 retries + 1×1 fallback)
-- `reducer.ts` — useReducer state machine: PLACE_PIECE, NEW_GAME, REVIVE, DISMISS_CELEBRATION
+- `pieces.ts` — 14 piece families (40 orientations), weighted random selection with DDA, piece-fit validation (20 retries + 1×1 fallback), `generateDailyPieces` for seeded daily mode
+- `reducer.ts` — useReducer state machine: PLACE_PIECE, NEW_GAME, NEW_DAILY_GAME, REVIVE, UNDO, DISMISS_CELEBRATION
+- `themes.ts` — 5 color themes (Classic, Midnight, Ocean, Sunset, Neon) with per-theme CSS variables and background palettes
+- `random.ts` — Mulberry32 seeded PRNG, date-to-seed conversion, day number utilities
 
 ### Audio (`src/audio/`)
-- `sounds.ts` — CC0 audio samples from Kenney.nl played via HTMLAudioElement pools (4 instances per sound for rapid-fire). Haptic feedback via `navigator.vibrate()` fires independently of mute state.
-- Sound files in `public/sounds/`: `place.ogg`, `clear.ogg`, `combo.ogg`, `gameover.ogg`
+- `synth.ts` — Web Audio API synthesizer using sine/triangle waves, pentatonic scale (C5-E6), ADSR envelopes. Master `GainNode` for volume control via `setMasterVolume()`.
+- `sounds.ts` — Sound playback controller with volume level (0-100), haptic feedback via `navigator.vibrate()` fires independently of volume state. Migrates old `gridlock-muted` key to `gridlock-volume`.
 
 ### Key patterns
 - Game state is a `useReducer` — all mutations go through `reducer.ts`
@@ -31,22 +33,27 @@
 - Line-clear animations use a two-phase approach: visual animation plays first (via `clearingCells` Map with per-cell stagger delays + CSS), then `dispatch` fires after animation completes
 - Piece generation uses 5 multiplicative DDA systems: score ramp, pity timer, solution boost, streak pushback, board-state awareness
 - Revive removes individual cells weighted by local congestion (not full rows), preserves combo streak
-- Single Block Blast-inspired visual theme via CSS variables on `:root`
-- Background palette cycles through 6 colors (blue → teal → purple → orange → rose → deep navy) as score increases, using CSS variable transitions
+- Theme system: `App.tsx` stores `themeId` in localStorage, applies CSS vars via `applyTheme()`, passes to Game → PauseMenu
+- Background palette cycles through 6 theme-specific colors as score increases, using CSS variable transitions
 - Score counter animates smoothly via `useAnimatedNumber` hook (ease-out cubic over 300ms)
 - `pieceGeneration` counter in game state drives piece tray entrance animations (React key change → remount → CSS animation)
+- Undo system: PLACE_PIECE saves pre-mutation snapshot, UNDO restores it (1 per game, classic mode only)
+- Daily challenge: seeded PRNG (mulberry32) ensures identical piece sequence per date, no DDA/revive/undo
 
 ### Screen flow
 ```
-App (screen state + leaderboard)
-├── MainMenu → Play, Tutorial, Leaderboard
-├── Tutorial → Visual how-to-play
+App (screen state + leaderboard + theme + daily results)
+├── MainMenu → Play, Daily Challenge, How to Play, Leaderboard
+├── Tutorial → Paginated 4-step stepper with dots + back/next
 ├── Leaderboard → Top 5 local scores
-└── Game → Board, PieceTray, DragOverlay, ScoreDisplay
-    ├── PauseMenu overlay (includes sound toggle)
-    ├── GameOver overlay (Revive / Play Again / Menu)
+├── DailyCalendar → Completed daily challenges list with share
+└── Game (mode: classic | daily) → Board, PieceTray, DragOverlay, ScoreDisplay
+    ├── PauseMenu overlay (volume slider + theme picker + restart/quit)
+    ├── GameOver overlay (classic: Revive/Play Again/Menu; daily: Share/Calendar/Menu)
     ├── CelebrationText (line clear feedback)
-    └── Confetti (multi-clear particles)
+    ├── Confetti (multi-clear particles)
+    ├── Undo button (classic only, when snapshot available)
+    └── Offline badge (when navigator.onLine is false)
 ```
 
 ## Gotchas
@@ -55,9 +62,11 @@ App (screen state + leaderboard)
 - Piece-fit validation in `generateThreePieces` validates each piece independently against the current board (not sequential simulation)
 - `clearCellsForRevive` uses weighted random selection — results differ each time
 - The DragOverlay renders via `createPortal` to document.body (outside React tree)
-- CSS variables defined in `:root` in `App.css` — all visual colors flow from these
-- Background palette effect sets `--bg`/`--bg-dark` on `document.documentElement` during gameplay; resets to default on game exit
+- CSS variables defined in `:root` in `App.css` — theme system overrides them via `applyTheme()` in `themes.ts`
+- Background palette effect sets `--bg`/`--bg-dark` on `document.documentElement` during gameplay; resets to theme default on game exit
 - `clearingCells` is a `Map<string, number>` (key → delay in ms), not a Set — the delay drives staggered cascade animation via `animation-delay` on each cell
 - `CLEAR_ANIMATION_MS` (600ms) is the per-cell animation duration; total clear time = `CLEAR_ANIMATION_MS + (GRID_SIZE - 1) * CLEAR_STAGGER_MS`
-- Sound pools are lazy-loaded on first play to avoid blocking page load
 - PWA service worker is auto-generated by vite-plugin-pwa on build — no manual sw.js file
+- Daily mode uses `mulberry32(seed + pieceGeneration)` for each tray refresh — deterministic regardless of move order
+- Volume slider persists to `gridlock-volume` (0-100); synth master GainNode applies it in real time
+- Undo snapshot is cleared after use and not available during daily mode

@@ -24,6 +24,24 @@ export type ClearingCell = { row: number; col: number };
 
 export type LeaderboardEntry = { score: number; date: string };
 
+export type UndoSnapshot = {
+  board: Board;
+  currentPieces: (PieceShape | null)[];
+  score: number;
+  streak: number;
+  movesSinceLastClear: number;
+  pieceGeneration: number;
+  lastMilestone: number;
+};
+
+export type GameMode = 'classic' | 'daily';
+
+export type DailyResult = {
+  date: string;
+  score: number;
+  dayNumber: number;
+};
+
 export type GameState = {
   board: Board;
   currentPieces: (PieceShape | null)[];
@@ -37,11 +55,17 @@ export type GameState = {
   movesSinceLastClear: number;
   pieceGeneration: number;
   lastMilestone: number;
+  undoSnapshot: UndoSnapshot | null;
+  undosRemaining: number;
+  mode: GameMode;
+  dailySeed?: number;
 };
 
 export type GameAction =
   | { type: 'PLACE_PIECE'; pieceIndex: number; row: number; col: number }
   | { type: 'NEW_GAME' }
+  | { type: 'NEW_DAILY_GAME'; seed: number }
   | { type: 'REVIVE' }
+  | { type: 'UNDO' }
   | { type: 'DISMISS_CELEBRATION' }
   | { type: 'LOAD_HIGH_SCORE'; highScore: number };

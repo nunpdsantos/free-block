@@ -3,11 +3,13 @@ import './MainMenu.css';
 type MainMenuProps = {
   topScore: number | null;
   onPlay: () => void;
+  onDaily: () => void;
+  todayCompleted: boolean;
   onTutorial: () => void;
   onLeaderboard: () => void;
 };
 
-export function MainMenu({ topScore, onPlay, onTutorial, onLeaderboard }: MainMenuProps) {
+export function MainMenu({ topScore, onPlay, onDaily, todayCompleted, onTutorial, onLeaderboard }: MainMenuProps) {
   return (
     <div className="main-menu">
       <div className="main-menu-title">
@@ -17,6 +19,9 @@ export function MainMenu({ topScore, onPlay, onTutorial, onLeaderboard }: MainMe
       <div className="main-menu-buttons">
         <button className="menu-btn menu-btn--play" onClick={onPlay}>
           Play
+        </button>
+        <button className="menu-btn menu-btn--daily" onClick={onDaily}>
+          {todayCompleted ? 'Daily Results' : 'Daily Challenge'}
         </button>
         <button className="menu-btn menu-btn--secondary" onClick={onTutorial}>
           How to Play

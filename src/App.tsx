@@ -1,18 +1,20 @@
-import { useState, useCallback } from 'react';
-import type { LeaderboardEntry } from './game/types';
+import { useState, useCallback, useEffect } from 'react';
+import type { LeaderboardEntry, DailyResult } from './game/types';
 import { useLocalStorage } from './hooks/useLocalStorage';
+import { getThemeById, applyTheme } from './game/themes';
+import { dateToSeed, getTodayDateStr, getDayNumber } from './game/random';
 import { Game } from './components/Game';
 import { MainMenu } from './components/MainMenu';
 import { Tutorial } from './components/Tutorial';
 import { Leaderboard } from './components/Leaderboard';
+import { DailyCalendar } from './components/DailyCalendar';
 import './App.css';
 
-type Screen = 'menu' | 'tutorial' | 'leaderboard' | 'playing';
+type Screen = 'menu' | 'tutorial' | 'leaderboard' | 'playing' | 'daily' | 'daily-calendar';
 
 const MAX_LEADERBOARD = 5;
 
 function getInitialLeaderboard(): LeaderboardEntry[] {
-  // Check if leaderboard already exists
   try {
     const existing = window.localStorage.getItem('gridlock-leaderboard');
     if (existing) return JSON.parse(existing) as LeaderboardEntry[];
@@ -20,7 +22,6 @@ function getInitialLeaderboard(): LeaderboardEntry[] {
     // fall through to migration
   }
 
-  // Migrate old single highscore key
   try {
     const raw = window.localStorage.getItem('gridlock-highscore');
     if (raw) {
@@ -46,6 +47,17 @@ export default function App() {
     'gridlock-leaderboard',
     INITIAL_LEADERBOARD
   );
+  const [themeId, setThemeId] = useLocalStorage<string>('gridlock-theme', 'classic');
+  const [dailyResults, setDailyResults] = useLocalStorage<Record<string, DailyResult>>(
+    'gridlock-daily',
+    {}
+  );
+
+  // Apply theme on mount and when themeId changes
+  useEffect(() => {
+    const theme = getThemeById(themeId);
+    applyTheme(theme);
+  }, [themeId]);
 
   const topScore = leaderboard.length > 0 ? leaderboard[0].score : 0;
 
@@ -66,12 +78,47 @@ export default function App() {
     [setLeaderboard]
   );
 
+  const todayStr = getTodayDateStr();
+  const todayCompleted = todayStr in dailyResults;
+
+  const handleDailyPlay = useCallback(() => {
+    if (todayCompleted) {
+      setScreen('daily-calendar');
+    } else {
+      setScreen('daily');
+    }
+  }, [todayCompleted]);
+
+  const handleDailySaveResult = useCallback(
+    (score: number) => {
+      const date = getTodayDateStr();
+      const dayNumber = getDayNumber(date);
+      setDailyResults((prev) => {
+        // Prune entries older than 30 days
+        const cutoff = Date.now() - 30 * 86400000;
+        const pruned: Record<string, DailyResult> = {};
+        for (const [k, v] of Object.entries(prev)) {
+          if (new Date(k + 'T00:00:00Z').getTime() >= cutoff) {
+            pruned[k] = v;
+          }
+        }
+        pruned[date] = { date, score, dayNumber };
+        return pruned;
+      });
+    },
+    [setDailyResults]
+  );
+
+  const dailySeed = dateToSeed(todayStr);
+
   return (
     <div className="app">
       {screen === 'menu' && (
         <MainMenu
           topScore={topScore}
           onPlay={() => setScreen('playing')}
+          onDaily={handleDailyPlay}
+          todayCompleted={todayCompleted}
           onTutorial={() => setScreen('tutorial')}
           onLeaderboard={() => setScreen('leaderboard')}
         />
@@ -84,9 +131,31 @@ export default function App() {
       )}
       {screen === 'playing' && (
         <Game
+          mode="classic"
           topScore={topScore}
+          themeId={themeId}
+          onThemeChange={setThemeId}
           onQuit={() => setScreen('menu')}
           onSaveScore={handleSaveScore}
+        />
+      )}
+      {screen === 'daily' && (
+        <Game
+          mode="daily"
+          dailySeed={dailySeed}
+          topScore={topScore}
+          themeId={themeId}
+          onThemeChange={setThemeId}
+          onQuit={() => setScreen('menu')}
+          onSaveScore={handleSaveScore}
+          onDailyComplete={handleDailySaveResult}
+          onViewCalendar={() => setScreen('daily-calendar')}
+        />
+      )}
+      {screen === 'daily-calendar' && (
+        <DailyCalendar
+          results={dailyResults}
+          onBack={() => setScreen('menu')}
         />
       )}
     </div>

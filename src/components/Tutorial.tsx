@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { PIECE_COLORS } from '../game/constants';
 import './Tutorial.css';
 
@@ -112,26 +113,53 @@ function StepIllustration({ step }: { step: typeof STEPS[number] }) {
 }
 
 export function Tutorial({ onBack }: TutorialProps) {
+  const [currentStep, setCurrentStep] = useState(0);
+  const step = STEPS[currentStep];
+  const isLast = currentStep === STEPS.length - 1;
+  const isFirst = currentStep === 0;
+
   return (
     <div className="tutorial">
       <h2 className="tutorial-title">How to Play</h2>
 
-      <div className="tutorial-steps">
-        {STEPS.map((step, i) => (
-          <div key={i} className="tutorial-step">
-            <div className="tutorial-step-number">{i + 1}</div>
-            <div className="tutorial-step-content">
-              <h3>{step.title}</h3>
-              <p>{step.description}</p>
-              <StepIllustration step={step} />
-            </div>
+      <div className="tutorial-stepper" key={currentStep}>
+        <div className="tutorial-step tutorial-step--single">
+          <div className="tutorial-step-number">{currentStep + 1}</div>
+          <div className="tutorial-step-content">
+            <h3>{step.title}</h3>
+            <p>{step.description}</p>
+            <StepIllustration step={step} />
           </div>
+        </div>
+      </div>
+
+      <div className="tutorial-dots">
+        {STEPS.map((_, i) => (
+          <button
+            key={i}
+            className={`tutorial-dot ${i === currentStep ? 'tutorial-dot--active' : ''}`}
+            onClick={() => setCurrentStep(i)}
+            aria-label={`Step ${i + 1}`}
+          />
         ))}
       </div>
 
-      <button className="menu-btn menu-btn--play tutorial-back-btn" onClick={onBack}>
-        Got it!
-      </button>
+      <div className="tutorial-nav">
+        {!isFirst && (
+          <button className="menu-btn menu-btn--secondary tutorial-nav-btn" onClick={() => setCurrentStep(s => s - 1)}>
+            Back
+          </button>
+        )}
+        {isLast ? (
+          <button className="menu-btn menu-btn--play tutorial-nav-btn" onClick={onBack}>
+            Got it!
+          </button>
+        ) : (
+          <button className="menu-btn menu-btn--play tutorial-nav-btn" onClick={() => setCurrentStep(s => s + 1)}>
+            Next
+          </button>
+        )}
+      </div>
     </div>
   );
 }
