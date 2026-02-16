@@ -22,6 +22,7 @@ import {
   GRID_SIZE,
   ALL_CLEAR_BONUS,
   SCORE_MILESTONES,
+  SOLUTION_THRESHOLD,
 } from '../game/constants';
 import { playPlace, playClear, playAllClear, playGameOver, getVolume, setVolume } from '../audio/sounds';
 import { Board } from './Board';
@@ -111,18 +112,40 @@ export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit
   const bgPalettes = theme.bgPalettes;
   const bgIndex = useMemo(() => getBgPaletteIndex(state.score, bgPalettes), [state.score, bgPalettes]);
 
+  // Tension signal (0-1): drives background desaturation + particle reactivity
+  const stateFillRatio = useMemo(() => getBoardFillRatio(state.board), [state.board]);
+  const tension = useMemo(() => {
+    const movePressure = Math.min(state.movesSinceLastClear / SOLUTION_THRESHOLD, 1);
+    const fillPressure = stateFillRatio < 0.4 ? 0 : Math.min(1, (stateFillRatio - 0.4) / 0.45);
+    return Math.min(1, movePressure * 0.6 + fillPressure * 0.4);
+  }, [state.movesSinceLastClear, stateFillRatio]);
+
+  // Pressure signal (0-1): drives board-edge vignette, with dead zone
+  const pressure = useMemo(() => {
+    const raw = state.movesSinceLastClear / SOLUTION_THRESHOLD;
+    return raw < 0.25 ? 0 : Math.min(1, (raw - 0.25) / 0.75);
+  }, [state.movesSinceLastClear]);
+
   useEffect(() => {
     const palette = bgPalettes[bgIndex];
     const root = document.documentElement;
-    root.style.setProperty('--bg', palette.bg);
-    root.style.setProperty('--bg-dark', palette.bgDark);
+
+    if (tension > 0.05) {
+      // Interpolate toward tense variant using color-mix in oklch
+      const pct = Math.round(tension * 100);
+      root.style.setProperty('--bg', `color-mix(in oklch, ${palette.bg} ${100 - pct}%, ${palette.bgTense})`);
+      root.style.setProperty('--bg-dark', `color-mix(in oklch, ${palette.bgDark} ${100 - pct}%, ${palette.bgDarkTense})`);
+    } else {
+      root.style.setProperty('--bg', palette.bg);
+      root.style.setProperty('--bg-dark', palette.bgDark);
+    }
 
     return () => {
       // Reset to theme default when leaving game
       root.style.setProperty('--bg', bgPalettes[0].bg);
       root.style.setProperty('--bg-dark', bgPalettes[0].bgDark);
     };
-  }, [bgIndex, bgPalettes]);
+  }, [bgIndex, bgPalettes, tension]);
 
   // Reset save flag on new game
   useEffect(() => {
@@ -433,10 +456,14 @@ export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit
     [displayBoard],
   );
 
-  // Build board container class with streak intensity
+  // Build board container class with streak intensity (5 tiers)
   let boardContainerClass = 'board-container';
   if (state.streak > 0) {
-    if (state.streak >= 5) {
+    if (state.streak >= 11) {
+      boardContainerClass += ' board-container--streak-supernova';
+    } else if (state.streak >= 8) {
+      boardContainerClass += ' board-container--streak-whitehot';
+    } else if (state.streak >= 5) {
       boardContainerClass += ' board-container--streak-fire';
     } else if (state.streak >= 3) {
       boardContainerClass += ' board-container--streak-hot';
@@ -450,7 +477,11 @@ export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit
   return (
     <div className="game" ref={gameRef} style={{ touchAction: 'none' }}>
       {isOffline && <div className="offline-badge">Offline</div>}
-      <AmbientParticles />
+      <AmbientParticles
+        tension={tension}
+        streak={state.streak}
+        clearBurst={cellParticleTrigger}
+      />
 
       <div className="game-header">
         <ScoreDisplay
@@ -470,6 +501,7 @@ export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit
 
       <div
         className={boardContainerClass}
+        style={{ '--pressure': pressure } as React.CSSProperties}
         ref={(el) => {
           boardRef.current = el;
           boardElRef.current = el;

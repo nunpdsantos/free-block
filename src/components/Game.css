@@ -51,6 +51,19 @@
   transition: filter 0.5s ease;
 }
 
+/* Pressure vignette — darkens board edges as moves without clearing increase */
+.board-container::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 14px;
+  pointer-events: none;
+  z-index: 48;
+  opacity: var(--pressure, 0);
+  box-shadow: inset 0 0 30px 12px rgba(0, 0, 0, 0.5);
+  transition: opacity 0.8s ease;
+}
+
 /* Streak glow — level 1 (streak 1-2) */
 .board-container--streak {
   outline: 2px solid var(--streak-glow);
@@ -66,12 +79,28 @@
   animation: streak-glow-hot 0.9s ease-in-out infinite alternate;
 }
 
-/* Streak glow — level 3 (streak 5+) */
+/* Streak glow — level 3 (streak 5-7) */
 .board-container--streak-fire {
   outline: 3px solid #EF5350;
   outline-offset: 2px;
   box-shadow: 0 0 28px rgba(239, 83, 80, 0.38);
   animation: streak-glow-fire 0.6s ease-in-out infinite alternate;
+}
+
+/* Streak glow — level 4 (streak 8-10) */
+.board-container--streak-whitehot {
+  outline: 3.5px solid #FFB74D;
+  outline-offset: 2px;
+  box-shadow: 0 0 32px rgba(255, 183, 77, 0.45);
+  animation: streak-glow-whitehot 0.45s ease-in-out infinite alternate;
+}
+
+/* Streak glow — level 5 (streak 11+) */
+.board-container--streak-supernova {
+  outline: 4px solid #FFFFFF;
+  outline-offset: 2px;
+  box-shadow: 0 0 40px rgba(255, 255, 255, 0.5);
+  animation: streak-glow-supernova 0.35s ease-in-out infinite alternate;
 }
 
 /* Board dims when game is over */
@@ -125,6 +154,24 @@
   }
   to {
     outline-color: rgba(239, 83, 80, 1);
+  }
+}
+
+@keyframes streak-glow-whitehot {
+  from {
+    outline-color: rgba(255, 183, 77, 0.6);
+  }
+  to {
+    outline-color: rgba(255, 255, 255, 0.95);
+  }
+}
+
+@keyframes streak-glow-supernova {
+  from {
+    outline-color: rgba(255, 255, 255, 0.7);
+  }
+  to {
+    outline-color: rgba(255, 255, 255, 1);
   }
 }
 

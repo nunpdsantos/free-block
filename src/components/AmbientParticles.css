@@ -9,9 +9,21 @@
 .ambient-particle {
   position: absolute;
   bottom: -10px;
-  background: rgba(255, 255, 255, 0.5);
   border-radius: 50%;
   animation: ambient-float linear infinite;
+  animation-duration: calc(var(--base-duration, 14s) / var(--particle-speed, 1));
+  opacity: calc(var(--base-opacity, 0.15) * var(--particle-opacity, 1));
+  background: hsl(
+    calc(0 + var(--particle-hue, 0)),
+    calc(0% + var(--particle-hue, 0) * 2%),
+    90%
+  );
+}
+
+/* Burst particles — shorter, brighter, center-biased */
+.ambient-particle--burst {
+  bottom: 40%;
+  animation-name: ambient-burst;
 }
 
 @keyframes ambient-float {
@@ -20,13 +32,28 @@
     opacity: 0;
   }
   8% {
-    opacity: 1;
+    opacity: calc(var(--base-opacity, 0.15) * var(--particle-opacity, 1));
   }
   92% {
-    opacity: 1;
+    opacity: calc(var(--base-opacity, 0.15) * var(--particle-opacity, 1));
   }
   100% {
     transform: translateY(-105vh) translateX(var(--drift, 20px));
+    opacity: 0;
+  }
+}
+
+@keyframes ambient-burst {
+  0% {
+    transform: translateY(0) translateX(0) scale(0.5);
+    opacity: 0;
+  }
+  10% {
+    opacity: calc(var(--base-opacity, 0.3) * var(--particle-opacity, 1));
+    transform: translateY(-10vh) translateX(calc(var(--drift, 20px) * 0.2)) scale(1);
+  }
+  100% {
+    transform: translateY(-60vh) translateX(var(--drift, 20px)) scale(0.3);
     opacity: 0;
   }
 }
