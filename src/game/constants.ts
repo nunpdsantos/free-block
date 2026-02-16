@@ -27,7 +27,7 @@ export const STREAK_MULTIPLIER_INCREMENT = 0.5;
 export const STREAK_MULTIPLIER_CAP = 8.0;
 
 // Revive
-export const REVIVES_PER_GAME = 1;
+export const REVIVES_PER_GAME = 3;
 
 // Undo
 export const UNDOS_PER_GAME = 1;
