@@ -1,4 +1,4 @@
-import { synthPlace, synthClear, synthAllClear, synthGameOver, synthRevive, setMasterVolume } from './synth';
+import { synthPlace, synthClear, synthAllClear, synthGameOver, synthRevive, synthAchievement, setMasterVolume } from './synth';
 
 let volume = 80; // 0-100
 let lastClearTime = 0;
@@ -80,4 +80,11 @@ export function playRevive() {
   vibrate([10, 20, 10]);
   if (volume === 0) return;
   synthRevive();
+}
+
+/** Celebratory fanfare on achievement unlock */
+export function playAchievement() {
+  vibrate([15, 30, 15, 30, 15]);
+  if (volume === 0) return;
+  synthAchievement();
 }

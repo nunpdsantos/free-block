@@ -6,6 +6,7 @@ import { dateToSeed, getTodayDateStr, getDayNumber, getYesterdayDateStr } from '
 import { checkAchievements, getAchievementById } from './game/achievements';
 import type { Achievement, AchievementContext } from './game/achievements';
 import { REVIVES_PER_GAME } from './game/constants';
+import { playAchievement } from './audio/sounds';
 import { Game } from './components/Game';
 import { MainMenu } from './components/MainMenu';
 import { Tutorial } from './components/Tutorial';
@@ -146,6 +147,7 @@ export default function App() {
         .map(id => getAchievementById(id))
         .filter((a): a is Achievement => a !== undefined);
       setToastQueue(prev => [...prev, ...newAchievements]);
+      playAchievement();
     }
   }, [stats, dailyStreak, dailyCount, setAchievementProgress]);
 

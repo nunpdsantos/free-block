@@ -317,3 +317,29 @@ export function synthRevive(): void {
   // Warm resolve sweep
   noiseBurst(0.02, 0.04, 1600, 0.2);
 }
+
+/**
+ * Achievement unlock fanfare — celebratory "ding-DING!" with sparkle.
+ * Two-note rising perfect 5th (C5 → G5) with a layered 3rd (E5) for richness.
+ * Brighter and more resonant than clear chimes — needs to feel special.
+ * Total duration: ~600ms.
+ */
+export function synthAchievement(): void {
+  // First note — C5, warm body
+  tone(CHORD_NOTES.C5, 'triangle', 0.13, 0.006, 0.1, 0.2);
+  tone(CHORD_NOTES.C5, 'sine', 0.03, 0.01, 0.08, 0.15, 0, 5);
+
+  // Second note — G5, brighter and louder (the "DING")
+  tone(CHORD_NOTES.G5, 'triangle', 0.16, 0.006, 0.15, 0.35, 0.09);
+  tone(CHORD_NOTES.G5, 'sine', 0.035, 0.01, 0.1, 0.25, 0.09, 6);
+
+  // Layered 3rd (E5) — fills out the chord subtly
+  tone(CHORD_NOTES.E5, 'sine', 0.04, 0.01, 0.12, 0.28, 0.09);
+
+  // Shimmer overtone on the resolution
+  tone(Math.min(CHORD_NOTES.G5 * 2, 2000), 'sine', 0.02, 0.015, 0.08, 0.2, 0.1);
+
+  // Sparkle noise
+  noiseBurst(0.025, 0.04, 2400, 0.08);
+  noiseBurst(0.015, 0.03, 3200, 0.14);
+}
