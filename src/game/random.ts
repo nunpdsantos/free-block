@@ -21,11 +21,16 @@ export function dateToSeed(dateStr: string): number {
 /** Get today's date as ISO string (YYYY-MM-DD). */
 export function getTodayDateStr(): string {
   const d = new Date();
-  return d.toISOString().split('T')[0];
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
 }
 
 /** Days since Unix epoch — used for "Daily #N" display. */
 export function getDayNumber(dateStr: string): number {
-  const ms = new Date(dateStr + 'T00:00:00Z').getTime();
+  const [y, m, d] = dateStr.split('-').map(Number);
+  if (!y || !m || !d) return 0;
+  const ms = new Date(y, m - 1, d).getTime();
   return Math.floor(ms / 86400000);
 }

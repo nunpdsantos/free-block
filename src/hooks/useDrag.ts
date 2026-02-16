@@ -13,6 +13,7 @@ export function useDrag(
   const [dragState, setDragState] = useState<DragState | null>(null);
   const [ghostCells, setGhostCells] = useState<GhostCells>(new Map());
   const boardRef = useRef<HTMLDivElement>(null);
+  const boardPaddingRef = useRef(0);
   const dragRef = useRef<DragState | null>(null);
   const rectRef = useRef<DOMRect | null>(null);
   const rafRef = useRef<number>(0);
@@ -27,7 +28,7 @@ export function useDrag(
       const pieceRows = Math.max(...piece.coords.map(c => c.row)) + 1;
       const pieceCols = Math.max(...piece.coords.map(c => c.col)) + 1;
 
-      const BOARD_PADDING = 8;
+      const BOARD_PADDING = boardPaddingRef.current;
       const relX = clientX - rect.left - BOARD_PADDING - (pieceCols * TOTAL_CELL) / 2;
       const relY = clientY - rect.top - BOARD_PADDING - FINGER_OFFSET - (pieceRows * TOTAL_CELL) / 2;
 
@@ -72,7 +73,11 @@ export function useDrag(
 
       // Cache board rect once at drag start
       const boardEl = boardRef.current;
-      if (boardEl) rectRef.current = boardEl.getBoundingClientRect();
+      if (boardEl) {
+        rectRef.current = boardEl.getBoundingClientRect();
+        const computed = getComputedStyle(boardEl);
+        boardPaddingRef.current = parseFloat(computed.paddingLeft) || 0;
+      }
 
       const state: DragState = {
         piece,
@@ -133,6 +138,7 @@ export function useDrag(
 
     dragRef.current = null;
     rectRef.current = null;
+    boardPaddingRef.current = 0;
     lastGridRef.current = { row: null, col: null };
     setDragState(null);
     setGhostCells(new Map());
@@ -142,6 +148,7 @@ export function useDrag(
     if (rafRef.current) cancelAnimationFrame(rafRef.current);
     dragRef.current = null;
     rectRef.current = null;
+    boardPaddingRef.current = 0;
     lastGridRef.current = { row: null, col: null };
     setDragState(null);
     setGhostCells(new Map());

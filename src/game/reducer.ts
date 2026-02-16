@@ -13,7 +13,7 @@ import {
   isBoardEmpty,
 } from './logic';
 import { generateThreePieces, generateDailyPieces } from './pieces';
-import { REVIVES_PER_GAME, ALL_CLEAR_BONUS, SCORE_MILESTONES, UNDOS_PER_GAME } from './constants';
+import { REVIVES_PER_GAME, ALL_CLEAR_BONUS, SCORE_MILESTONES, UNDOS_PER_GAME, PITY_THRESHOLD } from './constants';
 import { mulberry32 } from './random';
 
 export function createInitialState(): GameState {
@@ -80,7 +80,10 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       if (!canPlacePiece(state.board, piece, row, col)) return state;
 
       // Save undo snapshot before mutating
-      const undoSnapshot = state.mode === 'classic' ? takeSnapshot(state) : null;
+      const undoSnapshot =
+        state.mode === 'classic' && state.undosRemaining > 0
+          ? takeSnapshot(state)
+          : null;
 
       // Place the piece
       let newBoard = placePiece(state.board, piece, row, col);
@@ -189,14 +192,20 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       if (state.revivesRemaining <= 0 || !state.isGameOver) return state;
 
       const newBoard = clearCellsForRevive(state.board);
-      const newPieces = generateThreePieces(newBoard, 0);
+      const newPieces = generateThreePieces(
+        newBoard,
+        PITY_THRESHOLD,
+        state.score,
+        0
+      );
 
       return {
         ...state,
         board: newBoard,
         currentPieces: newPieces,
         isGameOver: false,
-        movesSinceLastClear: 0,
+        movesSinceLastClear: PITY_THRESHOLD,
+        streak: 0,
         revivesRemaining: state.revivesRemaining - 1,
         celebrationText: null,
         pieceGeneration: state.pieceGeneration + 1,

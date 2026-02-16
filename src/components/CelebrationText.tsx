@@ -34,7 +34,7 @@ export function CelebrationText({ text, onDismiss }: CelebrationTextProps) {
   if (isAllClear) className += ' celebration-text--allclear';
 
   return (
-    <div className="celebration" key={text + Date.now()}>
+    <div className="celebration">
       <span className={className}>{text}</span>
     </div>
   );

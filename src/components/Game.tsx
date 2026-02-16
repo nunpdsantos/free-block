@@ -77,6 +77,7 @@ export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit
   const [confettiCount, setConfettiCount] = useState(12);
   const [volume, setVolumeState] = useState(getVolume);
   const [scorePop, setScorePop] = useState<number | null>(null);
+  const [scorePopKey, setScorePopKey] = useState(0);
   const [reviveFlash, setReviveFlash] = useState(false);
   const [clearedLines, setClearedLines] = useState<{ rows: number[]; cols: number[] } | null>(null);
   const [cellParticleTrigger, setCellParticleTrigger] = useState(0);
@@ -91,7 +92,6 @@ export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit
   const gameRef = useRef<HTMLDivElement>(null);
   const scoreSavedRef = useRef(false);
   const prevGameOverRef = useRef(false);
-  const scorePopKeyRef = useRef(0);
   const boardElRef = useRef<HTMLDivElement>(null);
 
   // --- Offline detection ---
@@ -133,20 +133,28 @@ export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit
 
   // Game over — shatter then show UI, save daily result
   useEffect(() => {
+    let shatterTimer: ReturnType<typeof setTimeout> | null = null;
+    let showUiTimer: ReturnType<typeof setTimeout> | null = null;
+
     if (state.isGameOver && !prevGameOverRef.current) {
       playGameOver();
       if (mode === 'daily' && onDailyComplete) {
         onDailyComplete(state.score);
       }
-      setIsShattered(true);
-      const timer = setTimeout(() => setShowGameOverUI(true), 800);
-      return () => clearTimeout(timer);
+      shatterTimer = setTimeout(() => setIsShattered(true), 0);
+      showUiTimer = setTimeout(() => setShowGameOverUI(true), 800);
     }
-    if (!state.isGameOver) {
-      setIsShattered(false);
-      setShowGameOverUI(false);
+    if (!state.isGameOver && prevGameOverRef.current) {
+      shatterTimer = setTimeout(() => setIsShattered(false), 0);
+      showUiTimer = setTimeout(() => setShowGameOverUI(false), 0);
     }
+
     prevGameOverRef.current = state.isGameOver;
+
+    return () => {
+      if (shatterTimer) clearTimeout(shatterTimer);
+      if (showUiTimer) clearTimeout(showUiTimer);
+    };
   }, [state.isGameOver, mode, onDailyComplete, state.score]);
 
   const prevVolumeRef = useRef(80);
@@ -231,7 +239,7 @@ export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit
         setAnimPieces(newPieces);
         setIsAnimating(true);
         setScorePop(totalPoints);
-        scorePopKeyRef.current += 1;
+        setScorePopKey(k => k + 1);
 
         // --- Phase 2: After anticipation, fire cascade + effects ---
         setTimeout(() => {
@@ -492,7 +500,7 @@ export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit
         />
         <PlaceSparkles cells={placedCells} trigger={placeTrigger} />
         {scorePop !== null && (
-          <div className="score-pop" key={scorePopKeyRef.current}>
+          <div className="score-pop" key={scorePopKey}>
             +{scorePop.toLocaleString()}
           </div>
         )}

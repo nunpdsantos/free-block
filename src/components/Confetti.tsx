@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useMemo } from 'react';
 import { PIECE_COLORS } from '../game/constants';
 import './Confetti.css';
 
@@ -31,22 +31,15 @@ type ConfettiProps = {
 };
 
 export function Confetti({ trigger, particleCount = DEFAULT_COUNT }: ConfettiProps) {
-  const [particles, setParticles] = useState<Particle[]>([]);
-  const [key, setKey] = useState(0);
-  const countRef = useRef(particleCount);
-  countRef.current = particleCount;
-
-  useEffect(() => {
-    if (trigger > 0) {
-      setParticles(createParticles(countRef.current));
-      setKey(k => k + 1);
-    }
-  }, [trigger]);
+  const particles = useMemo(() => {
+    if (trigger <= 0) return [];
+    return createParticles(particleCount);
+  }, [trigger, particleCount]);
 
   if (particles.length === 0) return null;
 
   return (
-    <div className="confetti" key={key} aria-hidden>
+    <div className="confetti" key={trigger} aria-hidden>
       {particles.map(p => (
         <div
           key={p.id}

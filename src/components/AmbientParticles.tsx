@@ -32,7 +32,7 @@ function generateParticles(): AmbientParticle[] {
 }
 
 export function AmbientParticles() {
-  const particles = useMemo(generateParticles, []);
+  const particles = useMemo(() => generateParticles(), []);
 
   return (
     <div className="ambient-particles" aria-hidden>
