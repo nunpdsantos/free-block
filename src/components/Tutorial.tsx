@@ -9,7 +9,7 @@ type TutorialProps = {
 const STEPS = [
   {
     title: 'Drag & Drop',
-    description: 'Drag pieces from the tray onto the 8\u00d78 board. Place them in empty spaces.',
+    description: 'Drag pieces from the tray onto the 8\u00d78 board. As you drag, the board highlights which rows and columns would clear.',
     blocks: [
       [1, 1],
       [1, 0],
@@ -19,19 +19,25 @@ const STEPS = [
   },
   {
     title: 'Clear Lines',
-    description: 'Fill an entire row or column to clear it. Each block cleared earns 10 points.',
+    description: 'Fill an entire row or column to clear it. Each cell cleared earns 10 points. Clear multiple lines at once for combo bonuses.',
     blocks: 'row',
     color: PIECE_COLORS.green,
   },
   {
-    title: 'Combos & Streaks',
-    description: 'Clear multiple lines at once for combo bonuses. Consecutive clears build a streak multiplier for even bigger scores!',
+    title: 'Be Fast',
+    description: 'Speed is everything. Clear lines within 3 seconds for 3x points. Slow down past 10 seconds and your score drops. Past 20 seconds you earn almost nothing.',
+    blocks: 'speed',
+    color: PIECE_COLORS.orange,
+  },
+  {
+    title: 'Build Streaks',
+    description: 'Every consecutive placement that clears a line builds your streak multiplier \u2014 up to 8x. Miss a clear and the streak resets. Streaks stack with speed bonuses.',
     blocks: 'combo',
     color: PIECE_COLORS.yellow,
   },
   {
-    title: 'Game Over',
-    description: "The game ends when no remaining piece can fit on the board. Plan ahead!",
+    title: 'Revive & Game Over',
+    description: 'No pieces fit? Use a revive to clear space and keep going \u2014 you get 2 per game. When revives run out, the game ends. Plan ahead!',
     blocks: 'gameover',
     color: PIECE_COLORS.red,
   },
@@ -47,6 +53,27 @@ function StepIllustration({ step }: { step: typeof STEPS[number] }) {
           ))}
         </div>
         <div className="tutorial-clear-flash" />
+      </div>
+    );
+  }
+
+  if (step.blocks === 'speed') {
+    return (
+      <div className="tutorial-illustration">
+        <div className="tutorial-speed">
+          <div className="tutorial-speed-row">
+            <span className="tutorial-speed-label tutorial-speed-label--fast">&#9889; &lt; 3s</span>
+            <span className="tutorial-speed-value tutorial-speed-value--fast">3.0x</span>
+          </div>
+          <div className="tutorial-speed-row">
+            <span className="tutorial-speed-label">~10s</span>
+            <span className="tutorial-speed-value">1.0x</span>
+          </div>
+          <div className="tutorial-speed-row">
+            <span className="tutorial-speed-label tutorial-speed-label--slow">&gt; 20s</span>
+            <span className="tutorial-speed-value tutorial-speed-value--slow">0.3x</span>
+          </div>
+        </div>
       </div>
     );
   }
@@ -74,14 +101,17 @@ function StepIllustration({ step }: { step: typeof STEPS[number] }) {
   if (step.blocks === 'gameover') {
     return (
       <div className="tutorial-illustration">
-        <div className="tutorial-mini-board">
-          {Array.from({ length: 16 }, (_, i) => (
-            <div
-              key={i}
-              className={`tutorial-cell ${i % 3 !== 0 ? 'tutorial-cell--filled' : ''}`}
-              style={i % 3 !== 0 ? { background: [PIECE_COLORS.blue, PIECE_COLORS.red, PIECE_COLORS.green, PIECE_COLORS.purple][i % 4] } : undefined}
-            />
-          ))}
+        <div className="tutorial-gameover">
+          <div className="tutorial-mini-board">
+            {Array.from({ length: 16 }, (_, i) => (
+              <div
+                key={i}
+                className={`tutorial-cell ${i % 3 !== 0 ? 'tutorial-cell--filled' : ''}`}
+                style={i % 3 !== 0 ? { background: [PIECE_COLORS.blue, PIECE_COLORS.red, PIECE_COLORS.green, PIECE_COLORS.purple][i % 4] } : undefined}
+              />
+            ))}
+          </div>
+          <div className="tutorial-revive-badge">Revive (2)</div>
         </div>
       </div>
     );

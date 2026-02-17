@@ -181,6 +181,77 @@
   text-shadow: 0 0 8px var(--streak-glow);
 }
 
+/* Speed bonus illustration */
+.tutorial-speed {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.tutorial-speed-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 12px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.tutorial-speed-label {
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.tutorial-speed-label--fast {
+  color: #FFD700;
+  font-weight: 700;
+}
+
+.tutorial-speed-label--slow {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.tutorial-speed-value {
+  font-size: 16px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+}
+
+.tutorial-speed-value--fast {
+  color: #FFD700;
+  text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+  animation: speed-glow 1.2s ease-in-out infinite alternate;
+}
+
+.tutorial-speed-value--slow {
+  color: rgba(255, 255, 255, 0.35);
+}
+
+@keyframes speed-glow {
+  from { text-shadow: 0 0 6px rgba(255, 215, 0, 0.3); }
+  to { text-shadow: 0 0 14px rgba(255, 215, 0, 0.7); }
+}
+
+/* Revive badge */
+.tutorial-gameover {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.tutorial-revive-badge {
+  font-size: 13px;
+  font-weight: 700;
+  color: #EF5350;
+  padding: 4px 12px;
+  border-radius: 12px;
+  background: rgba(239, 83, 80, 0.15);
+  border: 1px solid rgba(239, 83, 80, 0.3);
+}
+
 @keyframes flash-line {
   0%, 100% { opacity: 0.3; }
   50% { opacity: 1; }
