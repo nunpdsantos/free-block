@@ -18,6 +18,7 @@ import { ProfileScreen } from './components/ProfileScreen';
 import { AchievementToast } from './components/AchievementToast';
 import { UpdateBanner } from './components/UpdateBanner';
 import { useInstallPrompt } from './hooks/useInstallPrompt';
+import { useSync } from './hooks/useSync';
 import './App.css';
 
 type Screen = 'menu' | 'tutorial' | 'playing' | 'daily' | 'daily-calendar' | 'profile';
@@ -95,6 +96,20 @@ export default function App() {
 
   // --- Firebase auth ---
   const { user, displayName, loading: authLoading, authError, signInWithGoogle, updateDisplayName } = useAuth();
+
+  // --- Cross-device sync ---
+  const { scheduleSync } = useSync({
+    user,
+    authLoading,
+    stats,
+    achievements: achievementProgress,
+    dailyStreak,
+    dailyResults,
+    setStats,
+    setAchievements: setAchievementProgress,
+    setDailyStreak,
+    setDailyResults,
+  });
 
   // --- Global leaderboard (fetched via REST API) ---
   const [globalLeaderboard, setGlobalLeaderboard] = useState<GlobalLeaderboardEntry[]>([]);
@@ -207,8 +222,9 @@ export default function App() {
         .filter((a): a is Achievement => a !== undefined);
       setToastQueue(prev => [...prev, ...newAchievements]);
       playAchievement();
+      scheduleSync();
     }
-  }, [stats, dailyStreak, dailyCount, setAchievementProgress]);
+  }, [stats, dailyStreak, dailyCount, setAchievementProgress, scheduleSync]);
 
   // Run check whenever stats change
   useEffect(() => {
@@ -304,8 +320,10 @@ export default function App() {
           lastPlayedDate: today,
         };
       });
+
+      scheduleSync();
     },
-    [setDailyResults, setDailyStreak]
+    [setDailyResults, setDailyStreak, scheduleSync]
   );
 
   // Ref to hold auth state for use in handleGameOver without re-creating the callback
@@ -337,8 +355,10 @@ export default function App() {
           console.error('[Gridlock] Score submit failed:', err);
         });
       }
+
+      scheduleSync();
     },
-    [setStats, handleSaveScore]
+    [setStats, handleSaveScore, scheduleSync]
   );
 
   const dailySeed = dateToSeed(todayStr);
