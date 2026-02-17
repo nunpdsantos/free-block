@@ -324,6 +324,9 @@ export default function App() {
           dailyStreak={dailyStreak}
           installState={installState}
           onInstall={installApp}
+          displayName={displayName}
+          isAnonymous={user?.isAnonymous ?? true}
+          onSignIn={signInWithGoogle}
         />
       )}
       {screen === 'tutorial' && (

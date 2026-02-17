@@ -13,9 +13,12 @@ type MainMenuProps = {
   dailyStreak: DailyStreak;
   installState: 'hidden' | 'prompt' | 'ios' | 'installed';
   onInstall: () => void;
+  displayName: string | null;
+  isAnonymous: boolean;
+  onSignIn: () => void;
 };
 
-export function MainMenu({ topScore, onPlay, onDaily, todayCompleted, onTutorial, onProfile, dailyStreak, installState, onInstall }: MainMenuProps) {
+export function MainMenu({ topScore, onPlay, onDaily, todayCompleted, onTutorial, onProfile, dailyStreak, installState, onInstall, displayName, isAnonymous, onSignIn }: MainMenuProps) {
   const [showIOSHint, setShowIOSHint] = useState(false);
 
   return (
@@ -23,6 +26,17 @@ export function MainMenu({ topScore, onPlay, onDaily, todayCompleted, onTutorial
       <div className="main-menu-title">
         <h1>GRIDLOCK</h1>
       </div>
+
+      {displayName && (
+        <div className="main-menu-identity">
+          <span className="main-menu-identity__name">{displayName}</span>
+          {isAnonymous && (
+            <button className="main-menu-identity__link" onClick={onSignIn}>
+              Sign in with Google
+            </button>
+          )}
+        </div>
+      )}
 
       <DailyStreakBadge streak={dailyStreak} />
 

@@ -126,20 +126,9 @@ export function useAuth(): AuthState {
   const signInWithGoogle = useCallback(async () => {
     const provider = new GoogleAuthProvider();
 
-    if (isMobile) {
-      // Mobile: use redirect (popups are blocked on mobile browsers)
+    // Try popup first (works on desktop), fall back to redirect (works everywhere)
+    const tryPopup = async () => {
       if (user?.isAnonymous) {
-        linkWithRedirect(user, provider);
-      } else {
-        signInWithRedirect(auth, provider);
-      }
-      return;
-    }
-
-    // Desktop: use popup
-    if (user?.isAnonymous) {
-      // Link anonymous account to Google — preserves UID and scores
-      try {
         const result = await linkWithPopup(user, provider);
         const linked = result.user;
         const name = linked.displayName ?? displayName ?? generateDisplayName();
@@ -148,21 +137,45 @@ export function useAuth(): AuthState {
         setCachedName(linked.uid, name);
         setUser(linked);
         return;
-      } catch (err: unknown) {
-        // If linking fails (e.g. Google account already used), fall back to regular sign-in
-        if ((err as { code?: string }).code !== 'auth/credential-already-in-use') {
-          throw err;
-        }
       }
+      const result = await signInWithPopup(auth, provider);
+      const googleUser = result.user;
+      const name = googleUser.displayName ?? generateDisplayName();
+      await setDoc(doc(db, 'users', googleUser.uid), { displayName: name }, { merge: true });
+      setDisplayName(name);
+      setCachedName(googleUser.uid, name);
+      setUser(googleUser);
+    };
+
+    const useRedirect = () => {
+      if (user?.isAnonymous) {
+        linkWithRedirect(user, provider);
+      } else {
+        signInWithRedirect(auth, provider);
+      }
+    };
+
+    if (isMobile) {
+      useRedirect();
+      return;
     }
 
-    const result = await signInWithPopup(auth, provider);
-    const googleUser = result.user;
-    const name = googleUser.displayName ?? generateDisplayName();
-    await setDoc(doc(db, 'users', googleUser.uid), { displayName: name }, { merge: true });
-    setDisplayName(name);
-    setCachedName(googleUser.uid, name);
-    setUser(googleUser);
+    try {
+      await tryPopup();
+    } catch (err: unknown) {
+      const code = (err as { code?: string }).code;
+      // Popup blocked or closed — fall back to redirect
+      if (code === 'auth/popup-blocked' || code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') {
+        useRedirect();
+        return;
+      }
+      // Credential already in use — fall back to regular sign-in via redirect
+      if (code === 'auth/credential-already-in-use') {
+        useRedirect();
+        return;
+      }
+      console.error('[Gridlock] Google sign-in failed:', code);
+    }
   }, [user, displayName]);
 
   const updateDisplayName = useCallback(async (name: string) => {
