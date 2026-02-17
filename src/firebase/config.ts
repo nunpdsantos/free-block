@@ -16,11 +16,13 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
-// One-time Firestore cache clear: wipe stale IndexedDB so the SDK re-fetches
-// from server. Bump version when query shape changes (e.g. new composite index).
-// NOTE: only clears Firestore IndexedDB — local leaderboard (localStorage) is preserved.
-const CACHE_V = 'gridlock-cache-v4';
-if (!localStorage.getItem(CACHE_V)) {
+// Full reset: wipe all localStorage + Firestore IndexedDB when Firestore data
+// has been cleared server-side. Bump DATA_V to force all clients to reset.
+const DATA_V = 'gridlock-data-v1';
+if (!localStorage.getItem(DATA_V)) {
+  // Preserve nothing — Firestore was wiped, local data is orphaned
+  localStorage.clear();
+  localStorage.setItem(DATA_V, '1');
   try {
     const dbNames = [
       'firestore/[DEFAULT]/gridlock-b2f24/main',
@@ -30,7 +32,6 @@ if (!localStorage.getItem(CACHE_V)) {
       try { indexedDB.deleteDatabase(name); } catch { /* ignore */ }
     }
   } catch { /* ignore in SSR or unsupported envs */ }
-  localStorage.setItem(CACHE_V, '1');
 }
 
 const app = initializeApp(firebaseConfig);
