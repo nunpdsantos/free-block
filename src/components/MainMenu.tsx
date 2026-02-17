@@ -16,9 +16,10 @@ type MainMenuProps = {
   displayName: string | null;
   isAnonymous: boolean;
   onSignIn: () => void;
+  authError: string | null;
 };
 
-export function MainMenu({ topScore, onPlay, onDaily, todayCompleted, onTutorial, onProfile, dailyStreak, installState, onInstall, displayName, isAnonymous, onSignIn }: MainMenuProps) {
+export function MainMenu({ topScore, onPlay, onDaily, todayCompleted, onTutorial, onProfile, dailyStreak, installState, onInstall, displayName, isAnonymous, onSignIn, authError }: MainMenuProps) {
   const [showIOSHint, setShowIOSHint] = useState(false);
 
   return (
@@ -34,6 +35,9 @@ export function MainMenu({ topScore, onPlay, onDaily, todayCompleted, onTutorial
             <button className="main-menu-identity__link" onClick={onSignIn}>
               Sign in with Google
             </button>
+          )}
+          {authError && (
+            <span className="main-menu-identity__error">{authError}</span>
           )}
         </div>
       )}

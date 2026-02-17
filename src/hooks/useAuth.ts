@@ -36,6 +36,7 @@ export type AuthState = {
   user: User | null;
   displayName: string | null;
   loading: boolean;
+  authError: string | null;
   signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
   updateDisplayName: (name: string) => Promise<void>;
@@ -72,6 +73,7 @@ export function useAuth(): AuthState {
   const [user, setUser] = useState<User | null>(null);
   const [displayName, setDisplayName] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [authError, setAuthError] = useState<string | null>(null);
 
   useEffect(() => {
     // Handle redirect result from mobile Google sign-in
@@ -124,9 +126,9 @@ export function useAuth(): AuthState {
   }, []);
 
   const signInWithGoogle = useCallback(async () => {
+    setAuthError(null);
     const provider = new GoogleAuthProvider();
 
-    // Try popup first (works on desktop), fall back to redirect (works everywhere)
     const tryPopup = async () => {
       if (user?.isAnonymous) {
         const result = await linkWithPopup(user, provider);
@@ -147,7 +149,7 @@ export function useAuth(): AuthState {
       setUser(googleUser);
     };
 
-    const useRedirect = () => {
+    const doRedirect = () => {
       if (user?.isAnonymous) {
         linkWithRedirect(user, provider);
       } else {
@@ -156,25 +158,29 @@ export function useAuth(): AuthState {
     };
 
     if (isMobile) {
-      useRedirect();
+      doRedirect();
       return;
     }
 
     try {
       await tryPopup();
     } catch (err: unknown) {
-      const code = (err as { code?: string }).code;
+      const code = (err as { code?: string }).code ?? 'unknown';
+      const message = (err as { message?: string }).message ?? String(err);
+      console.error('[Gridlock] Google sign-in failed:', code, message);
+
       // Popup blocked or closed — fall back to redirect
       if (code === 'auth/popup-blocked' || code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') {
-        useRedirect();
+        doRedirect();
         return;
       }
       // Credential already in use — fall back to regular sign-in via redirect
       if (code === 'auth/credential-already-in-use') {
-        useRedirect();
+        doRedirect();
         return;
       }
-      console.error('[Gridlock] Google sign-in failed:', code);
+
+      setAuthError(`Sign-in failed: ${code}`);
     }
   }, [user, displayName]);
 
@@ -196,5 +202,5 @@ export function useAuth(): AuthState {
     // onAuthStateChanged will fire → auto-creates a new anonymous account
   }, []);
 
-  return { user, displayName, loading, signInWithGoogle, signOut: handleSignOut, updateDisplayName };
+  return { user, displayName, loading, authError, signInWithGoogle, signOut: handleSignOut, updateDisplayName };
 }

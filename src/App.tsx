@@ -94,7 +94,7 @@ export default function App() {
   const { needRefresh: [needRefresh], updateServiceWorker } = useRegisterSW();
 
   // --- Firebase auth ---
-  const { user, displayName, loading: authLoading, signInWithGoogle, signOut, updateDisplayName } = useAuth();
+  const { user, displayName, loading: authLoading, authError, signInWithGoogle, signOut, updateDisplayName } = useAuth();
 
   // --- Global leaderboard (real-time from Firestore) ---
   const [globalLeaderboard, setGlobalLeaderboard] = useState<GlobalLeaderboardEntry[]>([]);
@@ -327,6 +327,7 @@ export default function App() {
           displayName={displayName}
           isAnonymous={user?.isAnonymous ?? true}
           onSignIn={signInWithGoogle}
+          authError={authError}
         />
       )}
       {screen === 'tutorial' && (

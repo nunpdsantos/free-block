@@ -53,6 +53,14 @@
   text-decoration: underline;
 }
 
+.main-menu-identity__error {
+  font-size: 11px;
+  color: #EF4444;
+  text-align: center;
+  max-width: 260px;
+  word-break: break-word;
+}
+
 .main-menu-buttons {
   display: flex;
   flex-direction: column;
