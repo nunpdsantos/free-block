@@ -29,14 +29,17 @@ export async function submitScore(
   const safeScore = Math.round(score);
   if (safeScore <= 0 || safeScore > 999999) return;
 
-  const docRef = doc(db, LEADERBOARD_COLLECTION, `${uid}_${mode}`);
+  const docId = `${uid}_${mode}`;
+  const docRef = doc(db, LEADERBOARD_COLLECTION, docId);
 
   // Local check — getDoc reads from persistent cache when offline
   const existing = await getDoc(docRef);
   if (existing.exists() && existing.data().score >= safeScore) {
-    return; // existing score is equal or better — skip
+    console.log(`[Gridlock] Score ${safeScore} not higher than existing ${existing.data().score} — skipping`);
+    return;
   }
 
+  console.log(`[Gridlock] Submitting score ${safeScore} for ${displayName} (${docId})`);
   await setDoc(docRef, {
     uid,
     displayName,
@@ -45,6 +48,7 @@ export async function submitScore(
     date: new Date().toISOString().slice(0, 10),
     timestamp: serverTimestamp(),
   });
+  console.log(`[Gridlock] Score submitted successfully`);
 }
 
 export function onTopScoresChanged(

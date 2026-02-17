@@ -10,9 +10,22 @@ export default defineConfig({
       registerType: 'prompt',
       workbox: {
         globPatterns: ['**/*.{js,css,html,png,svg,woff2}'],
-        // Skip waiting forces the new SW to activate immediately
         skipWaiting: true,
         clientsClaim: true,
+        cleanupOutdatedCaches: true,
+        // Serve navigation requests (HTML) from network first —
+        // ensures users always get the latest index.html
+        navigateFallback: undefined,
+        runtimeCaching: [
+          {
+            urlPattern: ({ request }) => request.mode === 'navigate',
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'html-cache',
+              networkTimeoutSeconds: 3,
+            },
+          },
+        ],
       },
     }),
   ],

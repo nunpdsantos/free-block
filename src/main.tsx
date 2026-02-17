@@ -9,6 +9,13 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.addEventListener('controllerchange', () => {
     window.location.reload();
   });
+
+  // Aggressively check for SW updates every 60s so users get new code fast
+  navigator.serviceWorker.ready.then((registration) => {
+    setInterval(() => {
+      registration.update().catch(() => {});
+    }, 60_000);
+  });
 }
 
 createRoot(document.getElementById('root')!).render(

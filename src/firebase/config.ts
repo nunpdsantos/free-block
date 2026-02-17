@@ -18,13 +18,19 @@ const firebaseConfig = {
 
 // One-time cache clear: wipe ghost leaderboard entries from failed writes
 // (old 'score is int' rule rejected all JS numbers — 0 docs on server)
-const CACHE_V = 'gridlock-cache-v2';
+const CACHE_V = 'gridlock-cache-v3';
 if (!localStorage.getItem(CACHE_V)) {
   try {
-    // Delete Firestore IndexedDB — blocks until complete, then Firestore creates fresh
-    indexedDB.deleteDatabase('firestore/[DEFAULT]/gridlock-b2f24/main');
+    // Delete ALL Firestore IndexedDB databases to clear ghost entries
+    // This is async but Firestore will block on opening until deletion completes
+    const dbNames = [
+      'firestore/[DEFAULT]/gridlock-b2f24/main',
+      'firestore/gridlock-b2f24/main',
+    ];
+    for (const name of dbNames) {
+      try { indexedDB.deleteDatabase(name); } catch { /* ignore */ }
+    }
   } catch { /* ignore in SSR or unsupported envs */ }
-  // Clear local leaderboard too (stale local-only scores)
   localStorage.removeItem('gridlock-leaderboard');
   localStorage.setItem(CACHE_V, '1');
 }
