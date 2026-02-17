@@ -6,9 +6,7 @@ type LeaderboardContentProps = {
   personalEntries: LeaderboardEntry[];
   globalEntries: GlobalLeaderboardEntry[];
   playerRank: PlayerRankInfo | null;
-  globalMode: 'classic' | 'daily';
   globalLoading: boolean;
-  onGlobalModeChange: (mode: 'classic' | 'daily') => void;
   currentUid: string | null;
   onRefresh?: () => void;
 };
@@ -19,9 +17,7 @@ export function LeaderboardContent({
   personalEntries,
   globalEntries,
   playerRank,
-  globalMode,
   globalLoading,
-  onGlobalModeChange,
   currentUid,
   onRefresh,
 }: LeaderboardContentProps) {
@@ -68,20 +64,6 @@ export function LeaderboardContent({
 
       {tab === 'global' ? (
         <>
-          <div className="leaderboard-mode-toggle">
-            <button
-              className={`leaderboard-mode-btn ${globalMode === 'classic' ? 'leaderboard-mode-btn--active' : ''}`}
-              onClick={() => onGlobalModeChange('classic')}
-            >
-              Classic
-            </button>
-            <button
-              className={`leaderboard-mode-btn ${globalMode === 'daily' ? 'leaderboard-mode-btn--active' : ''}`}
-              onClick={() => onGlobalModeChange('daily')}
-            >
-              Daily
-            </button>
-          </div>
           {globalLoading && (
             <div className="leaderboard-cache-hint">Loading...</div>
           )}

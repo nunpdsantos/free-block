@@ -99,7 +99,6 @@ export default function App() {
   // --- Global leaderboard (fetched via REST API) ---
   const [globalLeaderboard, setGlobalLeaderboard] = useState<GlobalLeaderboardEntry[]>([]);
   const [playerRank, setPlayerRank] = useState<PlayerRankInfo | null>(null);
-  const [leaderboardMode, setLeaderboardMode] = useState<'classic' | 'daily'>('classic');
   const [leaderboardLoading, setLeaderboardLoading] = useState(false);
   const [leaderboardRefresh, setLeaderboardRefresh] = useState(0);
 
@@ -110,8 +109,8 @@ export default function App() {
 
     const uid = user?.uid;
     const fetchAll = Promise.all([
-      fetchTopScores(leaderboardMode),
-      uid ? fetchPlayerRank(uid, leaderboardMode) : Promise.resolve(null),
+      fetchTopScores('classic'),
+      uid ? fetchPlayerRank(uid, 'classic') : Promise.resolve(null),
     ]);
 
     fetchAll
@@ -123,7 +122,7 @@ export default function App() {
       .catch((err) => { console.error('[Gridlock] Leaderboard fetch error:', err); })
       .finally(() => { if (!cancelled) setLeaderboardLoading(false); });
     return () => { cancelled = true; };
-  }, [leaderboardMode, leaderboardRefresh, user?.uid]);
+  }, [leaderboardRefresh, user?.uid]);
 
   const handleLeaderboardRefresh = useCallback(() => {
     setLeaderboardRefresh(n => n + 1);
@@ -375,9 +374,7 @@ export default function App() {
           leaderboard={leaderboard}
           globalLeaderboard={globalLeaderboard}
           playerRank={playerRank}
-          leaderboardMode={leaderboardMode}
           leaderboardLoading={leaderboardLoading}
-          onLeaderboardModeChange={setLeaderboardMode}
           currentUid={user?.uid ?? null}
           authUser={user}
           authDisplayName={displayName}

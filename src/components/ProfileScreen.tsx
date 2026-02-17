@@ -23,9 +23,7 @@ type ProfileScreenProps = {
   leaderboard: LeaderboardEntry[];
   globalLeaderboard: GlobalLeaderboardEntry[];
   playerRank: PlayerRankInfo | null;
-  leaderboardMode: 'classic' | 'daily';
   leaderboardLoading: boolean;
-  onLeaderboardModeChange: (mode: 'classic' | 'daily') => void;
   currentUid: string | null;
   authUser: User | null;
   authDisplayName: string | null;
@@ -44,9 +42,7 @@ export function ProfileScreen({
   leaderboard,
   globalLeaderboard,
   playerRank,
-  leaderboardMode,
   leaderboardLoading,
-  onLeaderboardModeChange,
   currentUid,
   authUser,
   authDisplayName,
@@ -99,9 +95,7 @@ export function ProfileScreen({
             personalEntries={leaderboard}
             globalEntries={globalLeaderboard}
             playerRank={playerRank}
-            globalMode={leaderboardMode}
             globalLoading={leaderboardLoading}
-            onGlobalModeChange={onLeaderboardModeChange}
             currentUid={currentUid}
             onRefresh={onLeaderboardRefresh}
           />
