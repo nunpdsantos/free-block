@@ -1,18 +1,16 @@
 import {
   collection,
-  doc,
-  setDoc,
   query,
   orderBy,
   limit,
   onSnapshot,
-  serverTimestamp,
 } from 'firebase/firestore';
-import { db } from './config';
+import { db, auth } from './config';
 import type { GlobalLeaderboardEntry } from '../game/types';
 
 const LEADERBOARD_COLLECTION = 'leaderboard';
 const TOP_N = 20;
+const PROJECT_ID = import.meta.env.VITE_FIREBASE_PROJECT_ID as string;
 
 // ---------------------------------------------------------------------------
 // localStorage-based tracking — avoids Firestore cache ghost entries entirely
@@ -67,26 +65,47 @@ function setPending(entries: PendingScore[]): void {
 }
 
 // ---------------------------------------------------------------------------
-// Core write — always writes to Firestore, no getDoc pre-check.
-// Firestore rules enforce score > existing server-side.
-// With persistentLocalCache, setDoc writes locally + queues for server sync.
+// Direct Firestore REST API write — bypasses SDK persistent cache entirely.
+// Gives immediate success/failure, no ghost entries, no stuck pending writes.
 // ---------------------------------------------------------------------------
 
-async function writeScore(
+async function writeScoreREST(
   uid: string,
   displayName: string,
   score: number,
   mode: 'classic' | 'daily',
 ): Promise<void> {
-  const docRef = doc(db, LEADERBOARD_COLLECTION, `${uid}_${mode}`);
-  await setDoc(docRef, {
-    uid,
-    displayName,
-    score,
-    mode,
-    date: new Date().toISOString().slice(0, 10),
-    timestamp: serverTimestamp(),
+  const user = auth.currentUser;
+  if (!user) throw new Error('Not authenticated');
+
+  const idToken = await user.getIdToken();
+  const docId = `${uid}_${mode}`;
+  const url = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents/${LEADERBOARD_COLLECTION}/${docId}`;
+
+  const body = {
+    fields: {
+      uid: { stringValue: uid },
+      displayName: { stringValue: displayName },
+      score: { integerValue: String(score) },
+      mode: { stringValue: mode },
+      date: { stringValue: new Date().toISOString().slice(0, 10) },
+      timestamp: { timestampValue: new Date().toISOString() },
+    },
+  };
+
+  const response = await fetch(url, {
+    method: 'PATCH',
+    headers: {
+      'Authorization': `Bearer ${idToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body),
   });
+
+  if (!response.ok) {
+    const errorText = await response.text().catch(() => '');
+    throw new Error(`Firestore REST ${response.status}: ${errorText}`);
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -94,9 +113,9 @@ async function writeScore(
 // ---------------------------------------------------------------------------
 
 /**
- * Submit a score. Uses localStorage to skip if we've already submitted a
- * higher score (no Firestore cache dependency). If the write fails, the
- * score is queued in localStorage for retry on next app load.
+ * Submit a score via direct REST API call (bypasses SDK cache).
+ * Uses localStorage to skip if we've already submitted a higher score.
+ * If the write fails, the score is queued in localStorage for retry.
  */
 export async function submitScore(
   uid: string,
@@ -114,9 +133,9 @@ export async function submitScore(
   }
 
   try {
-    await writeScore(uid, displayName, safeScore, mode);
+    await writeScoreREST(uid, displayName, safeScore, mode);
     setBestSubmitted(uid, mode, safeScore);
-    console.log(`[Gridlock] Score ${safeScore} submitted for ${displayName}`);
+    console.log(`[Gridlock] Score ${safeScore} submitted for ${displayName} ✓`);
   } catch (err) {
     console.error('[Gridlock] Score submit failed, queuing for retry:', err);
     const pending = getPending();
@@ -134,7 +153,6 @@ export async function retryPendingScores(): Promise<void> {
   if (pending.length === 0) return;
 
   console.log(`[Gridlock] Retrying ${pending.length} pending score(s)`);
-  // Clear queue first to avoid infinite retry loops if we crash mid-retry
   setPending([]);
 
   const stillPending: PendingScore[] = [];
@@ -162,12 +180,12 @@ export async function syncLocalBest(
   mode: 'classic' | 'daily',
 ): Promise<void> {
   if (localBestScore <= 0) return;
-  // submitScore internally skips if already submitted a higher score
   await submitScore(uid, displayName, localBestScore, mode);
 }
 
 /**
  * Real-time listener for top scores from Firestore.
+ * Uses SDK onSnapshot (reads benefit from cache for offline support).
  */
 export function onTopScoresChanged(
   callback: (entries: GlobalLeaderboardEntry[]) => void,
