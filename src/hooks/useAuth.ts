@@ -4,9 +4,9 @@ import {
   signInAnonymously,
   signInWithPopup,
   signInWithRedirect,
+  signInWithCredential,
   GoogleAuthProvider,
   linkWithPopup,
-  linkWithRedirect,
   getRedirectResult,
   signOut as firebaseSignOut,
   type User,
@@ -88,7 +88,24 @@ export function useAuth(): AuthState {
         setCachedName(u.uid, name);
         setUser(u);
       }
-    }).catch(() => { /* redirect had no result or failed — onAuthStateChanged handles it */ });
+    }).catch(async (err) => {
+      // credential-already-in-use means the Google account is linked to a different UID.
+      // Extract the credential from the error and sign in directly as that user.
+      const code = (err as { code?: string }).code;
+      if (code === 'auth/credential-already-in-use') {
+        console.log('[Gridlock] Redirect: credential in use, signing in as existing Google user');
+        const credential = GoogleAuthProvider.credentialFromError(err);
+        if (credential) {
+          try {
+            await signInWithCredential(auth, credential);
+            // onAuthStateChanged will fire with the Google user
+          } catch (signInErr) {
+            console.error('[Gridlock] signInWithCredential failed:', signInErr);
+          }
+        }
+      }
+      // Other errors: onAuthStateChanged handles it
+    });
 
     const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
@@ -160,28 +177,10 @@ export function useAuth(): AuthState {
     };
 
     if (isMobile) {
-      // On mobile, try link first; if credential is already in use, use regular sign-in
-      if (user?.isAnonymous) {
-        try {
-          await linkWithPopup(user, provider);
-          // If popup works on this mobile browser, great
-          return;
-        } catch (linkErr: unknown) {
-          const linkCode = (linkErr as { code?: string }).code;
-          if (linkCode === 'auth/credential-already-in-use') {
-            signInWithRedirect(auth, provider);
-            return;
-          }
-          // Popup likely blocked on mobile — fall back to redirect
-          if (linkCode === 'auth/popup-blocked' || linkCode === 'auth/popup-closed-by-user' || linkCode === 'auth/cancelled-popup-request') {
-            linkWithRedirect(user, provider);
-            return;
-          }
-          setAuthError(`Sign-in failed: ${linkCode}`);
-        }
-      } else {
-        signInWithRedirect(auth, provider);
-      }
+      // Mobile: always use redirect (popups are unreliable on mobile browsers/PWAs).
+      // Use signInWithRedirect — NOT linkWithRedirect — so credential-already-in-use
+      // from getRedirectResult can be handled by extracting the credential.
+      signInWithRedirect(auth, provider);
       return;
     }
 
@@ -193,12 +192,10 @@ export function useAuth(): AuthState {
       console.error('[Gridlock] Google sign-in failed:', code, message);
 
       // Popup blocked or closed — fall back to redirect
+      // Always use signInWithRedirect (not linkWithRedirect) so getRedirectResult
+      // can handle credential-already-in-use by extracting the credential
       if (code === 'auth/popup-blocked' || code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') {
-        if (user?.isAnonymous) {
-          linkWithRedirect(user, provider);
-        } else {
-          signInWithRedirect(auth, provider);
-        }
+        signInWithRedirect(auth, provider);
         return;
       }
 
