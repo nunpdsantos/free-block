@@ -9,6 +9,7 @@ import {
 } from '../firebase/sync';
 
 const DEBOUNCE_MS = 2000;
+const PULL_COOLDOWN_MS = 30_000; // minimum 30s between pulls
 
 export type SyncConfig = {
   user: User | null;
@@ -32,6 +33,7 @@ export function useSync(config: SyncConfig): { scheduleSync: () => void } {
 
   const hasSyncedRef = useRef(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastPullRef = useRef(0);
 
   // Keep a ref to current data so push callbacks always read latest values
   const dataRef = useRef({ stats, achievements, dailyStreak, dailyResults });
@@ -40,30 +42,18 @@ export function useSync(config: SyncConfig): { scheduleSync: () => void } {
   const uidRef = useRef<string | null>(null);
   uidRef.current = user?.uid ?? null;
 
-  // ------ Push current local data to Firestore ------
-  const pushNow = useCallback(() => {
-    const uid = uidRef.current;
-    if (!uid) return;
+  // Refs for setters so pull doesn't depend on them changing
+  const settersRef = useRef({ setStats, setAchievements, setDailyStreak, setDailyResults });
+  settersRef.current = { setStats, setAchievements, setDailyStreak, setDailyResults };
 
-    const data: SyncedPlayerData = {
-      ...dataRef.current,
-      syncedAt: Date.now(),
-    };
-    pushPlayerData(uid, data);
-  }, []);
-
-  // ------ Pull once on auth ready, merge, then push merged result ------
-  useEffect(() => {
-    if (authLoading || !user || hasSyncedRef.current) return;
-    hasSyncedRef.current = true;
-
-    const uid = user.uid;
+  // ------ Pull + merge helper (reused by initial sync and re-pull) ------
+  const pullAndMerge = useCallback((uid: string) => {
+    lastPullRef.current = Date.now();
 
     fetchPlayerData(uid).then((remote) => {
       if (!remote) {
-        // No remote data — push local as initial seed
         console.log('[Gridlock] Sync: no remote data, pushing local');
-        pushNow();
+        pushPlayerData(uid, { ...dataRef.current, syncedAt: Date.now() });
         return;
       }
 
@@ -77,11 +67,11 @@ export function useSync(config: SyncConfig): { scheduleSync: () => void } {
 
         const merged = mergePlayerData(local, remote);
 
-        // Apply merged data to local state
-        setStats(merged.stats);
-        setAchievements(merged.achievements);
-        setDailyStreak(merged.dailyStreak);
-        setDailyResults(merged.dailyResults);
+        const { setStats: ss, setAchievements: sa, setDailyStreak: sds, setDailyResults: sdr } = settersRef.current;
+        ss(merged.stats);
+        sa(merged.achievements);
+        sds(merged.dailyStreak);
+        sdr(merged.dailyResults);
 
         // Push merged result back so both sides converge
         pushPlayerData(uid, { ...merged, syncedAt: Date.now() });
@@ -91,7 +81,26 @@ export function useSync(config: SyncConfig): { scheduleSync: () => void } {
     }).catch((err) => {
       console.error('[Gridlock] Sync pull failed:', err);
     });
-  }, [authLoading, user, setStats, setAchievements, setDailyStreak, setDailyResults, pushNow]);
+  }, []);
+
+  // ------ Push current local data to Firestore ------
+  const pushNow = useCallback(() => {
+    const uid = uidRef.current;
+    if (!uid) return;
+
+    const data: SyncedPlayerData = {
+      ...dataRef.current,
+      syncedAt: Date.now(),
+    };
+    pushPlayerData(uid, data);
+  }, []);
+
+  // ------ Pull once on auth ready ------
+  useEffect(() => {
+    if (authLoading || !user || hasSyncedRef.current) return;
+    hasSyncedRef.current = true;
+    pullAndMerge(user.uid);
+  }, [authLoading, user, pullAndMerge]);
 
   // ------ Debounced push ------
   const scheduleSync = useCallback(() => {
@@ -99,21 +108,29 @@ export function useSync(config: SyncConfig): { scheduleSync: () => void } {
     debounceRef.current = setTimeout(pushNow, DEBOUNCE_MS);
   }, [pushNow]);
 
-  // ------ Push on visibilitychange (tab hidden / app background) ------
+  // ------ Visibility change: push on hidden, re-pull on visible ------
   useEffect(() => {
     const handleVisibility = () => {
-      if (document.visibilityState === 'hidden' && uidRef.current) {
-        // Flush any pending debounce
+      const uid = uidRef.current;
+      if (!uid) return;
+
+      if (document.visibilityState === 'hidden') {
+        // Flush any pending debounce and push
         if (debounceRef.current) {
           clearTimeout(debounceRef.current);
           debounceRef.current = null;
         }
         pushNow();
+      } else if (document.visibilityState === 'visible') {
+        // Re-pull when tab becomes visible (with cooldown)
+        if (Date.now() - lastPullRef.current > PULL_COOLDOWN_MS) {
+          pullAndMerge(uid);
+        }
       }
     };
     document.addEventListener('visibilitychange', handleVisibility);
     return () => document.removeEventListener('visibilitychange', handleVisibility);
-  }, [pushNow]);
+  }, [pushNow, pullAndMerge]);
 
   // Cleanup debounce on unmount
   useEffect(() => {

@@ -1,5 +1,4 @@
-import { doc, setDoc } from 'firebase/firestore';
-import { auth, db } from './config';
+import { auth } from './config';
 import type { PlayerStats, AchievementProgress, DailyStreak, DailyResult } from '../game/types';
 
 const PROJECT_ID = import.meta.env.VITE_FIREBASE_PROJECT_ID as string;
@@ -160,16 +159,57 @@ export async function fetchPlayerData(uid: string): Promise<SyncedPlayerData | n
   }
 }
 
+// Convert a JS value to Firestore REST field format
+function toFirestoreValue(val: unknown): Record<string, unknown> {
+  if (val === null || val === undefined) return { nullValue: 'NULL_VALUE' };
+  if (typeof val === 'string') return { stringValue: val };
+  if (typeof val === 'boolean') return { booleanValue: val };
+  if (typeof val === 'number') {
+    return Number.isInteger(val) ? { integerValue: String(val) } : { doubleValue: val };
+  }
+  if (typeof val === 'object' && !Array.isArray(val)) {
+    const fields: Record<string, Record<string, unknown>> = {};
+    for (const [k, v] of Object.entries(val as Record<string, unknown>)) {
+      fields[k] = toFirestoreValue(v);
+    }
+    return { mapValue: { fields } };
+  }
+  return { nullValue: 'NULL_VALUE' };
+}
+
 export async function pushPlayerData(uid: string, data: SyncedPlayerData): Promise<void> {
   try {
-    await setDoc(doc(db, 'users', uid), {
-      stats: data.stats,
-      achievements: data.achievements,
-      dailyStreak: data.dailyStreak,
-      dailyResults: data.dailyResults,
-      syncedAt: data.syncedAt,
-    }, { merge: true });
-    console.log('[Gridlock] Sync push complete');
+    const user = auth.currentUser;
+    if (!user) return;
+
+    const idToken = await user.getIdToken();
+    const url = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents/users/${uid}?updateMask.fieldPaths=stats&updateMask.fieldPaths=achievements&updateMask.fieldPaths=dailyStreak&updateMask.fieldPaths=dailyResults&updateMask.fieldPaths=syncedAt`;
+
+    const body = {
+      fields: {
+        stats: toFirestoreValue(data.stats),
+        achievements: toFirestoreValue(data.achievements),
+        dailyStreak: toFirestoreValue(data.dailyStreak),
+        dailyResults: toFirestoreValue(data.dailyResults),
+        syncedAt: toFirestoreValue(data.syncedAt),
+      },
+    };
+
+    const response = await fetch(url, {
+      method: 'PATCH',
+      headers: {
+        'Authorization': `Bearer ${idToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+    });
+
+    if (!response.ok) {
+      const text = await response.text().catch(() => '');
+      throw new Error(`Firestore REST ${response.status}: ${text}`);
+    }
+
+    console.log('[Gridlock] Sync push complete (REST)');
   } catch (err) {
     console.error('[Gridlock] Sync push failed:', err);
   }
