@@ -88,8 +88,8 @@ const PIECE_DEFS: PieceDef[] = [
   { id: 'big-l-4', coords: [c(0,2), c(1,2), c(2,0), c(2,1), c(2,2)], weight: 3, tier: 'hard' },
 
   // Rectangles (6 cells) — hard
-  { id: 'rect-2x3', coords: [c(0,0), c(0,1), c(0,2), c(1,0), c(1,1), c(1,2)], weight: 2, tier: 'hard' },
-  { id: 'rect-3x2', coords: [c(0,0), c(0,1), c(1,0), c(1,1), c(2,0), c(2,1)], weight: 2, tier: 'hard' },
+  { id: 'rect-2x3', coords: [c(0,0), c(0,1), c(0,2), c(1,0), c(1,1), c(1,2)], weight: 1, tier: 'hard' },
+  { id: 'rect-3x2', coords: [c(0,0), c(0,1), c(1,0), c(1,1), c(2,0), c(2,1)], weight: 1, tier: 'hard' },
 
   // Square 3x3 (9 cells) — hard (most problematic piece per community)
   { id: 'sq-3', coords: [

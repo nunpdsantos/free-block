@@ -7,6 +7,7 @@ type CellProps = {
   ghostValid: boolean;
   ghostColor?: string;
   ghostCompletesLine?: boolean;
+  isPreviewClearing?: boolean;
   isClearing: boolean;
   clearDelay: number;
   isPreClearing?: boolean;
@@ -21,6 +22,7 @@ export const Cell = memo(function Cell({
   ghostValid,
   ghostColor,
   ghostCompletesLine,
+  isPreviewClearing,
   isClearing,
   clearDelay,
   isPreClearing,
@@ -32,6 +34,7 @@ export const Cell = memo(function Cell({
   if (color) className += ' cell--filled';
   if (isGhost) className += ghostValid ? ' cell--ghost-valid' : ' cell--ghost-invalid';
   if (ghostCompletesLine) className += ' cell--ghost-completing';
+  if (isPreviewClearing) className += ' cell--preview-clear';
   if (isPreClearing) className += ' cell--pre-clear';
   if (isClearing) className += ' cell--clearing';
   if (isShattered && color) className += ' cell--shattered';

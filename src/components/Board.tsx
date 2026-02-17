@@ -9,6 +9,7 @@ type BoardProps = {
   board: BoardType;
   ghostCells: GhostCells;
   ghostCompletingCells?: Set<string>;
+  previewClearCells?: Set<string>;
   clearingCells: Map<string, number>;
   preClearCells?: Set<string>;
   ghostColor?: string | null;
@@ -37,6 +38,7 @@ export const Board = memo(function Board({
   board,
   ghostCells,
   ghostCompletingCells,
+  previewClearCells,
   clearingCells,
   preClearCells,
   ghostColor,
@@ -59,6 +61,7 @@ export const Board = memo(function Board({
           ghostValid={ghost === true}
           ghostColor={ghostColor ?? undefined}
           ghostCompletesLine={ghostCompletingCells?.has(key)}
+          isPreviewClearing={previewClearCells?.has(key)}
           isClearing={clearDelay !== undefined}
           clearDelay={clearDelay ?? 0}
           isPreClearing={preClearCells?.has(key)}

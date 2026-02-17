@@ -467,13 +467,16 @@ export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit
   const dangerLevel = fillRatio >= 0.85 ? 2 : fillRatio >= 0.75 ? 1 : 0;
 
   // Ghost cells that would complete a line — glow brighter as anticipation cue
-  const ghostCompletingCells = useMemo(() => {
+  // + preview all cells in completing rows/cols
+  const { ghostCompletingCells, previewClearCells } = useMemo(() => {
     if (!dragState || !dragState.isValid || dragState.boardRow === null || dragState.boardCol === null) {
-      return undefined;
+      return { ghostCompletingCells: undefined, previewClearCells: undefined };
     }
     const simBoard = placePiece(displayBoard, dragState.piece, dragState.boardRow, dragState.boardCol);
     const { rows, cols } = findCompletedLines(simBoard);
-    if (rows.length === 0 && cols.length === 0) return undefined;
+    if (rows.length === 0 && cols.length === 0) {
+      return { ghostCompletingCells: undefined, previewClearCells: undefined };
+    }
 
     const completing = new Set<string>();
     for (const key of ghostCells.keys()) {
@@ -482,7 +485,26 @@ export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit
         completing.add(key);
       }
     }
-    return completing.size > 0 ? completing : undefined;
+
+    // All cells in the completing rows/cols (excluding ghost cells — they have their own style)
+    const preview = new Set<string>();
+    for (const row of rows) {
+      for (let c = 0; c < GRID_SIZE; c++) {
+        const key = `${row},${c}`;
+        if (!ghostCells.has(key)) preview.add(key);
+      }
+    }
+    for (const col of cols) {
+      for (let r = 0; r < GRID_SIZE; r++) {
+        const key = `${r},${col}`;
+        if (!ghostCells.has(key)) preview.add(key);
+      }
+    }
+
+    return {
+      ghostCompletingCells: completing.size > 0 ? completing : undefined,
+      previewClearCells: preview.size > 0 ? preview : undefined,
+    };
   }, [dragState, displayBoard, ghostCells]);
 
   // Build board container class with streak intensity (5 tiers)
@@ -540,6 +562,7 @@ export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit
           board={displayBoard}
           ghostCells={ghostCells}
           ghostCompletingCells={ghostCompletingCells}
+          previewClearCells={previewClearCells}
           clearingCells={clearingCells}
           preClearCells={preClearCells}
           ghostColor={ghostColor}
@@ -561,7 +584,7 @@ export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit
         <PlaceSparkles cells={placedCells} trigger={placeTrigger} />
         {scorePop !== null && (
           <div
-            className={`score-pop${scorePopMult !== null && scorePopMult >= 1.25 ? ' score-pop--fast' : scorePopMult !== null && scorePopMult < 0.95 ? ' score-pop--slow' : ''}`}
+            className={`score-pop${scorePopMult !== null && scorePopMult >= 1.2 ? ' score-pop--fast' : scorePopMult !== null && scorePopMult < 0.95 ? ' score-pop--slow' : ''}`}
             key={scorePopKey}
           >
             +{scorePop.toLocaleString()}

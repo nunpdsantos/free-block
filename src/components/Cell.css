@@ -78,15 +78,35 @@
   }
 }
 
+/* Preview — cells in rows/cols that would be cleared by current ghost placement */
+.cell--preview-clear {
+  filter: brightness(1.6);
+  outline: 1.5px solid rgba(255, 255, 255, 0.5);
+  outline-offset: -1.5px;
+  animation: preview-clear-pulse 0.6s ease-in-out infinite alternate;
+  z-index: 5;
+}
+
+@keyframes preview-clear-pulse {
+  from {
+    filter: brightness(1.4);
+    outline-color: rgba(255, 255, 255, 0.35);
+  }
+  to {
+    filter: brightness(1.8);
+    outline-color: rgba(255, 255, 255, 0.65);
+  }
+}
+
 /* Anticipation pulse — all clearing cells flash simultaneously before cascade */
 .cell--pre-clear {
-  animation: cell-anticipate 120ms ease-out forwards;
+  animation: cell-anticipate 80ms ease-out forwards;
   z-index: 10;
 }
 
 /* Line clear — flash + staggered cascade with glow dissolve */
 .cell--clearing {
-  animation: cell-clear 0.55s ease-out forwards;
+  animation: cell-clear 0.38s ease-out forwards;
 }
 
 .cell--clearing::after {
@@ -100,7 +120,7 @@
     rgba(200, 64, 233, 0.3) 45%,
     transparent 75%
   );
-  animation: cell-sparkle 0.55s ease-out forwards;
+  animation: cell-sparkle 0.38s ease-out forwards;
   animation-delay: inherit;
   pointer-events: none;
 }
