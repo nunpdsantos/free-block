@@ -27,7 +27,7 @@
 
 ### Firebase (`src/firebase/`)
 - `config.ts` — Firebase init (`initializeApp`, `getAuth`, `initializeFirestore` with `persistentLocalCache` for offline PWA support). Exports `auth` + `db`. Emulator support via `VITE_USE_EMULATORS=true` env var.
-- `leaderboard.ts` — `submitScore(uid, displayName, score, mode)` writes to `leaderboard` collection via REST API (bypasses SDK cache); `onTopScoresChanged(mode, callback)` returns real-time listener unsubscribe for top 20 scores filtered by mode, callback receives `(entries, fromCache)`. On 403 (security rules rejection), `writeScoreREST` reads the server's actual score via `readScoreREST` and syncs localStorage best to prevent infinite retries.
+- `leaderboard.ts` — All Firestore I/O uses direct REST API (bypasses SDK persistent cache which fails with composite-index queries). `submitScore(uid, displayName, score, mode)` writes via REST PATCH; `fetchTopScores(mode)` reads via REST structured query filtered by mode. On 403 (security rules rejection), `writeScoreREST` reads the server's actual score via `readScoreREST` and syncs localStorage best to prevent infinite retries.
 - `names.ts` — `generateDisplayName()` returns `Adjective_Noun` pattern (30x30 = 900 combos) for anonymous players.
 
 ### Auth (`src/hooks/useAuth.ts`)
