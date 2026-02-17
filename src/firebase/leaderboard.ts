@@ -26,20 +26,21 @@ export async function submitScore(
   score: number,
   mode: 'classic' | 'daily',
 ): Promise<void> {
-  if (score <= 0 || score > 999999) return;
+  const safeScore = Math.round(score);
+  if (safeScore <= 0 || safeScore > 999999) return;
 
   const docRef = doc(db, LEADERBOARD_COLLECTION, `${uid}_${mode}`);
 
   // Local check — getDoc reads from persistent cache when offline
   const existing = await getDoc(docRef);
-  if (existing.exists() && existing.data().score >= score) {
+  if (existing.exists() && existing.data().score >= safeScore) {
     return; // existing score is equal or better — skip
   }
 
   await setDoc(docRef, {
     uid,
     displayName,
-    score,
+    score: safeScore,
     mode,
     date: new Date().toISOString().slice(0, 10),
     timestamp: serverTimestamp(),

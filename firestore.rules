@@ -8,7 +8,7 @@ service cloud.firestore {
       allow read: if true;
       allow create: if request.auth != null
         && request.resource.data.uid == request.auth.uid
-        && request.resource.data.score is int
+        && request.resource.data.score is number
         && request.resource.data.score > 0
         && request.resource.data.score <= 999999
         && request.resource.data.mode in ['classic', 'daily']
@@ -17,7 +17,7 @@ service cloud.firestore {
       allow update: if request.auth != null
         && resource.data.uid == request.auth.uid
         && request.resource.data.uid == request.auth.uid
-        && request.resource.data.score is int
+        && request.resource.data.score is number
         && request.resource.data.score > resource.data.score
         && request.resource.data.score <= 999999
         && request.resource.data.mode in ['classic', 'daily']
