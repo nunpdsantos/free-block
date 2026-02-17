@@ -62,25 +62,34 @@ export function useSync(config: SyncConfig): { scheduleSync: () => void } {
     fetchPlayerData(uid).then((remote) => {
       if (!remote) {
         // No remote data — push local as initial seed
+        console.log('[Gridlock] Sync: no remote data, pushing local');
         pushNow();
         return;
       }
 
-      const local: SyncedPlayerData = {
-        ...dataRef.current,
-        syncedAt: Date.now(),
-      };
+      console.log('[Gridlock] Sync: merging remote data', remote);
 
-      const merged = mergePlayerData(local, remote);
+      try {
+        const local: SyncedPlayerData = {
+          ...dataRef.current,
+          syncedAt: Date.now(),
+        };
 
-      // Apply merged data to local state
-      setStats(merged.stats);
-      setAchievements(merged.achievements);
-      setDailyStreak(merged.dailyStreak);
-      setDailyResults(merged.dailyResults);
+        const merged = mergePlayerData(local, remote);
 
-      // Push merged result back so both sides converge
-      pushPlayerData(uid, { ...merged, syncedAt: Date.now() });
+        // Apply merged data to local state
+        setStats(merged.stats);
+        setAchievements(merged.achievements);
+        setDailyStreak(merged.dailyStreak);
+        setDailyResults(merged.dailyResults);
+
+        // Push merged result back so both sides converge
+        pushPlayerData(uid, { ...merged, syncedAt: Date.now() });
+      } catch (err) {
+        console.error('[Gridlock] Sync merge/apply failed:', err);
+      }
+    }).catch((err) => {
+      console.error('[Gridlock] Sync pull failed:', err);
     });
   }, [authLoading, user, setStats, setAchievements, setDailyStreak, setDailyResults, pushNow]);
 

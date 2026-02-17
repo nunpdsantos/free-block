@@ -135,8 +135,8 @@ export async function fetchPlayerData(uid: string): Promise<SyncedPlayerData | n
 
     if (!response.ok) return null;
 
-    const doc = await response.json();
-    const fields = doc?.fields;
+    const docData = await response.json();
+    const fields = docData?.fields;
     if (!fields?.stats) return null; // Doc exists but has no sync data yet
 
     const stats = parseFirestoreValue(fields.stats) as PlayerStats;
