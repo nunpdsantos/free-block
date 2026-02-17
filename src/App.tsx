@@ -9,7 +9,7 @@ import { checkAchievements, getAchievementById } from './game/achievements';
 import type { Achievement, AchievementContext } from './game/achievements';
 import { REVIVES_PER_GAME } from './game/constants';
 import { playAchievement } from './audio/sounds';
-import { submitScore, onTopScoresChanged } from './firebase/leaderboard';
+import { submitScore, retryPendingScores, syncLocalBest, onTopScoresChanged } from './firebase/leaderboard';
 import { Game } from './components/Game';
 import { MainMenu } from './components/MainMenu';
 import { Tutorial } from './components/Tutorial';
@@ -108,6 +108,19 @@ export default function App() {
   const handleLeaderboardRefresh = useCallback(() => {
     setLeaderboardRefresh(n => n + 1);
   }, []);
+
+  // On auth ready: retry any failed score submissions and sync local best to Firestore
+  useEffect(() => {
+    if (authLoading || !user || !displayName) return;
+    const uid = user.uid;
+    const name = displayName;
+    const localBest = leaderboard.length > 0 ? leaderboard[0].score : 0;
+
+    retryPendingScores().catch(() => {});
+    if (localBest > 0) {
+      syncLocalBest(uid, name, localBest, 'classic').catch(() => {});
+    }
+  }, [authLoading, user, displayName]); // eslint-disable-line react-hooks/exhaustive-deps -- run once when auth is ready
 
   // Reset stale streak on app load — if last played date isn't today or yesterday, streak is broken
   useEffect(() => {
