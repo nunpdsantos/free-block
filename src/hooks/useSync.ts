@@ -31,7 +31,7 @@ export function useSync(config: SyncConfig): { scheduleSync: () => void } {
     setStats, setAchievements, setDailyStreak, setDailyResults,
   } = config;
 
-  const hasSyncedRef = useRef(false);
+  const syncedUidRef = useRef<string | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastPullRef = useRef(0);
 
@@ -50,13 +50,20 @@ export function useSync(config: SyncConfig): { scheduleSync: () => void } {
   const pullAndMerge = useCallback((uid: string) => {
     lastPullRef.current = Date.now();
 
-    fetchPlayerData(uid).then((remote) => {
-      if (!remote) {
-        console.log('[Gridlock] Sync: no remote data, pushing local');
+    fetchPlayerData(uid).then((result) => {
+      if (result.status === 'error') {
+        console.warn('[Gridlock] Sync: fetch failed, skipping (will NOT push over remote)');
+        return;
+      }
+
+      if (result.status === 'empty') {
+        console.log('[Gridlock] Sync: no remote data, pushing local as seed');
         pushPlayerData(uid, { ...dataRef.current, syncedAt: Date.now() });
         return;
       }
 
+      // status === 'found'
+      const remote = result.data;
       console.log('[Gridlock] Sync: merging remote data', remote);
 
       try {
@@ -95,11 +102,18 @@ export function useSync(config: SyncConfig): { scheduleSync: () => void } {
     pushPlayerData(uid, data);
   }, []);
 
-  // ------ Pull once on auth ready ------
+  // ------ Pull on auth ready + reset when UID changes ------
   useEffect(() => {
-    if (authLoading || !user || hasSyncedRef.current) return;
-    hasSyncedRef.current = true;
-    pullAndMerge(user.uid);
+    if (authLoading || !user) return;
+
+    const uid = user.uid;
+
+    // Already synced this UID — skip
+    if (syncedUidRef.current === uid) return;
+
+    // New UID (first load, or sign-out/sign-in) — pull fresh
+    syncedUidRef.current = uid;
+    pullAndMerge(uid);
   }, [authLoading, user, pullAndMerge]);
 
   // ------ Debounced push ------

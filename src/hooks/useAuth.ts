@@ -65,7 +65,7 @@ async function ensureUserDoc(user: User): Promise<string> {
 
   // New user — generate a name and create doc
   const name = user.displayName ?? generateDisplayName();
-  await setDoc(userRef, { displayName: name });
+  await setDoc(userRef, { displayName: name }, { merge: true });
   return name;
 }
 
@@ -129,36 +129,59 @@ export function useAuth(): AuthState {
     setAuthError(null);
     const provider = new GoogleAuthProvider();
 
-    const tryPopup = async () => {
-      if (user?.isAnonymous) {
-        const result = await linkWithPopup(user, provider);
-        const linked = result.user;
-        const name = linked.displayName ?? displayName ?? generateDisplayName();
-        await setDoc(doc(db, 'users', linked.uid), { displayName: name });
-        setDisplayName(name);
-        setCachedName(linked.uid, name);
-        setUser(linked);
-        return;
-      }
-      const result = await signInWithPopup(auth, provider);
-      const googleUser = result.user;
-      const name = googleUser.displayName ?? generateDisplayName();
-      await setDoc(doc(db, 'users', googleUser.uid), { displayName: name }, { merge: true });
+    const finishSignIn = async (u: User) => {
+      const name = u.displayName ?? displayName ?? generateDisplayName();
+      await setDoc(doc(db, 'users', u.uid), { displayName: name }, { merge: true });
       setDisplayName(name);
-      setCachedName(googleUser.uid, name);
-      setUser(googleUser);
+      setCachedName(u.uid, name);
+      setUser(u);
     };
 
-    const doRedirect = () => {
+    const tryPopup = async () => {
       if (user?.isAnonymous) {
-        linkWithRedirect(user, provider);
-      } else {
-        signInWithRedirect(auth, provider);
+        try {
+          const result = await linkWithPopup(user, provider);
+          await finishSignIn(result.user);
+          return;
+        } catch (linkErr: unknown) {
+          const linkCode = (linkErr as { code?: string }).code;
+          if (linkCode === 'auth/credential-already-in-use') {
+            // Google account already linked to another UID — sign in as that user
+            console.log('[Gridlock] Credential in use, signing in as existing Google user');
+            const result = await signInWithPopup(auth, provider);
+            await finishSignIn(result.user);
+            return;
+          }
+          throw linkErr; // re-throw other errors
+        }
       }
+      const result = await signInWithPopup(auth, provider);
+      await finishSignIn(result.user);
     };
 
     if (isMobile) {
-      doRedirect();
+      // On mobile, try link first; if credential is already in use, use regular sign-in
+      if (user?.isAnonymous) {
+        try {
+          await linkWithPopup(user, provider);
+          // If popup works on this mobile browser, great
+          return;
+        } catch (linkErr: unknown) {
+          const linkCode = (linkErr as { code?: string }).code;
+          if (linkCode === 'auth/credential-already-in-use') {
+            signInWithRedirect(auth, provider);
+            return;
+          }
+          // Popup likely blocked on mobile — fall back to redirect
+          if (linkCode === 'auth/popup-blocked' || linkCode === 'auth/popup-closed-by-user' || linkCode === 'auth/cancelled-popup-request') {
+            linkWithRedirect(user, provider);
+            return;
+          }
+          setAuthError(`Sign-in failed: ${linkCode}`);
+        }
+      } else {
+        signInWithRedirect(auth, provider);
+      }
       return;
     }
 
@@ -171,12 +194,11 @@ export function useAuth(): AuthState {
 
       // Popup blocked or closed — fall back to redirect
       if (code === 'auth/popup-blocked' || code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') {
-        doRedirect();
-        return;
-      }
-      // Credential already in use — fall back to regular sign-in via redirect
-      if (code === 'auth/credential-already-in-use') {
-        doRedirect();
+        if (user?.isAnonymous) {
+          linkWithRedirect(user, provider);
+        } else {
+          signInWithRedirect(auth, provider);
+        }
         return;
       }
 

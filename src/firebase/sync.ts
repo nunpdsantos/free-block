@@ -121,10 +121,15 @@ function parseFirestoreValue(val: Record<string, unknown>): unknown {
   return null;
 }
 
-export async function fetchPlayerData(uid: string): Promise<SyncedPlayerData | null> {
+export type FetchResult =
+  | { status: 'found'; data: SyncedPlayerData }
+  | { status: 'empty' }  // doc exists but no sync data, or doc doesn't exist
+  | { status: 'error' }; // fetch failed — do NOT push over remote
+
+export async function fetchPlayerData(uid: string): Promise<FetchResult> {
   try {
     const user = auth.currentUser;
-    if (!user) return null;
+    if (!user) return { status: 'error' };
 
     const idToken = await user.getIdToken();
     const url = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents/users/${uid}`;
@@ -132,11 +137,15 @@ export async function fetchPlayerData(uid: string): Promise<SyncedPlayerData | n
       headers: { 'Authorization': `Bearer ${idToken}` },
     });
 
-    if (!response.ok) return null;
+    if (response.status === 404) return { status: 'empty' };
+    if (!response.ok) {
+      console.error('[Gridlock] Sync fetch HTTP', response.status);
+      return { status: 'error' };
+    }
 
     const docData = await response.json();
     const fields = docData?.fields;
-    if (!fields?.stats) return null; // Doc exists but has no sync data yet
+    if (!fields?.stats) return { status: 'empty' }; // Doc exists but no sync data yet
 
     const stats = parseFirestoreValue(fields.stats) as PlayerStats;
     const achievements = fields.achievements
@@ -152,10 +161,10 @@ export async function fetchPlayerData(uid: string): Promise<SyncedPlayerData | n
       ? Number((fields.syncedAt as Record<string, unknown>).integerValue ?? (fields.syncedAt as Record<string, unknown>).doubleValue ?? 0)
       : 0;
 
-    return { stats, achievements, dailyStreak, dailyResults, syncedAt };
+    return { status: 'found', data: { stats, achievements, dailyStreak, dailyResults, syncedAt } };
   } catch (err) {
     console.error('[Gridlock] Sync fetch failed:', err);
-    return null;
+    return { status: 'error' };
   }
 }
 
