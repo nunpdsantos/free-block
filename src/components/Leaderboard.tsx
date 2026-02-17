@@ -5,13 +5,24 @@ import './Leaderboard.css';
 type LeaderboardContentProps = {
   entries: LeaderboardEntry[];
   globalEntries: GlobalLeaderboardEntry[];
+  globalMode: 'classic' | 'daily';
+  globalFromCache: boolean;
+  onGlobalModeChange: (mode: 'classic' | 'daily') => void;
   currentUid: string | null;
   onRefresh?: () => void;
 };
 
 type LeaderboardTab = 'global' | 'local';
 
-export function LeaderboardContent({ entries, globalEntries, currentUid, onRefresh }: LeaderboardContentProps) {
+export function LeaderboardContent({
+  entries,
+  globalEntries,
+  globalMode,
+  globalFromCache,
+  onGlobalModeChange,
+  currentUid,
+  onRefresh,
+}: LeaderboardContentProps) {
   const [tab, setTab] = useState<LeaderboardTab>('global');
   const [spinning, setSpinning] = useState(false);
 
@@ -54,7 +65,26 @@ export function LeaderboardContent({ entries, globalEntries, currentUid, onRefre
       </div>
 
       {tab === 'global' ? (
-        <GlobalTable entries={globalEntries} currentUid={currentUid} />
+        <>
+          <div className="leaderboard-mode-toggle">
+            <button
+              className={`leaderboard-mode-btn ${globalMode === 'classic' ? 'leaderboard-mode-btn--active' : ''}`}
+              onClick={() => onGlobalModeChange('classic')}
+            >
+              Classic
+            </button>
+            <button
+              className={`leaderboard-mode-btn ${globalMode === 'daily' ? 'leaderboard-mode-btn--active' : ''}`}
+              onClick={() => onGlobalModeChange('daily')}
+            >
+              Daily
+            </button>
+          </div>
+          {globalFromCache && globalEntries.length > 0 && (
+            <div className="leaderboard-cache-hint">Syncing...</div>
+          )}
+          <GlobalTable entries={globalEntries} currentUid={currentUid} />
+        </>
       ) : (
         <LocalTable entries={entries} />
       )}

@@ -1,6 +1,7 @@
 import {
   collection,
   query,
+  where,
   orderBy,
   limit,
   onSnapshot,
@@ -65,9 +66,36 @@ function setPending(entries: PendingScore[]): void {
 }
 
 // ---------------------------------------------------------------------------
-// Direct Firestore REST API write — bypasses SDK persistent cache entirely.
+// Direct Firestore REST API — bypasses SDK persistent cache entirely.
 // Gives immediate success/failure, no ghost entries, no stuck pending writes.
 // ---------------------------------------------------------------------------
+
+/** Read the current server score for a uid+mode via REST GET. */
+async function readScoreREST(
+  uid: string,
+  mode: 'classic' | 'daily',
+): Promise<number | null> {
+  const user = auth.currentUser;
+  if (!user) return null;
+
+  const idToken = await user.getIdToken();
+  const docId = `${uid}_${mode}`;
+  const url = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents/${LEADERBOARD_COLLECTION}/${docId}`;
+
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: { 'Authorization': `Bearer ${idToken}` },
+  });
+
+  if (response.status === 404) return null;
+  if (!response.ok) return null;
+
+  const doc = await response.json();
+  const scoreField = doc?.fields?.score;
+  if (scoreField?.integerValue) return Number(scoreField.integerValue);
+  if (scoreField?.doubleValue) return Number(scoreField.doubleValue);
+  return null;
+}
 
 async function writeScoreREST(
   uid: string,
@@ -103,8 +131,22 @@ async function writeScoreREST(
   });
 
   if (!response.ok) {
+    const status = response.status;
+
+    // 403 = security rules rejected — most likely the server already has a
+    // higher score (update rule: new > old). Read the actual server score
+    // and sync our localStorage best so we stop retrying.
+    if (status === 403) {
+      const serverScore = await readScoreREST(uid, mode).catch(() => null);
+      if (serverScore != null && serverScore >= score) {
+        setBestSubmitted(uid, mode, serverScore);
+        console.log(`[Gridlock] Server already has score ${serverScore} ≥ ${score} — synced localStorage`);
+        return; // Not a real failure — just stale local tracking
+      }
+    }
+
     const errorText = await response.text().catch(() => '');
-    throw new Error(`Firestore REST ${response.status}: ${errorText}`);
+    throw new Error(`Firestore REST ${status}: ${errorText}`);
   }
 }
 
@@ -184,43 +226,46 @@ export async function syncLocalBest(
 }
 
 /**
- * Real-time listener for top scores from Firestore.
+ * Real-time listener for top scores from Firestore, filtered by game mode.
  * Uses SDK onSnapshot (reads benefit from cache for offline support).
+ * Callback receives entries + fromCache flag so the UI can show a sync indicator.
+ *
+ * NOTE: requires a composite Firestore index on (mode ASC, score DESC).
+ * Deploy via `firebase deploy --only firestore:indexes` or create via the
+ * link in the console error the first time this query runs without it.
  */
 export function onTopScoresChanged(
-  callback: (entries: GlobalLeaderboardEntry[]) => void,
+  mode: 'classic' | 'daily',
+  callback: (entries: GlobalLeaderboardEntry[], fromCache: boolean) => void,
 ): () => void {
   const q = query(
     collection(db, LEADERBOARD_COLLECTION),
+    where('mode', '==', mode),
     orderBy('score', 'desc'),
-    limit(TOP_N * 3),
+    limit(TOP_N),
   );
 
   return onSnapshot(
     q,
     (snapshot) => {
-      const seen = new Set<string>();
       const entries: GlobalLeaderboardEntry[] = [];
 
       for (const d of snapshot.docs) {
         const data = d.data();
-        const uid = data.uid as string;
-        if (seen.has(uid)) continue;
-        seen.add(uid);
         entries.push({
-          uid,
+          uid: data.uid as string,
           displayName: data.displayName as string,
           score: data.score as number,
           mode: data.mode as 'classic' | 'daily',
           date: data.date as string,
         });
-        if (entries.length >= TOP_N) break;
       }
 
-      callback(entries);
+      callback(entries, snapshot.metadata.fromCache);
     },
     (error) => {
       console.error('[Gridlock] Leaderboard listener error:', error);
+      callback([], true);
     },
   );
 }

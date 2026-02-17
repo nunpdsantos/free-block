@@ -27,7 +27,7 @@
 
 ### Firebase (`src/firebase/`)
 - `config.ts` — Firebase init (`initializeApp`, `getAuth`, `initializeFirestore` with `persistentLocalCache` for offline PWA support). Exports `auth` + `db`. Emulator support via `VITE_USE_EMULATORS=true` env var.
-- `leaderboard.ts` — `submitScore(uid, displayName, score, mode)` writes to `leaderboard` collection; `onTopScoresChanged(callback)` returns real-time listener unsubscribe for top 20 scores.
+- `leaderboard.ts` — `submitScore(uid, displayName, score, mode)` writes to `leaderboard` collection via REST API (bypasses SDK cache); `onTopScoresChanged(mode, callback)` returns real-time listener unsubscribe for top 20 scores filtered by mode, callback receives `(entries, fromCache)`. On 403 (security rules rejection), `writeScoreREST` reads the server's actual score via `readScoreREST` and syncs localStorage best to prevent infinite retries.
 - `names.ts` — `generateDisplayName()` returns `Adjective_Noun` pattern (30x30 = 900 combos) for anonymous players.
 
 ### Auth (`src/hooks/useAuth.ts`)
@@ -71,7 +71,7 @@ App (screen state + leaderboard + theme + daily results + stats + achievements +
 │   ├── AuthStrip → Shows display name + Google sign-in/sign-out button
 │   ├── StatsContent → 8 stat cards in 2-col grid
 │   ├── AchievementsContent → 20 achievements gallery (locked/unlocked, tiers, progress bars)
-│   └── LeaderboardContent → Global/Local toggle; global shows top 20 with player names + current user highlight
+│   └── LeaderboardContent → Global/Local toggle + Classic/Daily mode sub-toggle; global shows top 20 per mode with player names + current user highlight + "Syncing..." cache indicator
 ├── DailyCalendar → Completed daily challenges list with share
 └── Game (mode: classic | daily) → Board, PieceTray, DragOverlay, ScoreDisplay
     ├── PauseMenu overlay (volume slider + theme picker with lock states + restart/quit)
@@ -103,4 +103,4 @@ AchievementToast (global, renders across all screens)
 - `useAuth` auto-creates anonymous accounts — every visitor gets a UID without any user action. Google sign-in `linkWithPopup` preserves the anonymous UID so all prior scores stay attached.
 - `authRef` in `App.tsx` avoids re-creating `handleGameOver` on every auth state change — reads uid/displayName from a ref instead of closing over `user`/`displayName` state.
 - Firestore `persistentLocalCache` with `persistentSingleTabManager` handles offline writes — scores submitted offline queue automatically and sync when back online.
-- `firestore.rules` at project root — deploy via `firebase deploy --only firestore:rules`. Leaderboard entries are create-only (no updates/deletes), uid must match auth, score 1-999999.
+- `firestore.rules` at project root — deploy via `firebase deploy --only firestore:rules`. Leaderboard entries are create-or-update (score must increase on update), uid must match auth, score 1-999999. `firestore.indexes.json` defines composite index on `(mode ASC, score DESC)` — deploy via `firebase deploy --only firestore:indexes`.

@@ -98,12 +98,17 @@ export default function App() {
 
   // --- Global leaderboard (real-time from Firestore) ---
   const [globalLeaderboard, setGlobalLeaderboard] = useState<GlobalLeaderboardEntry[]>([]);
+  const [leaderboardMode, setLeaderboardMode] = useState<'classic' | 'daily'>('classic');
+  const [leaderboardFromCache, setLeaderboardFromCache] = useState(false);
   const [leaderboardRefresh, setLeaderboardRefresh] = useState(0);
 
   useEffect(() => {
-    const unsub = onTopScoresChanged(setGlobalLeaderboard);
+    const unsub = onTopScoresChanged(leaderboardMode, (entries, fromCache) => {
+      setGlobalLeaderboard(entries);
+      setLeaderboardFromCache(fromCache);
+    });
     return unsub;
-  }, [leaderboardRefresh]);
+  }, [leaderboardMode, leaderboardRefresh]);
 
   const handleLeaderboardRefresh = useCallback(() => {
     setLeaderboardRefresh(n => n + 1);
@@ -354,6 +359,9 @@ export default function App() {
           dailyCount={dailyCount}
           leaderboard={leaderboard}
           globalLeaderboard={globalLeaderboard}
+          leaderboardMode={leaderboardMode}
+          leaderboardFromCache={leaderboardFromCache}
+          onLeaderboardModeChange={setLeaderboardMode}
           currentUid={user?.uid ?? null}
           authUser={user}
           authDisplayName={displayName}
