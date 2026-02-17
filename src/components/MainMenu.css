@@ -35,22 +35,35 @@
   opacity: 0.8;
 }
 
-.main-menu-identity__link {
-  background: none;
-  border: none;
-  font-size: 12px;
+.main-menu-identity__signin {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 13px;
   font-weight: 600;
   font-family: inherit;
-  color: var(--accent);
+  color: var(--text-primary);
   cursor: pointer;
-  padding: 2px 0;
-  opacity: 0.9;
-  transition: opacity 0.15s;
+  transition: background 0.15s, border-color 0.15s;
 }
 
-.main-menu-identity__link:hover {
-  opacity: 1;
-  text-decoration: underline;
+.main-menu-identity__signin:hover {
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+.main-menu-identity__signin:active {
+  transform: scale(0.97);
+}
+
+.main-menu-identity__hint {
+  font-size: 11px;
+  color: var(--text-secondary);
+  opacity: 0.6;
 }
 
 .main-menu-identity__error {

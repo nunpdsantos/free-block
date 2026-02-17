@@ -14,6 +14,7 @@ type AuthStripProps = {
 export function AuthStrip({ user, displayName, loading, onSignIn, onSignOut, onUpdateDisplayName }: AuthStripProps) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState('');
+  const [confirmSignOut, setConfirmSignOut] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -77,8 +78,20 @@ export function AuthStrip({ user, displayName, loading, onSignIn, onSignOut, onU
           </svg>
           Sign in with Google
         </button>
+      ) : confirmSignOut ? (
+        <div className="auth-strip__confirm">
+          <span className="auth-strip__confirm-text">Your scores will stay on the leaderboard, but you'll start fresh.</span>
+          <div className="auth-strip__confirm-actions">
+            <button className="auth-strip__btn auth-strip__btn--danger" onClick={() => { setConfirmSignOut(false); onSignOut(); }}>
+              Sign out
+            </button>
+            <button className="auth-strip__btn auth-strip__btn--secondary" onClick={() => setConfirmSignOut(false)}>
+              Cancel
+            </button>
+          </div>
+        </div>
       ) : (
-        <button className="auth-strip__btn auth-strip__btn--secondary" onClick={onSignOut}>
+        <button className="auth-strip__btn auth-strip__btn--secondary" onClick={() => setConfirmSignOut(true)}>
           Sign out
         </button>
       )}

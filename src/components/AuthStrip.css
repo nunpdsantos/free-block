@@ -70,7 +70,7 @@
 }
 
 .auth-strip__edit-icon {
-  opacity: 0.4;
+  opacity: 0.6;
   flex-shrink: 0;
   transition: opacity 0.15s ease;
 }
@@ -99,4 +99,33 @@
 
 .auth-strip__input:focus {
   border-color: var(--accent);
+}
+
+.auth-strip__confirm {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.auth-strip__confirm-text {
+  font-size: 11px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.auth-strip__confirm-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.auth-strip__btn--danger {
+  background: rgba(239, 68, 68, 0.2);
+  color: #F87171;
+  font-weight: 600;
+}
+
+.auth-strip__btn--danger:hover {
+  background: rgba(239, 68, 68, 0.35);
 }
