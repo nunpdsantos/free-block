@@ -80,7 +80,7 @@ export function ProfileScreen({
 
       <div className="profile-content">
         {activeTab === 'stats' && (
-          <StatsContent stats={stats} highScore={leaderboard.length > 0 ? leaderboard[0].score : 0} />
+          <StatsContent stats={stats} highScore={Math.max(leaderboard.length > 0 ? leaderboard[0].score : 0, playerRank?.score ?? 0)} />
         )}
         {activeTab === 'achievements' && (
           <AchievementsContent
