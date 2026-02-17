@@ -6,7 +6,7 @@ type LeaderboardContentProps = {
   entries: LeaderboardEntry[];
   globalEntries: GlobalLeaderboardEntry[];
   globalMode: 'classic' | 'daily';
-  globalFromCache: boolean;
+  globalLoading: boolean;
   onGlobalModeChange: (mode: 'classic' | 'daily') => void;
   currentUid: string | null;
   onRefresh?: () => void;
@@ -18,7 +18,7 @@ export function LeaderboardContent({
   entries,
   globalEntries,
   globalMode,
-  globalFromCache,
+  globalLoading,
   onGlobalModeChange,
   currentUid,
   onRefresh,
@@ -80,8 +80,8 @@ export function LeaderboardContent({
               Daily
             </button>
           </div>
-          {globalFromCache && globalEntries.length > 0 && (
-            <div className="leaderboard-cache-hint">Syncing...</div>
+          {globalLoading && (
+            <div className="leaderboard-cache-hint">Loading...</div>
           )}
           <GlobalTable entries={globalEntries} currentUid={currentUid} />
         </>

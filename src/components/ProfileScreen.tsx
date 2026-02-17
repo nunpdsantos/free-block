@@ -23,7 +23,7 @@ type ProfileScreenProps = {
   leaderboard: LeaderboardEntry[];
   globalLeaderboard: GlobalLeaderboardEntry[];
   leaderboardMode: 'classic' | 'daily';
-  leaderboardFromCache: boolean;
+  leaderboardLoading: boolean;
   onLeaderboardModeChange: (mode: 'classic' | 'daily') => void;
   currentUid: string | null;
   authUser: User | null;
@@ -44,7 +44,7 @@ export function ProfileScreen({
   leaderboard,
   globalLeaderboard,
   leaderboardMode,
-  leaderboardFromCache,
+  leaderboardLoading,
   onLeaderboardModeChange,
   currentUid,
   authUser,
@@ -100,7 +100,7 @@ export function ProfileScreen({
             entries={leaderboard}
             globalEntries={globalLeaderboard}
             globalMode={leaderboardMode}
-            globalFromCache={leaderboardFromCache}
+            globalLoading={leaderboardLoading}
             onGlobalModeChange={onLeaderboardModeChange}
             currentUid={currentUid}
             onRefresh={onLeaderboardRefresh}

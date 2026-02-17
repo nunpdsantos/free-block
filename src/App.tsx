@@ -9,7 +9,7 @@ import { checkAchievements, getAchievementById } from './game/achievements';
 import type { Achievement, AchievementContext } from './game/achievements';
 import { REVIVES_PER_GAME } from './game/constants';
 import { playAchievement } from './audio/sounds';
-import { submitScore, retryPendingScores, syncLocalBest, onTopScoresChanged } from './firebase/leaderboard';
+import { submitScore, retryPendingScores, syncLocalBest, fetchTopScores } from './firebase/leaderboard';
 import { Game } from './components/Game';
 import { MainMenu } from './components/MainMenu';
 import { Tutorial } from './components/Tutorial';
@@ -96,18 +96,20 @@ export default function App() {
   // --- Firebase auth ---
   const { user, displayName, loading: authLoading, authError, signInWithGoogle, signOut, updateDisplayName } = useAuth();
 
-  // --- Global leaderboard (real-time from Firestore) ---
+  // --- Global leaderboard (fetched via REST API) ---
   const [globalLeaderboard, setGlobalLeaderboard] = useState<GlobalLeaderboardEntry[]>([]);
   const [leaderboardMode, setLeaderboardMode] = useState<'classic' | 'daily'>('classic');
-  const [leaderboardFromCache, setLeaderboardFromCache] = useState(false);
+  const [leaderboardLoading, setLeaderboardLoading] = useState(false);
   const [leaderboardRefresh, setLeaderboardRefresh] = useState(0);
 
   useEffect(() => {
-    const unsub = onTopScoresChanged(leaderboardMode, (entries, fromCache) => {
-      setGlobalLeaderboard(entries);
-      setLeaderboardFromCache(fromCache);
-    });
-    return unsub;
+    let cancelled = false;
+    setLeaderboardLoading(true);
+    fetchTopScores(leaderboardMode)
+      .then((entries) => { if (!cancelled) setGlobalLeaderboard(entries); })
+      .catch((err) => { console.error('[Gridlock] Leaderboard fetch error:', err); })
+      .finally(() => { if (!cancelled) setLeaderboardLoading(false); });
+    return () => { cancelled = true; };
   }, [leaderboardMode, leaderboardRefresh]);
 
   const handleLeaderboardRefresh = useCallback(() => {
@@ -360,7 +362,7 @@ export default function App() {
           leaderboard={leaderboard}
           globalLeaderboard={globalLeaderboard}
           leaderboardMode={leaderboardMode}
-          leaderboardFromCache={leaderboardFromCache}
+          leaderboardLoading={leaderboardLoading}
           onLeaderboardModeChange={setLeaderboardMode}
           currentUid={user?.uid ?? null}
           authUser={user}

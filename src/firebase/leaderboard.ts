@@ -1,12 +1,4 @@
-import {
-  collection,
-  query,
-  where,
-  orderBy,
-  limit,
-  onSnapshot,
-} from 'firebase/firestore';
-import { db, auth } from './config';
+import { auth } from './config';
 import type { GlobalLeaderboardEntry } from '../game/types';
 
 const LEADERBOARD_COLLECTION = 'leaderboard';
@@ -226,46 +218,57 @@ export async function syncLocalBest(
 }
 
 /**
- * Real-time listener for top scores from Firestore, filtered by game mode.
- * Uses SDK onSnapshot (reads benefit from cache for offline support).
- * Callback receives entries + fromCache flag so the UI can show a sync indicator.
+ * Fetch top scores from Firestore via REST API, filtered by game mode.
+ * Bypasses the SDK persistent cache entirely — direct server query.
  *
  * NOTE: requires a composite Firestore index on (mode ASC, score DESC).
- * Deploy via `firebase deploy --only firestore:indexes` or create via the
- * link in the console error the first time this query runs without it.
  */
-export function onTopScoresChanged(
+export async function fetchTopScores(
   mode: 'classic' | 'daily',
-  callback: (entries: GlobalLeaderboardEntry[], fromCache: boolean) => void,
-): () => void {
-  const q = query(
-    collection(db, LEADERBOARD_COLLECTION),
-    where('mode', '==', mode),
-    orderBy('score', 'desc'),
-    limit(TOP_N),
-  );
-
-  return onSnapshot(
-    q,
-    (snapshot) => {
-      const entries: GlobalLeaderboardEntry[] = [];
-
-      for (const d of snapshot.docs) {
-        const data = d.data();
-        entries.push({
-          uid: data.uid as string,
-          displayName: data.displayName as string,
-          score: data.score as number,
-          mode: data.mode as 'classic' | 'daily',
-          date: data.date as string,
-        });
-      }
-
-      callback(entries, snapshot.metadata.fromCache);
+): Promise<GlobalLeaderboardEntry[]> {
+  const body = {
+    structuredQuery: {
+      from: [{ collectionId: LEADERBOARD_COLLECTION }],
+      where: {
+        fieldFilter: {
+          field: { fieldPath: 'mode' },
+          op: 'EQUAL',
+          value: { stringValue: mode },
+        },
+      },
+      orderBy: [{ field: { fieldPath: 'score' }, direction: 'DESCENDING' }],
+      limit: TOP_N,
     },
-    (error) => {
-      console.error('[Gridlock] Leaderboard listener error:', error);
-      callback([], true);
-    },
-  );
+  };
+
+  const url = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents:runQuery`;
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Firestore query failed: ${response.status}`);
+  }
+
+  const results = await response.json() as Array<{ document?: { fields: Record<string, { stringValue?: string; integerValue?: string; doubleValue?: number }> } }>;
+  const entries: GlobalLeaderboardEntry[] = [];
+
+  for (const result of results) {
+    const fields = result.document?.fields;
+    if (!fields) continue;
+    const score = fields.score?.integerValue
+      ? Number(fields.score.integerValue)
+      : fields.score?.doubleValue ?? 0;
+    entries.push({
+      uid: fields.uid?.stringValue ?? '',
+      displayName: fields.displayName?.stringValue ?? 'Unknown',
+      score,
+      mode: (fields.mode?.stringValue as 'classic' | 'daily') ?? mode,
+      date: fields.date?.stringValue ?? '',
+    });
+  }
+
+  return entries;
 }
