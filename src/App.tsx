@@ -94,7 +94,7 @@ export default function App() {
   const { needRefresh: [needRefresh], updateServiceWorker } = useRegisterSW();
 
   // --- Firebase auth ---
-  const { user, displayName, loading: authLoading, authError, signInWithGoogle, signOut, updateDisplayName } = useAuth();
+  const { user, displayName, loading: authLoading, authError, signInWithGoogle, updateDisplayName } = useAuth();
 
   // --- Global leaderboard (fetched via REST API) ---
   const [globalLeaderboard, setGlobalLeaderboard] = useState<GlobalLeaderboardEntry[]>([]);
@@ -369,7 +369,6 @@ export default function App() {
           authDisplayName={displayName}
           authLoading={authLoading}
           onSignIn={signInWithGoogle}
-          onSignOut={signOut}
           onUpdateDisplayName={updateDisplayName}
           onLeaderboardRefresh={handleLeaderboardRefresh}
           onBack={() => setScreen('menu')}

@@ -30,7 +30,6 @@ type ProfileScreenProps = {
   authDisplayName: string | null;
   authLoading: boolean;
   onSignIn: () => void;
-  onSignOut: () => void;
   onUpdateDisplayName: (name: string) => Promise<void>;
   onLeaderboardRefresh: () => void;
   onBack: () => void;
@@ -51,7 +50,6 @@ export function ProfileScreen({
   authDisplayName,
   authLoading,
   onSignIn,
-  onSignOut,
   onUpdateDisplayName,
   onLeaderboardRefresh,
   onBack,
@@ -67,7 +65,6 @@ export function ProfileScreen({
         displayName={authDisplayName}
         loading={authLoading}
         onSignIn={onSignIn}
-        onSignOut={onSignOut}
         onUpdateDisplayName={onUpdateDisplayName}
       />
 
