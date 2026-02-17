@@ -64,14 +64,14 @@ export const ALL_CLEAR_BONUS = 500;
 // Score milestones
 export const SCORE_MILESTONES = [1000, 2500, 5000, 10000, 25000, 50000] as const;
 
-// Speed bonus scoring
-export const SPEED_FAST_THRESHOLD = 5;         // seconds — at or below = max bonus
-export const SPEED_NEUTRAL_THRESHOLD = 15;     // seconds — decay to 1.0x
-export const SPEED_SLOW_THRESHOLD = 30;        // seconds — decay to penalty floor
-export const SPEED_FAST_MULTIPLIER = 2.0;      // max bonus for fast clears
+// Speed bonus scoring — aggressive curve to reward fast play
+export const SPEED_FAST_THRESHOLD = 3;         // seconds — at or below = max bonus
+export const SPEED_NEUTRAL_THRESHOLD = 10;     // seconds — decay to 1.0x
+export const SPEED_SLOW_THRESHOLD = 20;        // seconds — decay to penalty floor
+export const SPEED_FAST_MULTIPLIER = 3.0;      // triple points for blazing fast clears
 export const SPEED_NEUTRAL_MULTIPLIER = 1.0;   // baseline
-export const SPEED_SLOW_MULTIPLIER = 0.7;      // slow penalty
-export const SPEED_FLOOR_MULTIPLIER = 0.5;     // minimum multiplier (>30s)
+export const SPEED_SLOW_MULTIPLIER = 0.5;      // slow penalty — half points
+export const SPEED_FLOOR_MULTIPLIER = 0.3;     // minimum multiplier (>20s) — severe
 
 // Celebration text thresholds
 export const CELEBRATION_TEXTS = [
