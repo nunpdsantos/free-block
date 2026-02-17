@@ -1,9 +1,8 @@
 import { useState, useCallback } from 'react';
-import type { LeaderboardEntry, GlobalLeaderboardEntry, PlayerRankInfo } from '../game/types';
+import type { GlobalLeaderboardEntry, PlayerRankInfo } from '../game/types';
 import './Leaderboard.css';
 
 type LeaderboardContentProps = {
-  entries: LeaderboardEntry[];
   globalEntries: GlobalLeaderboardEntry[];
   playerRank: PlayerRankInfo | null;
   globalMode: 'classic' | 'daily';
@@ -13,10 +12,7 @@ type LeaderboardContentProps = {
   onRefresh?: () => void;
 };
 
-type LeaderboardTab = 'global' | 'local';
-
 export function LeaderboardContent({
-  entries,
   globalEntries,
   playerRank,
   globalMode,
@@ -25,7 +21,6 @@ export function LeaderboardContent({
   currentUid,
   onRefresh,
 }: LeaderboardContentProps) {
-  const [tab, setTab] = useState<LeaderboardTab>('global');
   const [spinning, setSpinning] = useState(false);
 
   const handleRefresh = useCallback(() => {
@@ -38,21 +33,21 @@ export function LeaderboardContent({
   return (
     <div className="leaderboard-wrapper">
       <div className="leaderboard-header">
-        <div className="leaderboard-toggle">
+        <div className="leaderboard-mode-toggle">
           <button
-            className={`leaderboard-toggle__btn ${tab === 'global' ? 'leaderboard-toggle__btn--active' : ''}`}
-            onClick={() => setTab('global')}
+            className={`leaderboard-mode-btn ${globalMode === 'classic' ? 'leaderboard-mode-btn--active' : ''}`}
+            onClick={() => onGlobalModeChange('classic')}
           >
-            Global
+            Classic
           </button>
           <button
-            className={`leaderboard-toggle__btn ${tab === 'local' ? 'leaderboard-toggle__btn--active' : ''}`}
-            onClick={() => setTab('local')}
+            className={`leaderboard-mode-btn ${globalMode === 'daily' ? 'leaderboard-mode-btn--active' : ''}`}
+            onClick={() => onGlobalModeChange('daily')}
           >
-            Local
+            Daily
           </button>
         </div>
-        {tab === 'global' && onRefresh && (
+        {onRefresh && (
           <button
             className={`leaderboard-refresh${spinning ? ' leaderboard-refresh--spinning' : ''}`}
             onClick={handleRefresh}
@@ -66,30 +61,11 @@ export function LeaderboardContent({
         )}
       </div>
 
-      {tab === 'global' ? (
-        <>
-          <div className="leaderboard-mode-toggle">
-            <button
-              className={`leaderboard-mode-btn ${globalMode === 'classic' ? 'leaderboard-mode-btn--active' : ''}`}
-              onClick={() => onGlobalModeChange('classic')}
-            >
-              Classic
-            </button>
-            <button
-              className={`leaderboard-mode-btn ${globalMode === 'daily' ? 'leaderboard-mode-btn--active' : ''}`}
-              onClick={() => onGlobalModeChange('daily')}
-            >
-              Daily
-            </button>
-          </div>
-          {globalLoading && (
-            <div className="leaderboard-cache-hint">Loading...</div>
-          )}
-          <GlobalTable entries={globalEntries} currentUid={currentUid} playerRank={playerRank} />
-        </>
-      ) : (
-        <LocalTable entries={entries} />
+      {globalLoading && (
+        <div className="leaderboard-cache-hint">Loading...</div>
       )}
+
+      <GlobalTable entries={globalEntries} currentUid={currentUid} playerRank={playerRank} />
     </div>
   );
 }
@@ -106,7 +82,7 @@ function GlobalTable({
   if (entries.length === 0) {
     return (
       <div className="leaderboard-empty">
-        No global scores yet — play a game!
+        No scores yet — play a game!
       </div>
     );
   }
@@ -153,40 +129,5 @@ function GlobalTable({
         </div>
       )}
     </div>
-  );
-}
-
-function LocalTable({ entries }: { entries: LeaderboardEntry[] }) {
-  if (entries.length === 0) {
-    return (
-      <div className="leaderboard-empty">
-        No scores yet — play a game!
-      </div>
-    );
-  }
-
-  return (
-    <table className="leaderboard-table">
-      <thead>
-        <tr>
-          <th>Rank</th>
-          <th>Score</th>
-          <th>Date</th>
-        </tr>
-      </thead>
-      <tbody>
-        {entries.map((entry, i) => (
-          <tr
-            key={i}
-            className={i === 0 ? 'leaderboard-row--top' : ''}
-            style={{ animationDelay: `${i * 80}ms` }}
-          >
-            <td className="leaderboard-rank">#{i + 1}</td>
-            <td className="leaderboard-score">{entry.score.toLocaleString()}</td>
-            <td className="leaderboard-date">{entry.date}</td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
   );
 }

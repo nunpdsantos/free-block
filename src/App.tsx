@@ -372,7 +372,6 @@ export default function App() {
           achievementProgress={achievementProgress}
           dailyStreak={dailyStreak}
           dailyCount={dailyCount}
-          leaderboard={leaderboard}
           globalLeaderboard={globalLeaderboard}
           playerRank={playerRank}
           leaderboardMode={leaderboardMode}
