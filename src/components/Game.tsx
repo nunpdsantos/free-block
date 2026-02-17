@@ -560,12 +560,15 @@ export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit
         />
         <PlaceSparkles cells={placedCells} trigger={placeTrigger} />
         {scorePop !== null && (
-          <div className="score-pop" key={scorePopKey}>
+          <div
+            className={`score-pop${scorePopMult !== null && scorePopMult >= 1.25 ? ' score-pop--fast' : scorePopMult !== null && scorePopMult < 0.95 ? ' score-pop--slow' : ''}`}
+            key={scorePopKey}
+          >
             +{scorePop.toLocaleString()}
             {scorePopMult !== null && Math.abs(scorePopMult - 1.0) >= 0.05 && (
-              <span className={`speed-mult ${scorePopMult > 1.0 ? 'speed-mult--fast' : 'speed-mult--slow'}`}>
-                {' '}{scorePopMult > 1.0 ? '\u26A1' : ''}{scorePopMult.toFixed(1)}x
-              </span>
+              <div className={`speed-mult ${scorePopMult > 1.0 ? 'speed-mult--fast' : 'speed-mult--slow'}`}>
+                {scorePopMult > 1.0 ? '\u26A1 ' : ''}{scorePopMult.toFixed(1)}x
+              </div>
             )}
           </div>
         )}

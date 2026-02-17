@@ -98,6 +98,18 @@ const PIECE_DEFS: PieceDef[] = [
     c(2,0), c(2,1), c(2,2),
   ], weight: 2, tier: 'hard' },
 
+  // Square 4x4 (16 cells) — hard (covers 25% of the board)
+  { id: 'sq-4', coords: [
+    c(0,0), c(0,1), c(0,2), c(0,3),
+    c(1,0), c(1,1), c(1,2), c(1,3),
+    c(2,0), c(2,1), c(2,2), c(2,3),
+    c(3,0), c(3,1), c(3,2), c(3,3),
+  ], weight: 1, tier: 'hard' },
+
+  // Diagonal domino (2 cells, 2 orientations) — hard (non-adjacent, creates guaranteed gap)
+  { id: 'diag-dom-1', coords: [c(0,0), c(1,1)], weight: 3, tier: 'hard' },
+  { id: 'diag-dom-2', coords: [c(0,1), c(1,0)], weight: 3, tier: 'hard' },
+
   // Plus/Cross (5 cells, 1 orientation) — hard (can't place within 1 cell of edge)
   { id: 'plus', coords: [c(0,1), c(1,0), c(1,1), c(1,2), c(2,1)], weight: 2, tier: 'hard' },
 
