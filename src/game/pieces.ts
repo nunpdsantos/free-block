@@ -110,15 +110,6 @@ const PIECE_DEFS: PieceDef[] = [
   { id: 'diag-dom-1', coords: [c(0,0), c(1,1)], weight: 3, tier: 'hard' },
   { id: 'diag-dom-2', coords: [c(0,1), c(1,0)], weight: 3, tier: 'hard' },
 
-  // Plus/Cross (5 cells, 1 orientation) — hard (can't place within 1 cell of edge)
-  { id: 'plus', coords: [c(0,1), c(1,0), c(1,1), c(1,2), c(2,1)], weight: 2, tier: 'hard' },
-
-  // U-shape (5 cells, 4 orientations) — hard (gap creates holes)
-  { id: 'u-1', coords: [c(0,0), c(0,2), c(1,0), c(1,1), c(1,2)], weight: 2, tier: 'hard' }, // open top
-  { id: 'u-2', coords: [c(0,0), c(0,1), c(1,0), c(2,0), c(2,1)], weight: 2, tier: 'hard' }, // open right
-  { id: 'u-3', coords: [c(0,0), c(0,1), c(0,2), c(1,0), c(1,2)], weight: 2, tier: 'hard' }, // open bottom
-  { id: 'u-4', coords: [c(0,0), c(0,1), c(1,1), c(2,0), c(2,1)], weight: 2, tier: 'hard' }, // open left
-
   // Diagonal (3 cells, 2 orientations) — hard (non-adjacent, fragments board)
   { id: 'diag-1', coords: [c(0,0), c(1,1), c(2,2)], weight: 3, tier: 'hard' }, // top-left to bottom-right
   { id: 'diag-2', coords: [c(0,2), c(1,1), c(2,0)], weight: 3, tier: 'hard' }, // top-right to bottom-left
@@ -129,29 +120,6 @@ const PIECE_DEFS: PieceDef[] = [
   { id: 'big-t-3', coords: [c(0,1), c(1,1), c(2,0), c(2,1), c(2,2)], weight: 2, tier: 'hard' }, // T up
   { id: 'big-t-4', coords: [c(0,2), c(1,0), c(1,1), c(1,2), c(2,2)], weight: 2, tier: 'hard' }, // T left (stem right)
 
-  // P-shape (5 cells, 4 orientations) — hard (asymmetric, hard to visualize)
-  { id: 'p-1', coords: [c(0,0), c(0,1), c(1,0), c(1,1), c(2,0)], weight: 2, tier: 'hard' }, // P facing right
-  { id: 'p-2', coords: [c(0,0), c(0,1), c(0,2), c(1,1), c(1,2)], weight: 2, tier: 'hard' }, // P rotated 90
-  { id: 'p-3', coords: [c(0,1), c(1,0), c(1,1), c(2,0), c(2,1)], weight: 2, tier: 'hard' }, // P rotated 180
-  { id: 'p-4', coords: [c(0,0), c(0,1), c(1,0), c(1,1), c(1,2)], weight: 2, tier: 'hard' }, // P rotated 270
-
-  // Corner 3x3 (7 cells, 4 orientations) — hard (3x3 square with 2-cell notch)
-  { id: 'corner3-1', coords: [c(0,0), c(0,1), c(0,2), c(1,0), c(1,1), c(2,0), c(2,1)], weight: 1, tier: 'hard' }, // notch bottom-right
-  { id: 'corner3-2', coords: [c(0,0), c(0,1), c(0,2), c(1,1), c(1,2), c(2,1), c(2,2)], weight: 1, tier: 'hard' }, // notch bottom-left
-  { id: 'corner3-3', coords: [c(0,1), c(0,2), c(1,1), c(1,2), c(2,0), c(2,1), c(2,2)], weight: 1, tier: 'hard' }, // notch top-left
-  { id: 'corner3-4', coords: [c(0,0), c(0,1), c(1,0), c(1,1), c(2,0), c(2,1), c(2,2)], weight: 1, tier: 'hard' }, // notch top-right
-
-  // Staircase (5 cells, 4 orientations) — hard (diagonal zigzag across 3 rows)
-  { id: 'stair-1', coords: [c(0,0), c(1,0), c(1,1), c(2,1), c(2,2)], weight: 3, tier: 'hard' }, // descending right
-  { id: 'stair-2', coords: [c(0,1), c(0,2), c(1,0), c(1,1), c(2,0)], weight: 3, tier: 'hard' }, // descending left
-  { id: 'stair-3', coords: [c(0,0), c(0,1), c(1,1), c(1,2), c(2,2)], weight: 3, tier: 'hard' }, // ascending right
-  { id: 'stair-4', coords: [c(0,2), c(1,1), c(1,2), c(2,0), c(2,1)], weight: 3, tier: 'hard' }, // ascending left
-
-  // Thick-L (5 cells, 4 orientations) — hard (2-wide L shape)
-  { id: 'thick-l-1', coords: [c(0,0), c(0,1), c(1,0), c(2,0), c(2,1)], weight: 2, tier: 'hard' }, // L down-right
-  { id: 'thick-l-2', coords: [c(0,0), c(0,1), c(0,2), c(1,2), c(2,2)], weight: 2, tier: 'hard' }, // L right-down (rotated)
-  { id: 'thick-l-3', coords: [c(0,0), c(0,1), c(1,1), c(2,0), c(2,1)], weight: 2, tier: 'hard' }, // L up-left
-  { id: 'thick-l-4', coords: [c(0,0), c(1,0), c(2,0), c(2,1), c(2,2)], weight: 2, tier: 'hard' }, // L left-up
 ];
 
 function pickRandomColor(rng: () => number = Math.random): string {
