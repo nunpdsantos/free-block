@@ -44,7 +44,8 @@
   to { transform: rotate(360deg); }
 }
 
-.leaderboard-mode-toggle {
+/* Global / Personal tab toggle */
+.leaderboard-tab-toggle {
   display: flex;
   gap: 0;
   background: rgba(255, 255, 255, 0.05);
@@ -52,7 +53,7 @@
   padding: 3px;
 }
 
-.leaderboard-mode-btn {
+.leaderboard-tab-btn {
   background: none;
   border: none;
   padding: 6px 16px;
@@ -65,12 +66,43 @@
   transition: background 0.15s ease, color 0.15s ease;
 }
 
+.leaderboard-tab-btn:hover {
+  color: var(--text-primary);
+}
+
+.leaderboard-tab-btn--active {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
+}
+
+/* Classic / Daily sub-toggle */
+.leaderboard-mode-toggle {
+  display: flex;
+  gap: 0;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 6px;
+  padding: 2px;
+}
+
+.leaderboard-mode-btn {
+  background: none;
+  border: none;
+  padding: 4px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  font-family: inherit;
+  color: var(--text-secondary);
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
 .leaderboard-mode-btn:hover {
   color: var(--text-primary);
 }
 
 .leaderboard-mode-btn--active {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.08);
   color: var(--text-primary);
 }
 
@@ -123,6 +155,11 @@
 
 .leaderboard-score {
   font-weight: 600;
+}
+
+.leaderboard-date {
+  font-size: 14px;
+  color: var(--text-secondary);
 }
 
 .leaderboard-player {
