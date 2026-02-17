@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { useRegisterSW } from 'virtual:pwa-register/react';
-import type { LeaderboardEntry, DailyResult, PlayerStats, AchievementProgress, DailyStreak, GlobalLeaderboardEntry } from './game/types';
+import type { LeaderboardEntry, DailyResult, PlayerStats, AchievementProgress, DailyStreak, GlobalLeaderboardEntry, PlayerRankInfo } from './game/types';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { useAuth } from './hooks/useAuth';
 import { getThemeById, applyTheme } from './game/themes';
@@ -9,7 +9,7 @@ import { checkAchievements, getAchievementById } from './game/achievements';
 import type { Achievement, AchievementContext } from './game/achievements';
 import { REVIVES_PER_GAME } from './game/constants';
 import { playAchievement } from './audio/sounds';
-import { submitScore, retryPendingScores, syncLocalBest, fetchTopScores } from './firebase/leaderboard';
+import { submitScore, retryPendingScores, syncLocalBest, fetchTopScores, fetchPlayerRank } from './firebase/leaderboard';
 import { Game } from './components/Game';
 import { MainMenu } from './components/MainMenu';
 import { Tutorial } from './components/Tutorial';
@@ -98,6 +98,7 @@ export default function App() {
 
   // --- Global leaderboard (fetched via REST API) ---
   const [globalLeaderboard, setGlobalLeaderboard] = useState<GlobalLeaderboardEntry[]>([]);
+  const [playerRank, setPlayerRank] = useState<PlayerRankInfo | null>(null);
   const [leaderboardMode, setLeaderboardMode] = useState<'classic' | 'daily'>('classic');
   const [leaderboardLoading, setLeaderboardLoading] = useState(false);
   const [leaderboardRefresh, setLeaderboardRefresh] = useState(0);
@@ -105,12 +106,24 @@ export default function App() {
   useEffect(() => {
     let cancelled = false;
     setLeaderboardLoading(true);
-    fetchTopScores(leaderboardMode)
-      .then((entries) => { if (!cancelled) setGlobalLeaderboard(entries); })
+    setPlayerRank(null);
+
+    const uid = user?.uid;
+    const fetchAll = Promise.all([
+      fetchTopScores(leaderboardMode),
+      uid ? fetchPlayerRank(uid, leaderboardMode) : Promise.resolve(null),
+    ]);
+
+    fetchAll
+      .then(([entries, rank]) => {
+        if (cancelled) return;
+        setGlobalLeaderboard(entries);
+        setPlayerRank(rank);
+      })
       .catch((err) => { console.error('[Gridlock] Leaderboard fetch error:', err); })
       .finally(() => { if (!cancelled) setLeaderboardLoading(false); });
     return () => { cancelled = true; };
-  }, [leaderboardMode, leaderboardRefresh]);
+  }, [leaderboardMode, leaderboardRefresh, user?.uid]);
 
   const handleLeaderboardRefresh = useCallback(() => {
     setLeaderboardRefresh(n => n + 1);
@@ -361,6 +374,7 @@ export default function App() {
           dailyCount={dailyCount}
           leaderboard={leaderboard}
           globalLeaderboard={globalLeaderboard}
+          playerRank={playerRank}
           leaderboardMode={leaderboardMode}
           leaderboardLoading={leaderboardLoading}
           onLeaderboardModeChange={setLeaderboardMode}

@@ -97,3 +97,9 @@ export type DailyStreak = {
   bestStreak: number;
   lastPlayedDate: string | null; // YYYY-MM-DD
 };
+
+export type PlayerRankInfo = {
+  rank: number;
+  score: number;
+  displayName: string;
+};

@@ -192,3 +192,50 @@
     transform: translateX(0);
   }
 }
+
+/* Sticky "You" footer when player is outside top N */
+.leaderboard-table-wrap {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.leaderboard-you {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  max-width: 340px;
+  padding: 10px 12px;
+  margin-top: 4px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  gap: 12px;
+  animation: leaderboard-row-enter 0.35s ease-out 0.2s both;
+}
+
+.leaderboard-you__rank {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  min-width: 42px;
+}
+
+.leaderboard-you__name {
+  flex: 1;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--accent);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.leaderboard-you__score {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  flex-shrink: 0;
+}

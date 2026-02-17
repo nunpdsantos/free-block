@@ -1,10 +1,11 @@
 import { useState, useCallback } from 'react';
-import type { LeaderboardEntry, GlobalLeaderboardEntry } from '../game/types';
+import type { LeaderboardEntry, GlobalLeaderboardEntry, PlayerRankInfo } from '../game/types';
 import './Leaderboard.css';
 
 type LeaderboardContentProps = {
   entries: LeaderboardEntry[];
   globalEntries: GlobalLeaderboardEntry[];
+  playerRank: PlayerRankInfo | null;
   globalMode: 'classic' | 'daily';
   globalLoading: boolean;
   onGlobalModeChange: (mode: 'classic' | 'daily') => void;
@@ -17,6 +18,7 @@ type LeaderboardTab = 'global' | 'local';
 export function LeaderboardContent({
   entries,
   globalEntries,
+  playerRank,
   globalMode,
   globalLoading,
   onGlobalModeChange,
@@ -83,7 +85,7 @@ export function LeaderboardContent({
           {globalLoading && (
             <div className="leaderboard-cache-hint">Loading...</div>
           )}
-          <GlobalTable entries={globalEntries} currentUid={currentUid} />
+          <GlobalTable entries={globalEntries} currentUid={currentUid} playerRank={playerRank} />
         </>
       ) : (
         <LocalTable entries={entries} />
@@ -92,7 +94,15 @@ export function LeaderboardContent({
   );
 }
 
-function GlobalTable({ entries, currentUid }: { entries: GlobalLeaderboardEntry[]; currentUid: string | null }) {
+function GlobalTable({
+  entries,
+  currentUid,
+  playerRank,
+}: {
+  entries: GlobalLeaderboardEntry[];
+  currentUid: string | null;
+  playerRank: PlayerRankInfo | null;
+}) {
   if (entries.length === 0) {
     return (
       <div className="leaderboard-empty">
@@ -101,35 +111,48 @@ function GlobalTable({ entries, currentUid }: { entries: GlobalLeaderboardEntry[
     );
   }
 
+  const playerInList = currentUid != null && entries.some((e) => e.uid === currentUid);
+  const showFooter = !playerInList && playerRank != null && playerRank.rank > 0;
+
   return (
-    <table className="leaderboard-table">
-      <thead>
-        <tr>
-          <th>Rank</th>
-          <th>Player</th>
-          <th>Score</th>
-        </tr>
-      </thead>
-      <tbody>
-        {entries.map((entry, i) => {
-          const isMe = currentUid != null && entry.uid === currentUid;
-          let rowClass = '';
-          if (i === 0) rowClass += ' leaderboard-row--top';
-          if (isMe) rowClass += ' leaderboard-row--me';
-          return (
-            <tr
-              key={`${entry.uid}-${entry.score}-${i}`}
-              className={rowClass}
-              style={{ animationDelay: `${i * 80}ms` }}
-            >
-              <td className="leaderboard-rank">#{i + 1}</td>
-              <td className="leaderboard-player">{entry.displayName}</td>
-              <td className="leaderboard-score">{entry.score.toLocaleString()}</td>
-            </tr>
-          );
-        })}
-      </tbody>
-    </table>
+    <div className="leaderboard-table-wrap">
+      <table className="leaderboard-table">
+        <thead>
+          <tr>
+            <th>Rank</th>
+            <th>Player</th>
+            <th>Score</th>
+          </tr>
+        </thead>
+        <tbody>
+          {entries.map((entry, i) => {
+            const isMe = currentUid != null && entry.uid === currentUid;
+            let rowClass = '';
+            if (i === 0) rowClass += ' leaderboard-row--top';
+            if (isMe) rowClass += ' leaderboard-row--me';
+            return (
+              <tr
+                key={`${entry.uid}-${entry.score}-${i}`}
+                className={rowClass}
+                style={{ animationDelay: `${i * 80}ms` }}
+              >
+                <td className="leaderboard-rank">#{i + 1}</td>
+                <td className="leaderboard-player">{entry.displayName}</td>
+                <td className="leaderboard-score">{entry.score.toLocaleString()}</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+
+      {showFooter && (
+        <div className="leaderboard-you">
+          <span className="leaderboard-you__rank">#{playerRank.rank}</span>
+          <span className="leaderboard-you__name">{playerRank.displayName}</span>
+          <span className="leaderboard-you__score">{playerRank.score.toLocaleString()}</span>
+        </div>
+      )}
+    </div>
   );
 }
 

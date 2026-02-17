@@ -1,5 +1,5 @@
 import { auth } from './config';
-import type { GlobalLeaderboardEntry } from '../game/types';
+import type { GlobalLeaderboardEntry, PlayerRankInfo } from '../game/types';
 
 const LEADERBOARD_COLLECTION = 'leaderboard';
 const TOP_N = 20;
@@ -271,4 +271,78 @@ export async function fetchTopScores(
   }
 
   return entries;
+}
+
+/**
+ * Fetch the current player's rank and score for a given mode.
+ * Uses a public doc read + count aggregation query (no auth needed).
+ * Returns null if the player has no submitted score for this mode.
+ */
+export async function fetchPlayerRank(
+  uid: string,
+  mode: 'classic' | 'daily',
+): Promise<PlayerRankInfo | null> {
+  const docId = `${uid}_${mode}`;
+  const docUrl = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents/${LEADERBOARD_COLLECTION}/${docId}`;
+
+  const docResponse = await fetch(docUrl);
+  if (!docResponse.ok) return null;
+
+  const doc = await docResponse.json();
+  const fields = doc?.fields;
+  if (!fields) return null;
+
+  const score = fields.score?.integerValue
+    ? Number(fields.score.integerValue)
+    : fields.score?.doubleValue ?? 0;
+  const displayName = fields.displayName?.stringValue ?? 'Unknown';
+
+  if (score <= 0) return null;
+
+  // Count players with a strictly higher score in the same mode
+  const countUrl = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents:runAggregationQuery`;
+  const countBody = {
+    structuredAggregationQuery: {
+      structuredQuery: {
+        from: [{ collectionId: LEADERBOARD_COLLECTION }],
+        where: {
+          compositeFilter: {
+            op: 'AND',
+            filters: [
+              {
+                fieldFilter: {
+                  field: { fieldPath: 'mode' },
+                  op: 'EQUAL',
+                  value: { stringValue: mode },
+                },
+              },
+              {
+                fieldFilter: {
+                  field: { fieldPath: 'score' },
+                  op: 'GREATER_THAN',
+                  value: { integerValue: String(score) },
+                },
+              },
+            ],
+          },
+        },
+      },
+      aggregations: [{ count: {}, alias: 'count' }],
+    },
+  };
+
+  const countResponse = await fetch(countUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(countBody),
+  });
+
+  let rank = -1;
+  if (countResponse.ok) {
+    const countResult = await countResponse.json();
+    const countValue = countResult?.[0]?.result?.aggregateFields?.count?.integerValue;
+    if (countValue != null) rank = Number(countValue) + 1;
+  }
+
+  return { rank, score, displayName };
 }

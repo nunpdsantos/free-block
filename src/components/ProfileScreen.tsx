@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { User } from 'firebase/auth';
-import type { PlayerStats, AchievementProgress, DailyStreak, LeaderboardEntry, GlobalLeaderboardEntry } from '../game/types';
+import type { PlayerStats, AchievementProgress, DailyStreak, LeaderboardEntry, GlobalLeaderboardEntry, PlayerRankInfo } from '../game/types';
 import { StatsContent } from './StatsScreen';
 import { AchievementsContent } from './AchievementsScreen';
 import { LeaderboardContent } from './Leaderboard';
@@ -22,6 +22,7 @@ type ProfileScreenProps = {
   dailyCount: number;
   leaderboard: LeaderboardEntry[];
   globalLeaderboard: GlobalLeaderboardEntry[];
+  playerRank: PlayerRankInfo | null;
   leaderboardMode: 'classic' | 'daily';
   leaderboardLoading: boolean;
   onLeaderboardModeChange: (mode: 'classic' | 'daily') => void;
@@ -42,6 +43,7 @@ export function ProfileScreen({
   dailyCount,
   leaderboard,
   globalLeaderboard,
+  playerRank,
   leaderboardMode,
   leaderboardLoading,
   onLeaderboardModeChange,
@@ -96,6 +98,7 @@ export function ProfileScreen({
           <LeaderboardContent
             entries={leaderboard}
             globalEntries={globalLeaderboard}
+            playerRank={playerRank}
             globalMode={leaderboardMode}
             globalLoading={leaderboardLoading}
             onGlobalModeChange={onLeaderboardModeChange}
