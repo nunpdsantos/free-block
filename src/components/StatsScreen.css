@@ -5,43 +5,139 @@
   padding: 40px 0;
 }
 
-.stats-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
+.stats-layout {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   width: 100%;
   max-width: 320px;
+  gap: 20px;
 }
 
-.stats-card {
-  background: linear-gradient(135deg, var(--card-bg-light), var(--card-bg));
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 12px;
-  padding: 16px 12px;
+/* Hero: High Score */
+.stats-hero {
   text-align: center;
-  animation: stats-card-enter 0.35s ease-out both;
+  animation: stats-hero-enter 0.4s ease-out both;
 }
 
-.stats-card-value {
-  font-size: 24px;
+.stats-hero-value {
+  font-size: 42px;
   font-weight: 900;
+  color: var(--text-primary);
+  line-height: 1;
+  text-shadow: 0 0 20px var(--accent-glow);
+}
+
+.stats-hero-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  margin-top: 6px;
+}
+
+/* Key metrics row */
+.stats-key-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  width: 100%;
+  padding: 12px 0;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 12px;
+  animation: stats-row-enter 0.4s ease-out 0.06s both;
+}
+
+.stats-key {
+  flex: 1;
+  text-align: center;
+}
+
+.stats-key-value {
+  font-size: 22px;
+  font-weight: 800;
   color: var(--text-primary);
   line-height: 1.2;
 }
 
-.stats-card-label {
-  font-size: 11px;
+.stats-key-label {
+  font-size: 10px;
   font-weight: 700;
   color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  margin-top: 4px;
+  margin-top: 2px;
 }
 
-@keyframes stats-card-enter {
+.stats-key-divider {
+  width: 1px;
+  height: 28px;
+  background: rgba(255, 255, 255, 0.1);
+  flex-shrink: 0;
+}
+
+/* Detail cards */
+.stats-detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  width: 100%;
+}
+
+.stats-detail {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 10px;
+  padding: 14px 12px;
+  text-align: center;
+  animation: stats-detail-enter 0.35s ease-out both;
+}
+
+.stats-detail-value {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+
+.stats-detail-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: 3px;
+}
+
+/* Animations */
+@keyframes stats-hero-enter {
   from {
     opacity: 0;
-    transform: scale(0.9) translateY(10px);
+    transform: scale(0.85);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes stats-row-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes stats-detail-enter {
+  from {
+    opacity: 0;
+    transform: scale(0.9) translateY(8px);
   }
   to {
     opacity: 1;
