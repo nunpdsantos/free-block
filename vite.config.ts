@@ -10,6 +10,9 @@ export default defineConfig({
       registerType: 'prompt',
       workbox: {
         globPatterns: ['**/*.{js,css,html,png,svg,woff2}'],
+        // Skip waiting forces the new SW to activate immediately
+        skipWaiting: true,
+        clientsClaim: true,
       },
     }),
   ],
