@@ -16,10 +16,10 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
-// One-time Firestore cache clear: wipe ghost leaderboard entries from failed
-// writes (old 'score is int' rule rejected all JS numbers).
+// One-time Firestore cache clear: wipe stale IndexedDB so the SDK re-fetches
+// from server. Bump version when query shape changes (e.g. new composite index).
 // NOTE: only clears Firestore IndexedDB — local leaderboard (localStorage) is preserved.
-const CACHE_V = 'gridlock-cache-v3';
+const CACHE_V = 'gridlock-cache-v4';
 if (!localStorage.getItem(CACHE_V)) {
   try {
     const dbNames = [
