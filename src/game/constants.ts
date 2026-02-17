@@ -64,6 +64,15 @@ export const ALL_CLEAR_BONUS = 500;
 // Score milestones
 export const SCORE_MILESTONES = [1000, 2500, 5000, 10000, 25000, 50000] as const;
 
+// Speed bonus scoring
+export const SPEED_FAST_THRESHOLD = 5;         // seconds — at or below = max bonus
+export const SPEED_NEUTRAL_THRESHOLD = 15;     // seconds — decay to 1.0x
+export const SPEED_SLOW_THRESHOLD = 30;        // seconds — decay to penalty floor
+export const SPEED_FAST_MULTIPLIER = 1.5;      // max bonus for fast clears
+export const SPEED_NEUTRAL_MULTIPLIER = 1.0;   // baseline
+export const SPEED_SLOW_MULTIPLIER = 0.8;      // slow penalty
+export const SPEED_FLOOR_MULTIPLIER = 0.6;     // minimum multiplier (>30s)
+
 // Celebration text thresholds
 export const CELEBRATION_TEXTS = [
   { minLines: 1, text: 'Good Work!' },

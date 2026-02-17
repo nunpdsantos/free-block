@@ -7,6 +7,7 @@ import {
   clearLines,
   getClearingCells,
   calculateScore,
+  computeSpeedMultiplier,
   canAnyPieceFit,
   getCelebrationText,
   clearCellsForRevive,
@@ -34,6 +35,7 @@ export function createInitialState(): GameState {
     undosRemaining: UNDOS_PER_GAME,
     postReviveGrace: false,
     mode: 'classic',
+    lastClearTimestamp: null,
   };
 }
 
@@ -58,6 +60,7 @@ export function createDailyState(seed: number): GameState {
     postReviveGrace: false,
     mode: 'daily',
     dailySeed: seed,
+    lastClearTimestamp: null,
   };
 }
 
@@ -70,13 +73,14 @@ function takeSnapshot(state: GameState): UndoSnapshot {
     movesSinceLastClear: state.movesSinceLastClear,
     pieceGeneration: state.pieceGeneration,
     lastMilestone: state.lastMilestone,
+    lastClearTimestamp: state.lastClearTimestamp,
   };
 }
 
 export function gameReducer(state: GameState, action: GameAction): GameState {
   switch (action.type) {
     case 'PLACE_PIECE': {
-      const { pieceIndex, row, col } = action;
+      const { pieceIndex, row, col, timestamp } = action;
       const piece = state.currentPieces[pieceIndex];
       if (!piece) return state;
       if (!canPlacePiece(state.board, piece, row, col)) return state;
@@ -105,11 +109,17 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       // Update movesSinceLastClear
       const newMovesSinceLastClear = linesCleared > 0 ? 0 : state.movesSinceLastClear + 1;
 
+      // Speed bonus (only applies when clearing lines and we have a reference timestamp)
+      const speedMult = linesCleared > 0
+        ? computeSpeedMultiplier(state.lastClearTimestamp, timestamp)
+        : null;
+
       // Calculate score
       const pointsEarned = calculateScore(
         clearingCells.length,
         linesCleared,
-        linesCleared > 0 ? newStreak - 1 : 0
+        linesCleared > 0 ? newStreak - 1 : 0,
+        speedMult ?? 1.0
       );
 
       // All-clear detection + bonus
@@ -181,6 +191,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         pieceGeneration: newPieceGeneration,
         lastMilestone: newLastMilestone,
         undoSnapshot,
+        lastClearTimestamp: linesCleared > 0 ? timestamp : state.lastClearTimestamp,
       };
     }
 
@@ -216,6 +227,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         postReviveGrace: true,
         celebrationText: null,
         pieceGeneration: state.pieceGeneration + 1,
+        lastClearTimestamp: null,
       };
     }
 
@@ -232,6 +244,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         movesSinceLastClear: snap.movesSinceLastClear,
         pieceGeneration: snap.pieceGeneration,
         lastMilestone: snap.lastMilestone,
+        lastClearTimestamp: snap.lastClearTimestamp,
         isGameOver: false,
         lastClearCount: 0,
         celebrationText: null,

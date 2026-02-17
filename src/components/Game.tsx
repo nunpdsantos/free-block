@@ -9,6 +9,7 @@ import {
   findCompletedLines,
   getClearingCells,
   calculateScore,
+  computeSpeedMultiplier,
   clearLines,
   isBoardEmpty,
   getBoardFillRatio,
@@ -99,6 +100,7 @@ export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit
   const [volume, setVolumeState] = useState(getVolume);
   const [scorePop, setScorePop] = useState<number | null>(null);
   const [scorePopKey, setScorePopKey] = useState(0);
+  const [scorePopMult, setScorePopMult] = useState<number | null>(null);
   const [reviveFlash, setReviveFlash] = useState(false);
   const [clearedLines, setClearedLines] = useState<{ rows: number[]; cols: number[] } | null>(null);
   const [cellParticleTrigger, setCellParticleTrigger] = useState(0);
@@ -218,6 +220,8 @@ export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit
       if (!piece) return;
       if (!canPlacePiece(state.board, piece, row, col)) return;
 
+      const dropTimestamp = Date.now();
+
       // Danger level for audio thinning — compute from current board
       const fr = getBoardFillRatio(state.board);
       const dl = fr >= 0.85 ? 2 : fr >= 0.75 ? 1 : 0;
@@ -263,9 +267,10 @@ export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit
         const boardAfterClear = clearLines(boardAfterPlace, rows, cols);
         const allClear = isBoardEmpty(boardAfterClear);
 
-        // Compute points for score pop display
+        // Compute points for score pop display (with speed multiplier)
+        const speedMult = computeSpeedMultiplier(state.lastClearTimestamp, dropTimestamp);
         const clearCells = getClearingCells(rows, cols);
-        const points = calculateScore(clearCells.length, linesCleared, state.streak);
+        const points = calculateScore(clearCells.length, linesCleared, state.streak, speedMult ?? 1.0);
         const totalPoints = points + (allClear ? ALL_CLEAR_BONUS : 0);
 
         // Build staggered delay map (used in phase 2)
@@ -298,6 +303,7 @@ export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit
         setAnimPieces(newPieces);
         setIsAnimating(true);
         setScorePop(totalPoints);
+        setScorePopMult(speedMult);
         setScorePopKey(k => k + 1);
 
         // --- Phase 2: After anticipation, fire cascade + effects ---
@@ -380,13 +386,14 @@ export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit
           setAnimPieces(null);
           setIsAnimating(false);
           setScorePop(null);
-          dispatch({ type: 'PLACE_PIECE', pieceIndex, row, col });
+          setScorePopMult(null);
+          dispatch({ type: 'PLACE_PIECE', pieceIndex, row, col, timestamp: dropTimestamp });
         }, totalMs);
       } else {
-        dispatch({ type: 'PLACE_PIECE', pieceIndex, row, col });
+        dispatch({ type: 'PLACE_PIECE', pieceIndex, row, col, timestamp: dropTimestamp });
       }
     },
-    [state.board, state.currentPieces, state.streak, state.score, state.revivesRemaining, onStatsUpdate, onGameContextUpdate]
+    [state.board, state.currentPieces, state.streak, state.score, state.lastClearTimestamp, state.revivesRemaining, onStatsUpdate, onGameContextUpdate]
   );
 
   const displayBoard = animBoard ?? state.board;
@@ -555,6 +562,11 @@ export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit
         {scorePop !== null && (
           <div className="score-pop" key={scorePopKey}>
             +{scorePop.toLocaleString()}
+            {scorePopMult !== null && Math.abs(scorePopMult - 1.0) >= 0.05 && (
+              <span className={`speed-mult ${scorePopMult > 1.0 ? 'speed-mult--fast' : 'speed-mult--slow'}`}>
+                {' '}{scorePopMult > 1.0 ? '\u26A1' : ''}{scorePopMult.toFixed(1)}x
+              </span>
+            )}
           </div>
         )}
       </div>

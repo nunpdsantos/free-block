@@ -7,6 +7,13 @@ import {
   STREAK_MULTIPLIER_INCREMENT,
   STREAK_MULTIPLIER_CAP,
   CELEBRATION_TEXTS,
+  SPEED_FAST_THRESHOLD,
+  SPEED_NEUTRAL_THRESHOLD,
+  SPEED_SLOW_THRESHOLD,
+  SPEED_FAST_MULTIPLIER,
+  SPEED_NEUTRAL_MULTIPLIER,
+  SPEED_SLOW_MULTIPLIER,
+  SPEED_FLOOR_MULTIPLIER,
 } from './constants';
 
 export function createEmptyBoard(): Board {
@@ -115,10 +122,44 @@ export function clearLines(board: Board, rows: number[], cols: number[]): Board 
   return newBoard;
 }
 
+/** Smooth interpolation between two values over a time range */
+function lerp(t: number, min: number, max: number): number {
+  return min + (max - min) * Math.min(1, Math.max(0, t));
+}
+
+/**
+ * Compute speed multiplier based on time since last clear.
+ * Returns null (no reference) for first clear or post-revive.
+ */
+export function computeSpeedMultiplier(
+  lastClearTimestamp: number | null,
+  currentTimestamp: number
+): number | null {
+  if (lastClearTimestamp === null) return null;
+
+  const elapsed = (currentTimestamp - lastClearTimestamp) / 1000; // seconds
+
+  if (elapsed <= SPEED_FAST_THRESHOLD) {
+    return SPEED_FAST_MULTIPLIER;
+  } else if (elapsed <= SPEED_NEUTRAL_THRESHOLD) {
+    const t = (elapsed - SPEED_FAST_THRESHOLD) / (SPEED_NEUTRAL_THRESHOLD - SPEED_FAST_THRESHOLD);
+    return lerp(t, SPEED_FAST_MULTIPLIER, SPEED_NEUTRAL_MULTIPLIER);
+  } else if (elapsed <= SPEED_SLOW_THRESHOLD) {
+    const t = (elapsed - SPEED_NEUTRAL_THRESHOLD) / (SPEED_SLOW_THRESHOLD - SPEED_NEUTRAL_THRESHOLD);
+    return lerp(t, SPEED_NEUTRAL_MULTIPLIER, SPEED_SLOW_MULTIPLIER);
+  } else {
+    // Asymptotic decay toward floor — never quite reaches it
+    const overtime = elapsed - SPEED_SLOW_THRESHOLD;
+    const decay = (SPEED_SLOW_MULTIPLIER - SPEED_FLOOR_MULTIPLIER) * Math.exp(-overtime / 30);
+    return SPEED_FLOOR_MULTIPLIER + decay;
+  }
+}
+
 export function calculateScore(
   cellsCleared: number,
   linesCleared: number,
-  streak: number
+  streak: number,
+  speedMultiplier: number = 1.0
 ): number {
   if (linesCleared === 0) return 0;
 
@@ -132,7 +173,7 @@ export function calculateScore(
     STREAK_MULTIPLIER_CAP,
     1 + streak * STREAK_MULTIPLIER_INCREMENT
   );
-  return Math.round(subtotal * streakMultiplier);
+  return Math.round(subtotal * streakMultiplier * speedMultiplier);
 }
 
 export function canPieceFitAnywhere(board: Board, piece: PieceShape): boolean {

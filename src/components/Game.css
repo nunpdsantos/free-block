@@ -130,6 +130,19 @@
   z-index: 55;
 }
 
+.speed-mult {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.speed-mult--fast {
+  color: #ffeb3b;
+}
+
+.speed-mult--slow {
+  color: #ef9a9a;
+}
+
 @keyframes streak-glow {
   from {
     outline-color: rgba(255, 215, 64, 0.5);

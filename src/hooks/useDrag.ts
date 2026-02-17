@@ -91,6 +91,9 @@ export function useDrag(
         boardRow: null,
         boardCol: null,
         isValid: false,
+        cellSize: totalCellRef.current - getCSSPx('--cell-gap'),
+        cellGap: getCSSPx('--cell-gap'),
+        fingerOffset: fingerOffsetRef.current,
       };
       dragRef.current = state;
       setDragState(state);

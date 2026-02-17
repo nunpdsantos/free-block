@@ -1,7 +1,6 @@
 import { createPortal } from 'react-dom';
 import type { DragState } from '../game/types';
 import { getPieceBounds } from '../game/pieces';
-import { getCSSPx } from '../game/responsive';
 import './DragOverlay.css';
 
 type DragOverlayProps = {
@@ -11,13 +10,10 @@ type DragOverlayProps = {
 export function DragOverlay({ dragState }: DragOverlayProps) {
   if (!dragState) return null;
 
-  const { piece, pointerX, pointerY } = dragState;
+  const { piece, pointerX, pointerY, cellSize: dragCell, cellGap: dragGap, fingerOffset } = dragState;
   const { rows, cols } = getPieceBounds(piece.coords);
   const coordSet = new Set(piece.coords.map(c => `${c.row},${c.col}`));
 
-  const dragCell = getCSSPx('--cell-size');
-  const dragGap = getCSSPx('--cell-gap');
-  const fingerOffset = getCSSPx('--finger-offset');
   const width = cols * (dragCell + dragGap) - dragGap;
   const height = rows * (dragCell + dragGap) - dragGap;
 

@@ -16,6 +16,9 @@ export type DragState = {
   boardRow: number | null;
   boardCol: number | null;
   isValid: boolean;
+  cellSize: number;
+  cellGap: number;
+  fingerOffset: number;
 };
 
 export type GhostCells = Map<string, boolean>; // "row,col" -> valid
@@ -40,6 +43,7 @@ export type UndoSnapshot = {
   movesSinceLastClear: number;
   pieceGeneration: number;
   lastMilestone: number;
+  lastClearTimestamp: number | null;
 };
 
 export type GameMode = 'classic' | 'daily';
@@ -68,10 +72,11 @@ export type GameState = {
   postReviveGrace: boolean;
   mode: GameMode;
   dailySeed?: number;
+  lastClearTimestamp: number | null;
 };
 
 export type GameAction =
-  | { type: 'PLACE_PIECE'; pieceIndex: number; row: number; col: number }
+  | { type: 'PLACE_PIECE'; pieceIndex: number; row: number; col: number; timestamp: number }
   | { type: 'NEW_GAME' }
   | { type: 'NEW_DAILY_GAME'; seed: number }
   | { type: 'REVIVE' }
