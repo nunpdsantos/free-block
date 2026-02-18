@@ -1,5 +1,5 @@
 import { synthPlace, synthClear, synthAllClear, synthGameOver, synthRevive, synthAchievement, setMasterVolume } from './synth';
-import { duckMusic } from './ambient';
+import { duckMusic, getCurrentChordRoot, isAmbientRunning } from './ambient';
 
 let volume = 80; // 0-100
 let sfxEnabled = true;
@@ -79,7 +79,7 @@ export function playClear(combo: number = 0, linesCleared: number = 1) {
   lastClearTime = performance.now();
   vibrate(linesCleared >= 2 ? [15, 30, 15] : 15);
   if (volume === 0) return;
-  synthClear(combo, linesCleared);
+  synthClear(combo, linesCleared, isAmbientRunning() ? getCurrentChordRoot() : undefined);
 }
 
 /** Triumphant major chord on all-clear */

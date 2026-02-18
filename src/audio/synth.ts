@@ -193,8 +193,24 @@ export function synthPlace(dangerLevel: number = 0): void {
  * Combo streak: starts higher on the scale each consecutive clear.
  * Total duration: single ~350ms, multi ~450ms.
  */
-export function synthClear(combo: number, linesCleared: number): void {
-  const baseIdx = Math.min(combo, CLEAR_SCALE.length - 3);
+export function synthClear(combo: number, linesCleared: number, chordRoot?: number): void {
+  let baseIdx = Math.min(combo, CLEAR_SCALE.length - 3);
+
+  // Chord alignment: shift arp start to the scale step closest to the chord root.
+  // Octave-normalise the root to the C5–C6 window, find the nearest pentatonic step,
+  // then advance baseIdx (never retreat — preserves combo ascending feel).
+  if (chordRoot !== undefined) {
+    let r = chordRoot;
+    while (r < CLEAR_SCALE[0]) r *= 2;
+    while (r >= CLEAR_SCALE[0] * 2) r /= 2;
+    let closestIdx = 0;
+    let minDist = Infinity;
+    for (let i = 0; i < 5; i++) {
+      const d = Math.abs(r - CLEAR_SCALE[i]);
+      if (d < minDist) { minDist = d; closestIdx = i; }
+    }
+    baseIdx = Math.min(Math.max(baseIdx, closestIdx), CLEAR_SCALE.length - 3);
+  }
   // Volume variation per call (+/- ~1 dB) to prevent mechanical repetition
   const volVar = 0.95 + Math.random() * 0.1;
 
