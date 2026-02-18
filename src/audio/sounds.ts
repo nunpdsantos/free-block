@@ -1,5 +1,6 @@
 import { synthPlace, synthClear, synthAllClear, synthGameOver, synthRevive, synthAchievement, setMasterVolume } from './synth';
-import { duckMusic, getCurrentChordRoot, getAmbientTension, isAmbientRunning, triggerMusicEvent } from './ambient';
+import { duckMusic, getCurrentChordRoot, getAmbientTension, isAmbientRunning, triggerMusicEvent, triggerStreakShimmer, lockRhythmPeriod } from './ambient';
+import { recordPlacement, clearRhythmHistory } from './rhythmDetector';
 
 let volume = 80; // 0-100
 let sfxEnabled = true;
@@ -71,6 +72,14 @@ export function playPlace(dangerLevel: number = 0) {
   if (volume === 0) return;
   if (performance.now() - lastClearTime < PLACE_SILENCE_GAP) return;
   synthPlace(dangerLevel);
+  // Record for rhythm detection — beat clock syncs to player's natural tempo
+  recordPlacement();
+  lockRhythmPeriod();
+}
+
+/** Reset rhythm history on new game / revive */
+export function resetRhythmHistory(): void {
+  clearRhythmHistory();
 }
 
 /** Crystalline chime on line clear — ascending pentatonic with combo */
@@ -80,6 +89,10 @@ export function playClear(combo: number = 0, linesCleared: number = 1) {
   vibrate(linesCleared >= 2 ? [15, 30, 15] : 15);
   if (volume === 0) return;
   synthClear(combo, linesCleared, isAmbientRunning() ? getCurrentChordRoot() : undefined);
+  // Harmonic shimmer ring at streak milestones — "leveling up" audio reward
+  if ((combo === 3 || combo === 5 || combo === 8 || combo >= 11) && isAmbientRunning()) {
+    triggerStreakShimmer(combo);
+  }
 }
 
 /** Triumphant major chord on all-clear */

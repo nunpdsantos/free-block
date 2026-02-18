@@ -176,14 +176,43 @@ function noiseBurst(
 // ─── Public API ────────────────────────────────────────────
 
 /**
+ * Deterministic impact click — a single damped cosine impulse at 800 Hz, 3ms.
+ * A half-sine window gives clean onset and offset without spectral leakage.
+ * At -18dB under the main placement sound, it's felt as "snap" rather than heard as pitch.
+ */
+function impactClick(freq: number, vol: number, delay = 0): void {
+  const ac = getCtx();
+  const t = ac.currentTime + delay;
+  const sampleCount = Math.ceil(ac.sampleRate * 0.003); // 3ms
+  const buf = ac.createBuffer(1, sampleCount, ac.sampleRate);
+  const data = buf.getChannelData(0);
+  const cyclesIn3ms = freq * 0.003;
+  for (let i = 0; i < sampleCount; i++) {
+    const phase = (i / sampleCount) * Math.PI * 2 * cyclesIn3ms;
+    const env = Math.sin(Math.PI * i / sampleCount); // half-sine window
+    data[i] = Math.cos(phase) * env;
+  }
+  const src = ac.createBufferSource();
+  src.buffer = buf;
+  const gain = ac.createGain();
+  gain.gain.value = vol;
+  src.connect(gain);
+  gain.connect(getMaster());
+  src.start(t);
+  src.onended = () => { src.disconnect(); gain.disconnect(); };
+}
+
+/**
  * Soft woody "thock" when a piece lands on the board.
- * 3 layers: noise burst (contact texture) + triangle body + sine sub.
+ * 4 layers: deterministic impact click + noise burst (contact texture) + triangle body + sine sub.
  * ±10 cents random detune prevents ear fatigue from repetition.
  * Total duration: ~110ms.
  */
 export function synthPlace(dangerLevel: number = 0): void {
   const drift = (Math.random() - 0.5) * 30; // ±15 cents variation
   const volVar = 0.94 + Math.random() * 0.12; // ±1.5 dB volume variation
+  // Deterministic click — single damped cosine impulse gives professional "snap" character
+  impactClick(800, 0.04);
   // Warm noise burst — bandpass at 1200Hz for woody "contact" texture
   noiseBurst(0.08 * volVar, 0.03, 1200);
   // Triangle body — 350Hz is in the low-mid "weight" range, audible on phones
@@ -296,33 +325,25 @@ export function synthClear(combo: number, linesCleared: number, chordRoot?: numb
 }
 
 /**
- * Triumphant major chord on all-clear (empty board).
- * C major: root (C5) + 3rd (E5) + 5th (G5) + octave (C6).
- * Each voice gets a shimmer overtone. High sparkle notes on top.
- * Total duration: ~800ms ring-out.
+ * Harmonic series ring on all-clear (empty board).
+ * Partials 2–9 of C3 root (130.81 Hz): integer multiples fuse perceptually into a
+ * single ringing object — a bell or tuning fork rather than four separate synthesizer voices.
+ * Amplitude falls as 1/n so high partials shimmer without harshness.
+ * Slight stagger (25ms per partial) creates a natural ring-out cascade.
+ * Total duration: ~850ms ring-out (+ natural partial decay).
  */
 export function synthAllClear(): void {
-  const chord = [
-    CHORD_NOTES.C5,
-    CHORD_NOTES.E5,
-    CHORD_NOTES.G5,
-    CHORD_NOTES.C6,
-  ];
-
-  chord.forEach((freq, i) => {
-    const d = i * 0.035;
-    tone(freq, 'triangle', 0.12, 0.01, 0.25, 0.55, d);
-    // Shimmer capped — C6*2 would be 2093Hz, keep it gentle
-    const shimmerFreq = Math.min(freq * 2, 2000);
-    tone(shimmerFreq, 'sine', 0.025, 0.015, 0.15, 0.35, d + 0.02);
-  });
-
-  // Sparkle — using triangle instead of sine for softer overtones
-  tone(CLEAR_SCALE[5], 'triangle', 0.04, 0.02, 0.12, 0.4, 0.12); // C6
-  tone(CLEAR_SCALE[7], 'triangle', 0.025, 0.02, 0.1, 0.3, 0.18); // E6
-
-  // Warm noise shimmer — lowered from 6kHz to 3.5kHz
-  noiseBurst(0.02, 0.05, 3500, 0.05);
+  const root = 130.81; // C3 — integer partials land on C major chord members
+  for (let n = 2; n <= 9; n++) {
+    const freq = root * n;
+    const amp = 0.18 / n; // natural 1/n falloff
+    const delay = (n - 2) * 0.025; // stagger: high partials bloom after the fundamental
+    tone(freq, 'sine', amp, 0.008, 0.2, 0.55, delay);
+  }
+  // Triangle sub on C4 for warm body on phone speakers
+  tone(root * 2, 'triangle', 0.06, 0.01, 0.3, 0.7, 0);
+  // Noise shimmer for contact texture
+  noiseBurst(0.02, 0.04, 2400, 0.05);
 }
 
 /**

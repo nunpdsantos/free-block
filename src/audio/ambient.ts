@@ -25,6 +25,7 @@
  */
 
 import { getCtx, getMaster } from './synth';
+import { detectRhythmPeriod } from './rhythmDetector';
 
 export type MusicTheme = 'ambient' | 'pulse' | 'lofi' | 'drift';
 
@@ -37,35 +38,70 @@ const NOTE = {
   C6: 1046.50,
 } as const;
 
+// ─── Just intonation ratios ────────────────────────────────────
+//
+// Pure small-integer ratios eliminate harmonic beating in chord voices.
+// Major third: 5/4 = 386¢ vs TET 400¢ (−14¢ = zero beating between 4th/5th harmonics)
+// Minor third: 6/5 = 316¢ vs TET 300¢ (+16¢ = pure minor 3rd)
+// Perfect fifth: 3/2 = 702¢ vs TET 700¢ (≈ same, nearly perfect in TET)
+// Perfect fourth: 4/3 = 498¢ vs TET 500¢ (≈ same)
+const JI_MAJ3 = 5 / 4;
+const JI_MIN3 = 6 / 5;
+const JI_P5   = 3 / 2;
+const JI_P4   = 4 / 3;
+
 // ─── Chord progression system ─────────────────────────────────
 //
 // Each chord is a set of "valid" frequencies voices should prefer.
 // The progression advances every CHORD_DURATION_SEC.
 // Calm progression: I → VI → IV → II (circular)
 // Tense progression (tension > 0.6): I → VIm → IVsus → V
+//
+// Chord tones use just intonation intervals computed from each chord root.
+// Voices voice-lead between these frequencies — slight detuning from TET is
+// inaudible at the tempo of ambient music, but harmonic purity is perceived.
 
 type Chord = { name: string; root: number; tones: number[] };
 
 const PROGRESSION_CALM: Chord[] = [
-  { name: 'I',  root: NOTE.C4, tones: [NOTE.C4, NOTE.E4, NOTE.G4, NOTE.C5, NOTE.E5, NOTE.G5, NOTE.C6] },
-  { name: 'VI', root: NOTE.A4, tones: [NOTE.A4, NOTE.C5, NOTE.E5, NOTE.A5] },
-  { name: 'IV', root: NOTE.G4, tones: [NOTE.G4, NOTE.C5, NOTE.D5, NOTE.G5] },
-  { name: 'II', root: NOTE.E4, tones: [NOTE.E4, NOTE.G4, NOTE.A4, NOTE.E5, NOTE.G5] },
+  // I: C major — JI major third and fifth, two octaves
+  { name: 'I',  root: NOTE.C4, tones: [
+    NOTE.C4, NOTE.C4 * JI_MAJ3, NOTE.C4 * JI_P5,          // C4, E4_JI(327), G4_JI(392)
+    NOTE.C5, NOTE.C5 * JI_MAJ3, NOTE.C5 * JI_P5, NOTE.C6, // C5, E5_JI(654), G5_JI(785), C6
+  ] },
+  // VI: A minor — JI minor third (528 Hz vs TET C5=523), pure fifth
+  { name: 'VI', root: NOTE.A4, tones: [
+    NOTE.A4, NOTE.A4 * JI_MIN3, NOTE.A4 * JI_P5, NOTE.A5, // A4, C5_JI(528), E5_JI(660), A5
+  ] },
+  // IV: G suspended — JI perfect fourth and fifth (almost identical to TET)
+  { name: 'IV', root: NOTE.G4, tones: [
+    NOTE.G4, NOTE.G4 * JI_P4, NOTE.G4 * JI_P5, NOTE.G4 * 2, // G4, C5_JI(523), D5_JI(588), G5
+  ] },
+  // II: E minor — JI minor third and fifth from E4 root
+  { name: 'II', root: NOTE.E4, tones: [
+    NOTE.E4, NOTE.E4 * JI_MIN3, NOTE.E4 * JI_P5, NOTE.E5, NOTE.E5 * JI_MIN3, // E4, G4_JI(396), B4_JI(494), E5, G5_JI(791)
+  ] },
 ];
 
 const PROGRESSION_TENSE: Chord[] = [
-  { name: 'I',     root: NOTE.C4, tones: [NOTE.C4, NOTE.E4, NOTE.G4, NOTE.C5] },
-  { name: 'VIm',   root: NOTE.A4, tones: [NOTE.A4, NOTE.C5, NOTE.E5] },
-  { name: 'IVsus', root: NOTE.G4, tones: [NOTE.G4, NOTE.C5, NOTE.D5] },
-  { name: 'V',     root: NOTE.D5, tones: [NOTE.D5, NOTE.A5, NOTE.C6] },
+  // I: C major triad, JI
+  { name: 'I',     root: NOTE.C4, tones: [NOTE.C4, NOTE.C4 * JI_MAJ3, NOTE.C4 * JI_P5, NOTE.C5] },
+  // VIm: A minor, JI
+  { name: 'VIm',   root: NOTE.A4, tones: [NOTE.A4, NOTE.A4 * JI_MIN3, NOTE.A4 * JI_P5] },
+  // IVsus: G suspended, JI
+  { name: 'IVsus', root: NOTE.G4, tones: [NOTE.G4, NOTE.G4 * JI_P4, NOTE.G4 * JI_P5] },
+  // V: D7 shell — root, JI fifth, TET minor 7th (C6)
+  { name: 'V',     root: NOTE.D5, tones: [NOTE.D5, NOTE.D5 * JI_P5, NOTE.C6] },
 ];
 
 // Extreme-tension minor progression (Am → Em → Dm) — modal darkening above tension 0.8.
-// Uses only existing pentatonic notes, no new frequencies needed.
 const PROGRESSION_EXTREME: Chord[] = [
-  { name: 'Am', root: NOTE.A4, tones: [NOTE.A4, NOTE.C5, NOTE.E5, NOTE.A5] },
-  { name: 'Em', root: NOTE.E4, tones: [NOTE.E4, NOTE.G4, NOTE.A4, NOTE.E5] },
-  { name: 'Dm', root: NOTE.D5, tones: [NOTE.D5, NOTE.A5, NOTE.C6] },
+  // Am: A minor, JI
+  { name: 'Am', root: NOTE.A4, tones: [NOTE.A4, NOTE.A4 * JI_MIN3, NOTE.A4 * JI_P5, NOTE.A5] },
+  // Em: E minor, JI
+  { name: 'Em', root: NOTE.E4, tones: [NOTE.E4, NOTE.E4 * JI_MIN3, NOTE.E4 * JI_P5, NOTE.E5] },
+  // Dm: D minor — JI minor third and fifth
+  { name: 'Dm', root: NOTE.D5, tones: [NOTE.D5, NOTE.D5 * JI_MIN3, NOTE.D5 * JI_P5] },
 ];
 
 const CHORD_DURATION_SEC = 20;
@@ -90,6 +126,8 @@ type VoiceConfig = {
   karplus?: boolean;     // Karplus-Strong synthesis instead of oscillator
   fmBell?: boolean;      // FM bell synthesis (Chowning — carrier + inharmonic modulator)
   amBreath?: boolean;    // AM breathing (3 Hz tremolo on output amplitude)
+  markov?: boolean;      // Markov-chain note selection (second-order, tension-biased)
+  modal?: boolean;       // Modal synthesis — inharmonic bandpass resonator bank (marimba/vibe)
 };
 
 // ─── Beat clock grid (pulse theme) ────────────────────────────
@@ -149,6 +187,17 @@ const VOICES_AMBIENT: VoiceConfig[] = [
     attack: 0.15, sustain: 0.5, release: 0.4,
     paceMult: 2.5, streakSubdivide: true,
     pan: 0.0,
+  },
+  {
+    // Markov lead: a melodic voice that follows smooth voice leading at low tension
+    // and ventures into leaps + higher scale degrees as tension climbs.
+    name: 'markovLead',
+    cycleSec: 3.5, paceInfluence: 0.7,
+    calmPool: [NOTE.C5, NOTE.D5, NOTE.E5, NOTE.G5, NOTE.A5],
+    tensePool: [NOTE.D5, NOTE.E5, NOTE.G5, NOTE.A5, NOTE.C6],
+    oscType: 'sine', baseVol: 0.013,
+    attack: 0.10, sustain: 0.35, release: 0.45,
+    pan: -0.15, markov: true,
   },
 ];
 
@@ -249,6 +298,17 @@ const VOICES_LOFI: VoiceConfig[] = [
     paceMult: 3.5, streakSubdivide: true,
     pan: 0.0,
   },
+  {
+    // Marimba: modal synthesis voice — physically modeled bar percussion.
+    // Wider note range than piano to fill the mellow lo-fi texture with something tactile.
+    name: 'marimba',
+    cycleSec: 3.0, paceInfluence: 0.5,
+    calmPool: [NOTE.C4, NOTE.E4, NOTE.G4, NOTE.C5],
+    tensePool: [NOTE.C4, NOTE.G4, NOTE.C5],
+    oscType: 'sine', baseVol: 0.020, // passed to modalStrike as vol
+    attack: 0.01, sustain: 0.0, release: 1.8, // release controls modal decay (not envelope)
+    pan: 0.25, modal: true,
+  },
 ];
 
 // ─── Theme: Drift ─────────────────────────────────────────────
@@ -304,6 +364,12 @@ const VOICES_DRIFT: VoiceConfig[] = [
   },
 ];
 
+// ─── A3: Binaural beat state ───────────────────────────────────
+
+let binauralL: OscillatorNode | null = null;
+let binauralR: OscillatorNode | null = null;
+let binauralGain: GainNode | null = null;
+
 // ─── Engine state ─────────────────────────────────────────────
 
 let ambientGain: GainNode | null = null;
@@ -312,11 +378,14 @@ let lfoGainNode: GainNode | null = null;
 let voiceTimers: ReturnType<typeof setTimeout>[] = [];
 let running = false;
 let paused = false;
+// Crossfade: increment on theme switch so old timers self-terminate at next fire
+let themeGeneration = 0;
 let tension = 0;
 let streak = 0;
 let paceMs = 5000;
 let arpIndex = 0;
 let currentTheme: MusicTheme = 'ambient';
+let prevTensionTier = -1; // -1 = not yet initialized; 0=calm, 1=tense, 2=extreme
 
 // Effect chain (sat + reverb, rebuilt per theme)
 let satNode: WaveShaperNode | null = null;
@@ -359,6 +428,10 @@ const SWING_AMOUNT = 0.08;
 let motifPattern: number[] = [0, 2, 1, 3, 0, 1, 2, 0];
 let motifPos = 0;
 let chordChangeCount = 0;
+
+// Markov melody: second-order chain over pool indices (−1 = no history)
+let markovPrev1 = -1; // pool index of the previous note
+let markovPrev2 = -1; // pool index of the note before that
 
 const AMBIENT_BASE_VOL = 0.06;
 const LFO_DEPTH = 0.025;
@@ -502,6 +575,92 @@ function tearDownEffectChain(): void {
   reverbWetGain = null;
 }
 
+// ─── A3: Binaural beat entrainment ────────────────────────────
+
+/**
+ * Two sine oscillators at 100 Hz, hard-panned L/R, with the right ear
+ * running slightly higher. The difference frequency (10–20 Hz) is perceived
+ * by the brain as a rhythmic beat via binaural processing — only audible on headphones.
+ * At calm tension: 10 Hz (alpha band — focus). At high tension: 20 Hz (beta band — alert).
+ *
+ * Carriers at 100 Hz are sub-threshold on phone speakers but reach IEMs/headphones.
+ * Volume is very low (0.008) — the effect is subliminal, not heard as a distinct tone.
+ */
+function startBinaural(ac: AudioContext): void {
+  if (binauralL) return; // already running
+  const panL = ac.createStereoPanner();
+  const panR = ac.createStereoPanner();
+  panL.pan.value = -1;
+  panR.pan.value = 1;
+
+  binauralGain = ac.createGain();
+  binauralGain.gain.value = 0.008; // sub-threshold on speakers, present on headphones
+
+  binauralL = ac.createOscillator();
+  binauralR = ac.createOscillator();
+  binauralL.type = 'sine';
+  binauralR.type = 'sine';
+  binauralL.frequency.value = 100;       // carrier
+  binauralR.frequency.value = 110;       // carrier + 10 Hz beat = alpha band
+
+  binauralL.connect(panL);
+  binauralR.connect(panR);
+  panL.connect(binauralGain);
+  panR.connect(binauralGain);
+  binauralGain.connect(getMaster());
+
+  binauralL.start();
+  binauralR.start();
+}
+
+function stopBinaural(): void {
+  try { binauralL?.stop(); }    catch { /* */ }
+  try { binauralR?.stop(); }    catch { /* */ }
+  try { binauralL?.disconnect(); } catch { /* */ }
+  try { binauralR?.disconnect(); } catch { /* */ }
+  try { binauralGain?.disconnect(); } catch { /* */ }
+  binauralL = null;
+  binauralR = null;
+  binauralGain = null;
+}
+
+/** Shift beat frequency with tension: 10 Hz (alpha/focus) → 20 Hz (beta/alert). */
+function updateBinauralBeat(t: number): void {
+  if (!binauralR) return;
+  const beatFreq = 10 + t * 10; // 10–20 Hz as tension rises
+  binauralR.frequency.setTargetAtTime(100 + beatFreq, getCtx().currentTime, 3.0);
+}
+
+// ─── C4: Tension-reactive reverb morphing ─────────────────────
+
+/**
+ * Three reverb tiers driven by tension level:
+ *   Calm (0–0.5):   2.5s hall — spacious and open
+ *   Tense (0.5–0.8): 1.0s tight room — walls closing in
+ *   Extreme (0.8+):  0.4s dead room — claustrophobic
+ *
+ * On tier crossing, the ConvolverNode's buffer is swapped.
+ * The previous reverb tail fades naturally since existing in-flight audio
+ * is processed by the old IR until it decays. In ambient pad context
+ * (slow sustained notes) the buffer swap is imperceptible.
+ */
+function getTensionTier(t: number): number {
+  if (t > 0.8) return 2;
+  if (t > 0.5) return 1;
+  return 0;
+}
+
+function morphReverb(newTier: number): void {
+  if (!convolver) return;
+  const cfgByTier = [
+    { duration: 2.5, decay: 3.0 },  // calm: spacious hall
+    { duration: 1.0, decay: 6.0 },  // tense: tight room
+    { duration: 0.4, decay: 10.0 }, // extreme: dead/claustrophobic
+  ];
+  const cfg = cfgByTier[Math.min(newTier, 2)];
+  convolver.buffer = buildIR(getCtx(), cfg.duration, cfg.decay);
+}
+
 // ─── PeriodicWave: electric piano timbre ──────────────────────
 
 /**
@@ -571,6 +730,80 @@ function karplusPluck(freq: number, vol: number, pan: number): void {
     try { burst.disconnect(); delay.disconnect(); filter.disconnect(); } catch { /* */ }
     try { feedback.disconnect(); outGain.disconnect(); panner.disconnect(); } catch { /* */ }
   }, (duration + 0.3) * 1000);
+}
+
+// ─── B1: Modal synthesis — marimba/vibraphone resonator bank ─────
+
+/**
+ * Marimba modal ratios measured from real bar acoustics.
+ * Integer harmonics (f, 2f, 3f) produce a boring string tone.
+ * These inharmonic ratios give the characteristic warm thud + bright ring.
+ * decaySec controls how long each mode sustains — lower modes ring longer.
+ */
+const MARIMBA_MODES = [
+  { ratio: 1.00, amp: 1.0,  decaySec: 1.8  }, // fundamental — long warm ring
+  { ratio: 3.99, amp: 0.45, decaySec: 0.6  }, // 2nd transverse mode (~4× fundamental)
+  { ratio: 9.87, amp: 0.15, decaySec: 0.3  }, // 3rd transverse mode (~10× fundamental)
+  { ratio: 19.5, amp: 0.06, decaySec: 0.15 }, // 4th transverse mode
+  { ratio: 2.76, amp: 0.20, decaySec: 0.4  }, // torsional mode
+  { ratio: 5.40, amp: 0.08, decaySec: 0.2  }, // 2nd torsional
+];
+
+/**
+ * Modal synthesis: a short noise burst excites a bank of exponentially-decaying
+ * BiquadFilter bandpass resonators tuned to each acoustic mode of a marimba bar.
+ * The resulting timbre is immediately recognizable and distinct from any oscillator voice.
+ */
+function modalStrike(freq: number, vol: number, pan: number): void {
+  if (!ambientGain) return;
+  const ac = getCtx();
+  const t = ac.currentTime;
+
+  // Short noise burst as the mallet impulse (4ms)
+  const burstLen = Math.ceil(ac.sampleRate * 0.004);
+  const buf = ac.createBuffer(1, burstLen, ac.sampleRate);
+  const data = buf.getChannelData(0);
+  for (let i = 0; i < burstLen; i++) data[i] = Math.random() * 2 - 1;
+
+  const burst = ac.createBufferSource();
+  burst.buffer = buf;
+
+  const panner = ac.createStereoPanner();
+  panner.pan.value = Math.max(-1, Math.min(1, pan + (Math.random() - 0.5) * 0.14));
+
+  const sumGain = ac.createGain();
+  sumGain.gain.value = vol;
+
+  MARIMBA_MODES.forEach(mode => {
+    const modeFreq = freq * mode.ratio;
+    if (modeFreq > ac.sampleRate / 2 - 200) return; // skip above Nyquist
+
+    const bpf = ac.createBiquadFilter();
+    bpf.type = 'bandpass';
+    bpf.frequency.value = modeFreq;
+    bpf.Q.value = modeFreq / 25; // Q scales with frequency for natural modal damping
+
+    const modeGain = ac.createGain();
+    modeGain.gain.setValueAtTime(mode.amp, t);
+    modeGain.gain.setTargetAtTime(0.0001, t + 0.005, mode.decaySec / 3);
+
+    burst.connect(bpf);
+    bpf.connect(modeGain);
+    modeGain.connect(sumGain);
+
+    setTimeout(() => {
+      try { bpf.disconnect(); modeGain.disconnect(); } catch { /* */ }
+    }, (mode.decaySec + 0.5) * 1000);
+  });
+
+  sumGain.connect(panner);
+  panner.connect(ambientGain!);
+
+  burst.start(t);
+  burst.stop(t + 0.01);
+  burst.onended = () => {
+    try { burst.disconnect(); sumGain.disconnect(); panner.disconnect(); } catch { /* */ }
+  };
 }
 
 // ─── FM bell synthesis (Drift theme bellTone voice) ───────────
@@ -838,6 +1071,64 @@ function getArpNote(cfg: VoiceConfig): number {
 }
 
 /**
+ * Pick the next Markov melody note.
+ *
+ * Second-order Markov chain over pool indices:
+ * - Step bias: exponential distance penalty, strong at low tension, flattens at high tension
+ * - Directional momentum: 1.3× bonus for continuing previous direction, 0.8× for reversing
+ * - Tonic gravity: slight pull toward pool center at low tension (keeps melody grounded)
+ *
+ * At tension=0: strongly favors step motion (adjacent degrees).
+ * At tension=1: almost uniform distribution — wide leaps and surprise skips.
+ */
+function getMarkovNote(cfg: VoiceConfig): number {
+  updateChord();
+  const pool = tension > 0.5 ? cfg.tensePool : cfg.calmPool;
+  const chordPool = pool.filter(f => currentChord.tones.some(ct => sameHarmonic(f, ct)));
+  const activePool = chordPool.length > 0 ? chordPool : pool;
+  const n = activePool.length;
+
+  if (markovPrev1 < 0 || markovPrev1 >= n) {
+    // No history or pool size changed — seed at the middle of the pool
+    const idx = Math.floor(n / 2);
+    markovPrev2 = -1;
+    markovPrev1 = idx;
+    return activePool[idx];
+  }
+
+  const weights: number[] = [];
+  for (let i = 0; i < n; i++) {
+    const dist = Math.abs(i - markovPrev1);
+    // Step bias: prefer close motion at low tension, allow leaps at high tension
+    const stepBias = Math.exp(-dist * (2.5 - tension * 2.0));
+    // Directional momentum (second-order): bonus for continuing the previous direction
+    let dirBonus = 1.0;
+    if (markovPrev2 >= 0) {
+      const prevDir = markovPrev1 - markovPrev2;
+      const currDir = i - markovPrev1;
+      dirBonus = ((prevDir > 0 && currDir > 0) || (prevDir < 0 && currDir < 0)) ? 1.3 : 0.8;
+    }
+    // Tonic gravity: pull toward pool center at low tension
+    const center = Math.floor(n / 2);
+    const tonicPull = 1 + 0.1 * Math.exp(-Math.abs(i - center) * (1 - tension));
+    weights.push(stepBias * dirBonus * tonicPull);
+  }
+
+  // Weighted random draw
+  const total = weights.reduce((a, b) => a + b, 0);
+  let r = Math.random() * total;
+  let chosen = n - 1;
+  for (let i = 0; i < n; i++) {
+    r -= weights[i];
+    if (r <= 0) { chosen = i; break; }
+  }
+
+  markovPrev2 = markovPrev1;
+  markovPrev1 = chosen;
+  return activePool[chosen];
+}
+
+/**
  * Play one oscillator note, scheduled at startTime (defaults to ac.currentTime).
  *
  * Signal chain:
@@ -997,6 +1288,8 @@ function getVoiceVolMult(name: string, t: number): number {
       if (streak <= 2) return 0.6;
       return 1.0;
     }
+    case 'markovLead': return 0.7 + t * 0.4; // audible at all tensions; louder under pressure
+    case 'marimba':   return 0.8 - t * 0.3; // quieter under tension (mallet percussion recedes)
     default: return 1.0;
   }
 }
@@ -1019,9 +1312,10 @@ function getEffectiveCycleSec(cfg: VoiceConfig): number {
 /**
  * setTimeout-based voice scheduler for ambient + lo-fi themes.
  * Pulse theme uses startBeatClock() instead.
+ * gen guards against old timers firing after a theme switch — they self-terminate.
  */
-function scheduleVoice(idx: number): void {
-  if (!running || paused) return;
+function scheduleVoice(idx: number, gen: number): void {
+  if (!running || paused || gen !== themeGeneration) return;
   const voices = getVoices();
   if (idx >= voices.length) return;
 
@@ -1030,15 +1324,21 @@ function scheduleVoice(idx: number): void {
   const cycleSec = getEffectiveCycleSec(cfg);
 
   if (cycleSec <= 0) {
-    voiceTimers[idx] = setTimeout(() => scheduleVoice(idx), 2000);
+    voiceTimers[idx] = setTimeout(() => scheduleVoice(idx, gen), 2000);
     return;
   }
 
   const volMult = getVoiceVolMult(cfg.name, tension);
   if (volMult > 0.01) {
-    const freq = isArp ? getArpNote(cfg) : pickChordNote(cfg);
+    const freq = isArp
+      ? getArpNote(cfg)
+      : cfg.markov
+        ? getMarkovNote(cfg)
+        : pickChordNote(cfg);
 
-    if (cfg.karplus) {
+    if (cfg.modal) {
+      modalStrike(freq, cfg.baseVol * volMult, cfg.pan ?? 0);
+    } else if (cfg.karplus) {
       karplusPluck(freq, cfg.baseVol * volMult, cfg.pan ?? 0);
     } else if (cfg.fmBell) {
       fmBell(freq, cfg, volMult);
@@ -1058,14 +1358,15 @@ function scheduleVoice(idx: number): void {
     lofiArpFireCount++;
   }
 
-  voiceTimers[idx] = setTimeout(() => scheduleVoice(idx), interval);
+  voiceTimers[idx] = setTimeout(() => scheduleVoice(idx, gen), interval);
 }
 
 function startVoiceTimers(stagger: number): void {
+  const gen = themeGeneration;
   const voices = getVoices();
   for (let i = 0; i < voices.length; i++) {
     const delay = i * stagger + Math.random() * (stagger * 0.5);
-    voiceTimers[i] = setTimeout(() => scheduleVoice(i), delay);
+    voiceTimers[i] = setTimeout(() => scheduleVoice(i, gen), delay);
   }
 }
 
@@ -1087,6 +1388,9 @@ export function startAmbient(): void {
   motifPattern = [0, 2, 1, 3, 0, 1, 2, 0];
   motifPos = 0;
   chordChangeCount = 0;
+  prevTensionTier = -1; // reset so first setAmbientTension call initializes reverb
+  markovPrev1 = -1;
+  markovPrev2 = -1;
 
   // Build PeriodicWave for lo-fi timbre
   electricPianoWave = buildElectricPianoWave(ac);
@@ -1112,6 +1416,8 @@ export function startAmbient(): void {
   running = true;
   paused = false;
 
+  startBinaural(ac);
+
   if (currentTheme === 'pulse') {
     startBeatClock();
   } else {
@@ -1131,6 +1437,7 @@ export function stopAmbient(): void {
   arpIndex = 0;
   lofiArpFireCount = 0;
   lastNotePerVoice.clear();
+  stopBinaural();
 
   if (ambientGain) {
     const ac = getCtx();
@@ -1246,33 +1553,81 @@ export function resumeAmbient(): void {
 }
 
 /**
- * Switch music style on the fly. Old notes fade naturally.
- * Rebuilds effect chain, restarts appropriate scheduler.
+ * Switch music style on the fly with a soft crossfade.
+ *
+ * A4 crossfade design:
+ * - Old voice timers self-terminate via themeGeneration guard — their in-flight notes
+ *   ring out naturally (no hard cut). Beat clock is explicitly stopped (interval-based).
+ * - Effect chain is rebuilt with a 60ms mute window to prevent any click from
+ *   the wet/dry routing change during teardown+rebuild.
+ * - New theme voices start staggered at 200ms, overlapping with the old fade-out.
+ *
+ * Result: ~200ms soft blend rather than a hard gap on theme switch.
  */
 export function setMusicTheme(theme: MusicTheme): void {
   if (theme === currentTheme) return;
+
+  const prevTheme = currentTheme;
   currentTheme = theme;
   arpIndex = 0;
   lofiArpFireCount = 0;
   motifPos = 0;
+  markovPrev1 = -1;
+  markovPrev2 = -1;
   lastNotePerVoice.clear();
 
   if (!running || paused) return;
 
-  stopBeatClock();
-  for (const t of voiceTimers) clearTimeout(t);
-  voiceTimers = [];
+  // Stop beat clock if leaving pulse (interval-based, must be cancelled explicitly)
+  if (prevTheme === 'pulse') stopBeatClock();
+
+  // Bump generation — old voice timer callbacks check this and self-terminate
+  themeGeneration++;
 
   if (ambientGain) {
-    tearDownEffectChain();
-    buildEffectChain(getCtx(), getMaster());
+    const ac = getCtx();
+    const now = ac.currentTime;
+    // Brief 60ms mute prevents any routing click during effect chain rebuild
+    ambientGain.gain.cancelScheduledValues(now);
+    ambientGain.gain.setValueAtTime(ambientGain.gain.value, now);
+    ambientGain.gain.linearRampToValueAtTime(0.0001, now + 0.02);
+    setTimeout(() => {
+      if (!running) return;
+      tearDownEffectChain();
+      buildEffectChain(getCtx(), getMaster());
+      // Fade back in over 200ms — new voices start during this ramp
+      const t2 = getCtx().currentTime;
+      ambientGain?.gain.setValueAtTime(0.0001, t2);
+      ambientGain?.gain.linearRampToValueAtTime(AMBIENT_BASE_VOL, t2 + 0.2);
+    }, 25); // 25ms after mute starts
   }
 
   if (theme === 'pulse') {
     startBeatClock();
   } else {
-    startVoiceTimers(300);
+    startVoiceTimers(200); // start immediately, overlap with old notes fading
   }
+}
+
+/**
+ * Attempt to snap the beat clock to the player's detected rhythm period.
+ * Called after each piece placement. If the autocorrelation over recent IOIs
+ * finds a clear periodicity (≥75% match), the beat clock snaps to that tempo.
+ * This creates a flow-state moment when the player's natural rhythm locks with the music.
+ * Only affects the pulse theme beat clock (other themes use voice timers, not a grid).
+ */
+export function lockRhythmPeriod(): void {
+  if (currentTheme !== 'pulse' || !running || paused || beatClockTimer === null) return;
+  const detected = detectRhythmPeriod();
+  if (detected === null) return;
+  // Convert detected period (ms) to quarter-note duration, clamped to BPM range
+  const detectedBeatSec = detected / 1000;
+  const bpm = 60 / detectedBeatSec;
+  if (bpm < 80 || bpm > 140) return; // outside range — ignore
+  const prev = beatDuration;
+  beatDuration = detectedBeatSec;
+  // Only update if meaningfully different (>3% change) to avoid micro-jitter
+  if (Math.abs(beatDuration - prev) / prev < 0.03) { beatDuration = prev; }
 }
 
 /** Update pace from average ms between piece placements. */
@@ -1303,6 +1658,12 @@ export function setAmbientPace(intervalMs: number): void {
 
 export function setAmbientTension(t: number): void {
   tension = Math.max(0, Math.min(1, t));
+  const tier = getTensionTier(tension);
+  if (tier !== prevTensionTier) {
+    prevTensionTier = tier;
+    if (running && !paused) morphReverb(tier);
+  }
+  updateBinauralBeat(tension);
 }
 
 export function setAmbientStreak(s: number): void {
@@ -1407,5 +1768,37 @@ export function triggerMusicEvent(event: MusicEvent): void {
       // Descend from chord root — musical echo of the SFX descent
       scheduleStinger([root * 4, root * 3, root * 2, root], nextGrid, 0.025, 0.14, 0.12);
       break;
+  }
+}
+
+/**
+ * Brief harmonic ring above the current chord root — fired at streak milestones (3, 5, 8, 11+).
+ * Fires harmonics 2f, 3f, ... up to min(streakLevel, 5) partials above the chord root,
+ * each at 1/n volume and staggered 10ms. Sounds like touching a resonant surface.
+ */
+export function triggerStreakShimmer(streakLevel: number): void {
+  if (!ambientGain || !running || paused) return;
+  const ac = getCtx();
+  const t = ac.currentTime;
+  const root = currentChord.root;
+  const harmonicCount = Math.min(streakLevel - 1, 5); // 2 at streak 3, 5 at streak 6+
+  const baseVol = Math.min(0.018 + streakLevel * 0.004, 0.045);
+
+  for (let i = 0; i < harmonicCount; i++) {
+    const n = i + 2; // partials 2, 3, 4, 5, 6
+    const freq = Math.min(root * n, 2000); // cap at 2kHz for phone speakers
+    const osc = ac.createOscillator();
+    const gain = ac.createGain();
+    osc.type = 'sine';
+    osc.frequency.value = freq;
+    const startT = t + i * 0.01;
+    gain.gain.setValueAtTime(0, startT);
+    gain.gain.linearRampToValueAtTime(baseVol / n, startT + 0.005);
+    gain.gain.exponentialRampToValueAtTime(0.0001, startT + 0.4 + i * 0.05);
+    osc.connect(gain);
+    gain.connect(ambientGain!);
+    osc.start(startT);
+    osc.stop(startT + 0.6);
+    osc.onended = () => { osc.disconnect(); gain.disconnect(); };
   }
 }
