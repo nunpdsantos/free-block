@@ -112,6 +112,7 @@ export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit
   const [screenFlash, setScreenFlash] = useState(false);
   const [settleCells, setSettleCells] = useState<Set<string>>(new Set());
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
+  const [lastDropTime, setLastDropTime] = useState(0);
   const gameRef = useRef<HTMLDivElement>(null);
   const prevGameOverRef = useRef(false);
   const boardElRef = useRef<HTMLDivElement>(null);
@@ -147,12 +148,13 @@ export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit
     return raw < 0.25 ? 0 : Math.min(1, (raw - 0.25) / 0.75);
   }, [state.movesSinceLastClear]);
 
-  // Generative ambient music — reacts to tension + streak, pauses/resumes with game
+  // Generative ambient music — reacts to tension, streak, and player pace
   useAmbientMusic(
     !isPaused && !state.isGameOver && !showGameOverUI,
     tension,
     state.streak,
     volume,
+    lastDropTime,
   );
 
   useEffect(() => {
@@ -229,6 +231,7 @@ export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit
       if (!canPlacePiece(state.board, piece, row, col)) return;
 
       const dropTimestamp = Date.now();
+      setLastDropTime(dropTimestamp);
 
       // Danger level for audio thinning — compute from current board
       const fr = getBoardFillRatio(state.board);

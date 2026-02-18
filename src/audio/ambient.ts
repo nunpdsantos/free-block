@@ -3,10 +3,10 @@
  *
  * Brian Eno-style: overlapping tones with coprime cycle lengths
  * that create ever-changing but always-consonant patterns.
- * Reactive to game tension and streak. Zero bundle size — all
- * synthesized via Web Audio API.
+ * Reactive to game tension, streak, and player pace.
  *
- * Routing: voices → voiceGain → ambientGain → masterGain → destination
+ * Routing: voices → voiceGain → ambientGain ← LFO pulse
+ *                                ambientGain → masterGain → destination
  */
 
 import { getCtx, getMaster } from './synth';
@@ -40,7 +40,7 @@ const VOICES: VoiceConfig[] = [
     calmPool: [NOTE.C4, NOTE.G4],
     tensePool: [NOTE.C4, NOTE.E4],
     oscType: 'triangle',
-    baseVol: 0.045,
+    baseVol: 0.035,
     attack: 3, sustain: 6, release: 4,
   },
   {
@@ -49,7 +49,7 @@ const VOICES: VoiceConfig[] = [
     calmPool: [NOTE.E4, NOTE.C5, NOTE.G5],
     tensePool: [NOTE.C4, NOTE.D5, NOTE.A4],
     oscType: 'triangle',
-    baseVol: 0.035,
+    baseVol: 0.025,
     attack: 2.5, sustain: 8, release: 5,
   },
   {
@@ -58,7 +58,7 @@ const VOICES: VoiceConfig[] = [
     calmPool: [NOTE.G4, NOTE.C5, NOTE.E5],
     tensePool: [NOTE.E4, NOTE.G4, NOTE.A4],
     oscType: 'sine',
-    baseVol: 0.025,
+    baseVol: 0.018,
     attack: 2, sustain: 5, release: 3,
   },
   {
@@ -67,7 +67,7 @@ const VOICES: VoiceConfig[] = [
     calmPool: [NOTE.C5, NOTE.G5, NOTE.C6],
     tensePool: [NOTE.E5, NOTE.A5],
     oscType: 'sine',
-    baseVol: 0.015,
+    baseVol: 0.010,
     attack: 3.5, sustain: 10, release: 4,
   },
   {
@@ -76,7 +76,7 @@ const VOICES: VoiceConfig[] = [
     calmPool: [NOTE.C5, NOTE.D5, NOTE.E5, NOTE.G5, NOTE.A5],
     tensePool: [NOTE.C5, NOTE.D5, NOTE.E5, NOTE.G5],
     oscType: 'sine',
-    baseVol: 0.02,
+    baseVol: 0.015,
     attack: 0.3, sustain: 0.8, release: 0.6,
   },
 ];
@@ -84,13 +84,17 @@ const VOICES: VoiceConfig[] = [
 // ─── Engine state ────────────────────────────────────────────
 
 let ambientGain: GainNode | null = null;
+let lfo: OscillatorNode | null = null;
+let lfoGainNode: GainNode | null = null;
 let voiceTimers: ReturnType<typeof setTimeout>[] = [];
 let running = false;
 let paused = false;
 let tension = 0;
 let streak = 0;
 
-const AMBIENT_BASE_VOL = 0.12;
+const AMBIENT_BASE_VOL = 0.06;
+const LFO_DEPTH = 0.025;        // ±0.025 gain modulation around base
+const DEFAULT_LFO_FREQ = 0.1;   // ~10s breathing period before first drop
 
 // ─── Internal helpers ────────────────────────────────────────
 
@@ -99,8 +103,6 @@ function pick<T>(arr: T[]): T {
 }
 
 function lerpPool(calm: number[], tense: number[], t: number): number {
-  // At low tension, pick from calm pool. At high tension, pick from tense pool.
-  // In between, probabilistically blend.
   if (Math.random() > t) return pick(calm);
   return pick(tense);
 }
@@ -114,7 +116,6 @@ function playNote(freq: number, cfg: VoiceConfig, volMult: number): void {
 
   osc.type = cfg.oscType;
   osc.frequency.value = freq;
-  // Slight random detune for organic feel (±8 cents)
   osc.detune.value = (Math.random() - 0.5) * 16;
 
   const peakVol = cfg.baseVol * volMult;
@@ -135,17 +136,17 @@ function playNote(freq: number, cfg: VoiceConfig, volMult: number): void {
 
 function getVoiceVolMult(name: string, t: number): number {
   switch (name) {
-    case 'padLow':  return 0.7 + t * 0.6;           // louder rumble under tension
+    case 'padLow':  return 0.7 + t * 0.6;
     case 'padMid':  return 1.0;
     case 'padHigh': return 1.0 - t * 0.3;
-    case 'shimmer': return 1.0 - t * 0.5;            // quieter shimmer under tension
-    case 'arp':     return t > 0.85 ? 0 : 1.0;       // drops out at extreme tension
+    case 'shimmer': return 1.0 - t * 0.5;
+    case 'arp':     return t > 0.85 ? 0 : 1.0;
     default:        return 1.0;
   }
 }
 
 function getArpCycle(): number {
-  if (streak <= 0)  return 0; // silent — timer won't fire
+  if (streak <= 0)  return 0;
   if (streak <= 2)  return 3;
   if (streak <= 4)  return 2;
   if (streak <= 7)  return 1.5;
@@ -158,9 +159,7 @@ function scheduleVoice(idx: number): void {
   const cfg = VOICES[idx];
   const isArp = cfg.name === 'arp';
 
-  // Arp stays silent when no streak
   if (isArp && streak <= 0) {
-    // Re-check every 2s
     voiceTimers[idx] = setTimeout(() => scheduleVoice(idx), 2000);
     return;
   }
@@ -176,14 +175,12 @@ function scheduleVoice(idx: number): void {
     const freq = lerpPool(cfg.calmPool, cfg.tensePool, tension);
     playNote(freq, cfg, volMult);
 
-    // Arp at streak 8+: octave doubling
     if (isArp && streak >= 8) {
       playNote(freq * 2, cfg, volMult * 0.5);
     }
   }
 
-  // Schedule next note after full cycle
-  const jitter = 1 + (Math.random() - 0.5) * 0.15; // ±7.5% timing variation
+  const jitter = 1 + (Math.random() - 0.5) * 0.15;
   voiceTimers[idx] = setTimeout(
     () => scheduleVoice(idx),
     cycleSec * 1000 * jitter,
@@ -203,11 +200,23 @@ export function startAmbient(): void {
   ambientGain.gain.linearRampToValueAtTime(AMBIENT_BASE_VOL, ac.currentTime + 3);
   ambientGain.connect(master);
 
+  // Pulse LFO — sine oscillator modulates ambientGain at player's pace
+  lfo = ac.createOscillator();
+  lfo.type = 'sine';
+  lfo.frequency.value = DEFAULT_LFO_FREQ;
+
+  lfoGainNode = ac.createGain();
+  lfoGainNode.gain.setValueAtTime(0, ac.currentTime);
+  lfoGainNode.gain.linearRampToValueAtTime(LFO_DEPTH, ac.currentTime + 3);
+
+  lfo.connect(lfoGainNode);
+  lfoGainNode.connect(ambientGain.gain); // audio-rate param modulation
+  lfo.start();
+
   running = true;
   paused = false;
   voiceTimers = [];
 
-  // Stagger initial voice starts so they don't all hit at once
   for (let i = 0; i < VOICES.length; i++) {
     const delay = i * 1200 + Math.random() * 800;
     voiceTimers[i] = setTimeout(() => scheduleVoice(i), delay);
@@ -217,7 +226,6 @@ export function startAmbient(): void {
 export function stopAmbient(): void {
   if (!running) return;
 
-  // Fade out over 1s, then disconnect
   if (ambientGain) {
     const ac = getCtx();
     const now = ac.currentTime;
@@ -225,9 +233,19 @@ export function stopAmbient(): void {
     ambientGain.gain.setValueAtTime(ambientGain.gain.value, now);
     ambientGain.gain.linearRampToValueAtTime(0.0001, now + 1);
 
-    const ref = ambientGain;
+    if (lfoGainNode) {
+      lfoGainNode.gain.cancelScheduledValues(now);
+      lfoGainNode.gain.setValueAtTime(0, now);
+    }
+
+    const refGain = ambientGain;
+    const refLfo = lfo;
+    const refLfoGain = lfoGainNode;
     setTimeout(() => {
-      try { ref.disconnect(); } catch { /* already disconnected */ }
+      try { refLfo?.stop(); } catch { /* */ }
+      try { refLfo?.disconnect(); } catch { /* */ }
+      try { refLfoGain?.disconnect(); } catch { /* */ }
+      try { refGain.disconnect(); } catch { /* */ }
     }, 1200);
   }
 
@@ -236,6 +254,8 @@ export function stopAmbient(): void {
   running = false;
   paused = false;
   ambientGain = null;
+  lfo = null;
+  lfoGainNode = null;
 }
 
 export function pauseAmbient(): void {
@@ -252,6 +272,13 @@ export function pauseAmbient(): void {
     ambientGain.gain.setValueAtTime(ambientGain.gain.value, now);
     ambientGain.gain.linearRampToValueAtTime(0.0001, now + 0.5);
   }
+  if (lfoGainNode) {
+    const ac = getCtx();
+    const now = ac.currentTime;
+    lfoGainNode.gain.cancelScheduledValues(now);
+    lfoGainNode.gain.setValueAtTime(lfoGainNode.gain.value, now);
+    lfoGainNode.gain.linearRampToValueAtTime(0, now + 0.5);
+  }
 }
 
 export function resumeAmbient(): void {
@@ -265,13 +292,32 @@ export function resumeAmbient(): void {
     ambientGain.gain.setValueAtTime(0.0001, now);
     ambientGain.gain.linearRampToValueAtTime(AMBIENT_BASE_VOL, now + 1);
   }
+  if (lfoGainNode) {
+    const ac = getCtx();
+    const now = ac.currentTime;
+    lfoGainNode.gain.cancelScheduledValues(now);
+    lfoGainNode.gain.setValueAtTime(0, now);
+    lfoGainNode.gain.linearRampToValueAtTime(LFO_DEPTH, now + 1);
+  }
 
-  // Restart voice schedulers with stagger
   voiceTimers = [];
   for (let i = 0; i < VOICES.length; i++) {
     const delay = i * 600 + Math.random() * 400;
     voiceTimers[i] = setTimeout(() => scheduleVoice(i), delay);
   }
+}
+
+/** Set pulse rate from average ms between piece placements. */
+export function setAmbientPace(intervalMs: number): void {
+  if (!lfo) return;
+  // Convert interval → LFO frequency (fast play = fast pulse)
+  const freq = intervalMs > 0 ? 1000 / intervalMs : DEFAULT_LFO_FREQ;
+  const clamped = Math.max(0.06, Math.min(0.5, freq));
+  const ac = getCtx();
+  const now = ac.currentTime;
+  lfo.frequency.cancelScheduledValues(now);
+  lfo.frequency.setValueAtTime(lfo.frequency.value, now);
+  lfo.frequency.linearRampToValueAtTime(clamped, now + 0.5);
 }
 
 export function setAmbientTension(t: number): void {
