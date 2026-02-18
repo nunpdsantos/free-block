@@ -143,6 +143,44 @@
   flex-shrink: 0;
 }
 
+/* Music style selector */
+.pause-music-style {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  margin-bottom: 16px;
+  animation: fade-in 0.2s ease-out;
+}
+
+.pause-music-style-btn {
+  padding: 6px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s;
+  letter-spacing: 0.3px;
+}
+
+.pause-music-style-btn:hover {
+  background: rgba(255, 255, 255, 0.09);
+  color: var(--text-primary);
+}
+
+.pause-music-style-btn--active {
+  background: rgba(255, 255, 255, 0.13);
+  border-color: rgba(255, 255, 255, 0.28);
+  color: var(--text-primary);
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.08);
+}
+
+.pause-music-style-btn:active {
+  transform: scale(0.94);
+}
+
 /* Theme section */
 .pause-theme-section {
   margin-bottom: 20px;

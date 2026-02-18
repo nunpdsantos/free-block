@@ -36,6 +36,7 @@ import { CellParticles } from './CellParticles';
 import { PlaceSparkles } from './PlaceSparkles';
 import type { PlacedCell } from './PlaceSparkles';
 import { useAmbientMusic } from '../hooks/useAmbientMusic';
+import type { MusicTheme } from '../audio/ambient';
 import { AmbientParticles } from './AmbientParticles';
 import './Game.css';
 
@@ -116,6 +117,9 @@ export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit
   const [musicOn, setMusicOn] = useState(() => {
     try { const s = localStorage.getItem('gridlock-music'); return s !== null ? JSON.parse(s) as boolean : true; } catch { return true; }
   });
+  const [musicTheme, setMusicThemeValue] = useState<MusicTheme>(() => {
+    try { return (localStorage.getItem('gridlock-music-theme') as MusicTheme) ?? 'ambient'; } catch { return 'ambient'; }
+  });
   const [sfxOn, setSfxOn] = useState(getSfxEnabled);
   const gameRef = useRef<HTMLDivElement>(null);
   const prevGameOverRef = useRef(false);
@@ -160,6 +164,7 @@ export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit
     volume,
     lastDropTime,
     musicOn,
+    musicTheme,
   );
 
   useEffect(() => {
@@ -235,6 +240,11 @@ export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit
       try { localStorage.setItem('gridlock-music', JSON.stringify(next)); } catch { /* */ }
       return next;
     });
+  }, []);
+
+  const handleMusicThemeChange = useCallback((theme: MusicTheme) => {
+    setMusicThemeValue(theme);
+    try { localStorage.setItem('gridlock-music-theme', theme); } catch { /* */ }
   }, []);
 
   const handleSfxToggle = useCallback(() => {
@@ -658,6 +668,8 @@ export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit
           sfxOn={sfxOn}
           onMusicToggle={handleMusicToggle}
           onSfxToggle={handleSfxToggle}
+          musicTheme={musicTheme}
+          onMusicThemeChange={handleMusicThemeChange}
           themeId={themeId}
           onThemeChange={onThemeChange}
           onResume={() => setIsPaused(false)}

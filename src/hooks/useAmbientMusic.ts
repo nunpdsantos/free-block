@@ -7,7 +7,9 @@ import {
   setAmbientTension,
   setAmbientStreak,
   setAmbientPace,
+  setMusicTheme,
 } from '../audio/ambient';
+import type { MusicTheme } from '../audio/ambient';
 
 const IDLE_TIMEOUT = 12_000; // 12s without a drop → fade out
 
@@ -26,6 +28,7 @@ export function useAmbientMusic(
   volume: number,
   lastDropTime: number,
   musicEnabled: boolean,
+  musicTheme: MusicTheme,
 ): void {
   const startedRef = useRef(false);
   const playingRef = useRef(false);
@@ -77,6 +80,11 @@ export function useAmbientMusic(
     clearTimeout(idleTimerRef.current);
     idleTimerRef.current = setTimeout(() => setIdle(true), IDLE_TIMEOUT);
   }, [lastDropTime]);
+
+  // Forward theme changes to the engine immediately
+  useEffect(() => {
+    setMusicTheme(musicTheme);
+  }, [musicTheme]);
 
   // Full cleanup on unmount
   useEffect(() => {
