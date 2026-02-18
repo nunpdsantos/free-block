@@ -432,6 +432,23 @@ export function synthRevive(reviveTension: number = 0): void {
 }
 
 /**
+ * Score milestone fanfare — rising C5→E5→G5 arpeggio with shimmer.
+ * Lighter than synthAchievement (no reverb tail), distinct from synthClear.
+ * Fires on score milestones (1k, 2.5k, 5k, 10k…).
+ * Total duration: ~500ms.
+ */
+export function synthMilestone(): void {
+  const notes = [CHORD_NOTES.C5, CHORD_NOTES.E5, CHORD_NOTES.G5];
+  notes.forEach((freq, i) => {
+    const d = i * 0.12;
+    tone(freq, 'triangle', 0.11, 0.008, 0.1, 0.18, d);
+    const shimmerFreq = Math.min(freq * 2, 2000);
+    tone(shimmerFreq, 'sine', 0.018, 0.01, 0.06, 0.12, d + 0.01);
+  });
+  noiseBurst(0.015, 0.03, 2000, 0.28);
+}
+
+/**
  * Achievement unlock fanfare — celebratory "ding-DING!-C6" with reverb tail.
  * C5 → G5 → C6 (rising octave resolution) with E5 inner voice and sparkle.
  * All voices routed through a 1.5s algorithmic reverb send (prestigious ring-out).

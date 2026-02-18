@@ -204,6 +204,33 @@
   transform: none;
 }
 
+.pause-theme-swatch-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.pause-theme-unlock-hint {
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-align: center;
+  max-width: 46px;
+  line-height: 1.2;
+  opacity: 0.65;
+}
+
+@media (hover: hover) {
+  .pause-theme-unlock-hint {
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+  .pause-theme-swatch-wrap:hover .pause-theme-unlock-hint {
+    opacity: 0.8;
+  }
+}
+
 .pause-theme-hint {
   display: flex;
   align-items: center;

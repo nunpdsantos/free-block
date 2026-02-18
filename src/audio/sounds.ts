@@ -1,4 +1,4 @@
-import { synthPlace, synthClear, synthAllClear, synthGameOver, synthRevive, synthAchievement, setMasterVolume } from './synth';
+import { synthPlace, synthClear, synthAllClear, synthGameOver, synthRevive, synthAchievement, synthMilestone, setMasterVolume } from './synth';
 
 let volume = 80; // 0-100
 let sfxEnabled = true;
@@ -103,6 +103,14 @@ export function playRevive() {
   vibrate([10, 20, 10]);
   if (volume === 0) return;
   synthRevive(0);
+}
+
+/** Rising 3-note fanfare on score milestone (1k, 2.5k, 5k…) */
+export function playMilestone() {
+  if (!sfxEnabled) return;
+  vibrate([10, 20, 10]);
+  if (volume === 0) return;
+  synthMilestone();
 }
 
 /** Celebratory fanfare on achievement unlock */

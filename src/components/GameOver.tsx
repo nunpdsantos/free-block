@@ -56,9 +56,9 @@ export function GameOver({
         <span className="game-over-breakdown-value">{piecesPlaced}</span>
       </div>
       {bestStreak > 0 && (
-        <div className="game-over-breakdown-row">
+        <div className={`game-over-breakdown-row${bestStreak >= 3 ? ' game-over-breakdown-row--streak' : ''}`}>
           <span className="game-over-breakdown-label">Best streak</span>
-          <span className="game-over-breakdown-value">{bestStreak}x</span>
+          <span className="game-over-breakdown-value">{bestStreak >= 3 ? '🔥 ' : ''}{bestStreak}x</span>
         </div>
       )}
     </div>

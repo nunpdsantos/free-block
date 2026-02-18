@@ -1,11 +1,12 @@
 import { useState, useCallback } from 'react';
-import type { LeaderboardEntry, GlobalLeaderboardEntry, PlayerRankInfo } from '../game/types';
+import type { LeaderboardEntry, GlobalLeaderboardEntry, PlayerRankInfo, EntriesAroundPlayer } from '../game/types';
 import './Leaderboard.css';
 
 type LeaderboardContentProps = {
   personalEntries: LeaderboardEntry[];
   globalEntries: GlobalLeaderboardEntry[];
   playerRank: PlayerRankInfo | null;
+  entriesAroundPlayer: EntriesAroundPlayer | null;
   globalLoading: boolean;
   currentUid: string | null;
   onRefresh?: () => void;
@@ -17,6 +18,7 @@ export function LeaderboardContent({
   personalEntries,
   globalEntries,
   playerRank,
+  entriesAroundPlayer,
   globalLoading,
   currentUid,
   onRefresh,
@@ -67,7 +69,7 @@ export function LeaderboardContent({
           {globalLoading && (
             <div className="leaderboard-cache-hint">Loading...</div>
           )}
-          <GlobalTable entries={globalEntries} currentUid={currentUid} playerRank={playerRank} />
+          <GlobalTable entries={globalEntries} currentUid={currentUid} playerRank={playerRank} entriesAroundPlayer={entriesAroundPlayer} />
         </>
       ) : (
         <PersonalTable entries={personalEntries} />
@@ -80,10 +82,12 @@ function GlobalTable({
   entries,
   currentUid,
   playerRank,
+  entriesAroundPlayer,
 }: {
   entries: GlobalLeaderboardEntry[];
   currentUid: string | null;
   playerRank: PlayerRankInfo | null;
+  entriesAroundPlayer: EntriesAroundPlayer | null;
 }) {
   if (entries.length === 0) {
     return (
@@ -93,8 +97,29 @@ function GlobalTable({
     );
   }
 
-  const playerInList = currentUid != null && entries.some((e) => e.uid === currentUid);
-  const showFooter = !playerInList && playerRank != null && playerRank.rank > 0;
+  const playerInTopList = currentUid != null && entries.some((e) => e.uid === currentUid);
+  // Show nearby section when player is outside the top 10
+  const showNearby = !playerInTopList && playerRank != null && playerRank.rank > 10 && entriesAroundPlayer != null;
+  // If player is in the list but beyond top 10, still show full list; nearby only when no top-20 data
+  const displayEntries = showNearby ? entries.slice(0, 10) : entries;
+
+  const renderRow = (entry: GlobalLeaderboardEntry, rankNum: number, animDelay: number) => {
+    const isMe = currentUid != null && entry.uid === currentUid;
+    let rowClass = '';
+    if (rankNum === 1) rowClass += ' leaderboard-row--top';
+    if (isMe) rowClass += ' leaderboard-row--me';
+    return (
+      <tr
+        key={`${entry.uid}-${entry.score}-${rankNum}`}
+        className={rowClass}
+        style={{ animationDelay: `${animDelay}ms` }}
+      >
+        <td className="leaderboard-rank">#{rankNum}</td>
+        <td className="leaderboard-player">{entry.displayName}</td>
+        <td className="leaderboard-score">{entry.score.toLocaleString()}</td>
+      </tr>
+    );
+  };
 
   return (
     <div className="leaderboard-table-wrap">
@@ -107,27 +132,32 @@ function GlobalTable({
           </tr>
         </thead>
         <tbody>
-          {entries.map((entry, i) => {
-            const isMe = currentUid != null && entry.uid === currentUid;
-            let rowClass = '';
-            if (i === 0) rowClass += ' leaderboard-row--top';
-            if (isMe) rowClass += ' leaderboard-row--me';
-            return (
-              <tr
-                key={`${entry.uid}-${entry.score}-${i}`}
-                className={rowClass}
-                style={{ animationDelay: `${i * 80}ms` }}
-              >
-                <td className="leaderboard-rank">#{i + 1}</td>
-                <td className="leaderboard-player">{entry.displayName}</td>
-                <td className="leaderboard-score">{entry.score.toLocaleString()}</td>
+          {displayEntries.map((entry, i) => renderRow(entry, i + 1, i * 80))}
+
+          {showNearby && (
+            <>
+              <tr className="leaderboard-row--divider">
+                <td colSpan={3} className="leaderboard-divider-cell">···</td>
               </tr>
-            );
-          })}
+              {entriesAroundPlayer!.above.map((entry, i) => {
+                const aboveRank = playerRank!.rank - (entriesAroundPlayer!.above.length - i);
+                return renderRow(entry, aboveRank, 0);
+              })}
+              <tr className="leaderboard-row--me">
+                <td className="leaderboard-rank">#{playerRank!.rank}</td>
+                <td className="leaderboard-player leaderboard-player--me">{playerRank!.displayName}</td>
+                <td className="leaderboard-score">{playerRank!.score.toLocaleString()}</td>
+              </tr>
+              {entriesAroundPlayer!.below.map((entry, i) =>
+                renderRow(entry, playerRank!.rank + i + 1, 0)
+              )}
+            </>
+          )}
         </tbody>
       </table>
 
-      {showFooter && (
+      {/* Legacy footer — only show if player has a rank but nearby section is not active */}
+      {!showNearby && !playerInTopList && playerRank != null && playerRank.rank > 0 && (
         <div className="leaderboard-you">
           <span className="leaderboard-you__rank">#{playerRank.rank}</span>
           <span className="leaderboard-you__name">{playerRank.displayName}</span>

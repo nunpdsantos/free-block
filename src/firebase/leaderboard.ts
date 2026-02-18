@@ -1,5 +1,5 @@
 import { auth } from './config';
-import type { GlobalLeaderboardEntry, PlayerRankInfo } from '../game/types';
+import type { GlobalLeaderboardEntry, PlayerRankInfo, EntriesAroundPlayer } from '../game/types';
 
 const LEADERBOARD_COLLECTION = 'leaderboard';
 const TOP_N = 20;
@@ -344,4 +344,69 @@ export async function fetchPlayerRank(
   }
 
   return { rank, score, displayName };
+}
+
+/**
+ * Fetch up to 2 entries immediately above and 2 immediately below the given score.
+ * Uses GREATER_THAN/LESS_THAN with ordering to get closest neighbours only.
+ * No auth required — public query.
+ */
+export async function fetchEntriesAroundScore(
+  score: number,
+  mode: 'classic' | 'daily',
+): Promise<EntriesAroundPlayer> {
+  const url = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents:runQuery`;
+
+  type RawResult = Array<{ document?: { fields: Record<string, { stringValue?: string; integerValue?: string; doubleValue?: number }> } }>;
+
+  const makeBody = (op: 'GREATER_THAN' | 'LESS_THAN', direction: 'DESCENDING' | 'ASCENDING', limit: number) => ({
+    structuredQuery: {
+      from: [{ collectionId: LEADERBOARD_COLLECTION }],
+      where: {
+        compositeFilter: {
+          op: 'AND',
+          filters: [
+            { fieldFilter: { field: { fieldPath: 'mode' }, op: 'EQUAL', value: { stringValue: mode } } },
+            { fieldFilter: { field: { fieldPath: 'score' }, op, value: { integerValue: String(score) } } },
+          ],
+        },
+      },
+      orderBy: [{ field: { fieldPath: 'score' }, direction }],
+      limit,
+    },
+  });
+
+  const parseEntries = (results: RawResult): GlobalLeaderboardEntry[] => {
+    const entries: GlobalLeaderboardEntry[] = [];
+    for (const result of results) {
+      const fields = result.document?.fields;
+      if (!fields) continue;
+      const s = fields.score?.integerValue ? Number(fields.score.integerValue) : fields.score?.doubleValue ?? 0;
+      entries.push({
+        uid: fields.uid?.stringValue ?? '',
+        displayName: fields.displayName?.stringValue ?? 'Unknown',
+        score: s,
+        mode: (fields.mode?.stringValue as 'classic' | 'daily') ?? mode,
+        date: fields.date?.stringValue ?? '',
+      });
+    }
+    return entries;
+  };
+
+  const [aboveRes, belowRes] = await Promise.all([
+    fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(makeBody('GREATER_THAN', 'ASCENDING', 2)) }),
+    fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(makeBody('LESS_THAN', 'DESCENDING', 2)) }),
+  ]);
+
+  if (!aboveRes.ok || !belowRes.ok) {
+    throw new Error(`fetchEntriesAroundScore failed: ${aboveRes.status}/${belowRes.status}`);
+  }
+
+  const [aboveRaw, belowRaw]: [RawResult, RawResult] = await Promise.all([aboveRes.json(), belowRes.json()]);
+
+  // "above" returns lowest-above first (ASCENDING); reverse to get highest-above first for display
+  const above = parseEntries(aboveRaw).reverse();
+  const below = parseEntries(belowRaw);
+
+  return { above, below };
 }

@@ -107,3 +107,8 @@ export type PlayerRankInfo = {
   score: number;
   displayName: string;
 };
+
+export type EntriesAroundPlayer = {
+  above: GlobalLeaderboardEntry[];
+  below: GlobalLeaderboardEntry[];
+};

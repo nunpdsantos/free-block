@@ -24,7 +24,7 @@ import {
   SCORE_MILESTONES,
   SOLUTION_THRESHOLD,
 } from '../game/constants';
-import { playPlace, playClear, playAllClear, playGameOver, playRevive, getVolume, setVolume, getSfxEnabled, setSfxEnabled } from '../audio/sounds';
+import { playPlace, playClear, playAllClear, playGameOver, playRevive, playMilestone, getVolume, setVolume, getSfxEnabled, setSfxEnabled } from '../audio/sounds';
 import { Board } from './Board';
 import { PieceTray } from './PieceTray';
 import { ScoreDisplay } from './ScoreDisplay';
@@ -115,6 +115,7 @@ export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit
   const gameRef = useRef<HTMLDivElement>(null);
   const prevGameOverRef = useRef(false);
   const boardElRef = useRef<HTMLDivElement>(null);
+  const prevMilestoneRef = useRef(0);
 
   // --- Offline detection ---
   useEffect(() => {
@@ -195,6 +196,14 @@ export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit
       if (showUiTimer) clearTimeout(showUiTimer);
     };
   }, [state.isGameOver, mode, onDailyComplete, onGameOver, state.score, state.revivesRemaining]);
+
+  // Milestone audio — fires whenever a score milestone is crossed
+  useEffect(() => {
+    if (state.lastMilestone > prevMilestoneRef.current) {
+      playMilestone();
+    }
+    prevMilestoneRef.current = state.lastMilestone;
+  }, [state.lastMilestone]);
 
   const prevVolumeRef = useRef(80);
 

@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { useRegisterSW } from 'virtual:pwa-register/react';
-import type { LeaderboardEntry, DailyResult, PlayerStats, AchievementProgress, DailyStreak, GlobalLeaderboardEntry, PlayerRankInfo } from './game/types';
+import type { LeaderboardEntry, DailyResult, PlayerStats, AchievementProgress, DailyStreak, GlobalLeaderboardEntry, PlayerRankInfo, EntriesAroundPlayer } from './game/types';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { useAuth } from './hooks/useAuth';
 import { getThemeById, applyTheme } from './game/themes';
@@ -9,7 +9,7 @@ import { checkAchievements, getAchievementById } from './game/achievements';
 import type { Achievement, AchievementContext } from './game/achievements';
 import { REVIVES_PER_GAME } from './game/constants';
 import { playAchievement } from './audio/sounds';
-import { submitScore, retryPendingScores, syncLocalBest, fetchTopScores, fetchPlayerRank } from './firebase/leaderboard';
+import { submitScore, retryPendingScores, syncLocalBest, fetchTopScores, fetchPlayerRank, fetchEntriesAroundScore } from './firebase/leaderboard';
 import { Game } from './components/Game';
 import { MainMenu } from './components/MainMenu';
 import { Tutorial } from './components/Tutorial';
@@ -115,6 +115,7 @@ export default function App() {
   // --- Global leaderboard (fetched via REST API) ---
   const [globalLeaderboard, setGlobalLeaderboard] = useState<GlobalLeaderboardEntry[]>([]);
   const [playerRank, setPlayerRank] = useState<PlayerRankInfo | null>(null);
+  const [entriesAroundPlayer, setEntriesAroundPlayer] = useState<EntriesAroundPlayer | null>(null);
   const [leaderboardLoading, setLeaderboardLoading] = useState(false);
   const [leaderboardRefresh, setLeaderboardRefresh] = useState(0);
 
@@ -122,18 +123,24 @@ export default function App() {
     let cancelled = false;
     setLeaderboardLoading(true);
     setPlayerRank(null);
+    setEntriesAroundPlayer(null);
 
     const uid = user?.uid;
-    const fetchAll = Promise.all([
+
+    Promise.all([
       fetchTopScores('classic'),
       uid ? fetchPlayerRank(uid, 'classic') : Promise.resolve(null),
-    ]);
-
-    fetchAll
+    ])
       .then(([entries, rank]) => {
         if (cancelled) return;
         setGlobalLeaderboard(entries);
         setPlayerRank(rank);
+        // Fetch nearby entries only when player is outside the top 10
+        if (rank && rank.rank > 10) {
+          fetchEntriesAroundScore(rank.score, 'classic')
+            .then((around) => { if (!cancelled) setEntriesAroundPlayer(around); })
+            .catch(() => {});
+        }
       })
       .catch((err) => { console.error('[Gridlock] Leaderboard fetch error:', err); })
       .finally(() => { if (!cancelled) setLeaderboardLoading(false); });
@@ -396,6 +403,7 @@ export default function App() {
           leaderboard={leaderboard}
           globalLeaderboard={globalLeaderboard}
           playerRank={playerRank}
+          entriesAroundPlayer={entriesAroundPlayer}
           leaderboardLoading={leaderboardLoading}
           currentUid={user?.uid ?? null}
           authUser={user}

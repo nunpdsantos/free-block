@@ -88,15 +88,19 @@ export function PauseMenu({
               const locked = !!t.requiredAchievement && !unlockedAchievements[t.requiredAchievement];
               const achievement = t.requiredAchievement ? getAchievementById(t.requiredAchievement) : null;
               return (
-                <button
-                  key={t.id}
-                  className={`pause-theme-swatch ${t.id === themeId ? 'pause-theme-swatch--active' : ''} ${locked ? 'pause-theme-swatch--locked' : ''}`}
-                  style={{ background: `linear-gradient(135deg, ${t.swatchFrom}, ${t.swatchTo})` }}
-                  onClick={locked ? () => setLockHint(
-                    achievement ? achievement.description : 'Locked'
-                  ) : () => { setLockHint(null); onThemeChange(t.id); }}
-                  aria-label={locked && achievement ? `Locked: ${achievement.description}` : t.name}
-                />
+                <div key={t.id} className="pause-theme-swatch-wrap">
+                  <button
+                    className={`pause-theme-swatch ${t.id === themeId ? 'pause-theme-swatch--active' : ''} ${locked ? 'pause-theme-swatch--locked' : ''}`}
+                    style={{ background: `linear-gradient(135deg, ${t.swatchFrom}, ${t.swatchTo})` }}
+                    onClick={locked ? () => setLockHint(
+                      achievement ? achievement.description : 'Locked'
+                    ) : () => { setLockHint(null); onThemeChange(t.id); }}
+                    aria-label={locked && achievement ? `Locked: ${achievement.title}` : t.name}
+                  />
+                  {locked && achievement && (
+                    <span className="pause-theme-unlock-hint">{achievement.title}</span>
+                  )}
+                </div>
               );
             })}
           </div>

@@ -164,6 +164,23 @@
   }
 }
 
+/* Divider row between top 10 and nearby section */
+.leaderboard-row--divider td {
+  text-align: center;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  padding: 4px 0;
+  letter-spacing: 4px;
+  opacity: 0.35;
+  border-bottom: none;
+}
+
+.leaderboard-player--me {
+  color: var(--accent);
+  font-weight: 700;
+}
+
 /* Sticky "You" footer when player is outside top N */
 .leaderboard-table-wrap {
   width: 100%;
