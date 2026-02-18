@@ -24,7 +24,7 @@ import {
   SCORE_MILESTONES,
   SOLUTION_THRESHOLD,
 } from '../game/constants';
-import { playPlace, playClear, playAllClear, playGameOver, playRevive, getVolume, setVolume } from '../audio/sounds';
+import { playPlace, playClear, playAllClear, playGameOver, playRevive, getVolume, setVolume, getSfxEnabled, setSfxEnabled } from '../audio/sounds';
 import { Board } from './Board';
 import { PieceTray } from './PieceTray';
 import { ScoreDisplay } from './ScoreDisplay';
@@ -113,6 +113,10 @@ export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit
   const [settleCells, setSettleCells] = useState<Set<string>>(new Set());
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
   const [lastDropTime, setLastDropTime] = useState(0);
+  const [musicOn, setMusicOn] = useState(() => {
+    try { const s = localStorage.getItem('gridlock-music'); return s !== null ? JSON.parse(s) as boolean : true; } catch { return true; }
+  });
+  const [sfxOn, setSfxOn] = useState(getSfxEnabled);
   const gameRef = useRef<HTMLDivElement>(null);
   const prevGameOverRef = useRef(false);
   const boardElRef = useRef<HTMLDivElement>(null);
@@ -155,6 +159,7 @@ export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit
     state.streak,
     volume,
     lastDropTime,
+    musicOn,
   );
 
   useEffect(() => {
@@ -223,6 +228,22 @@ export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit
       handleVolumeChange(0);
     }
   }, [volume, handleVolumeChange]);
+
+  const handleMusicToggle = useCallback(() => {
+    setMusicOn((prev: boolean) => {
+      const next = !prev;
+      try { localStorage.setItem('gridlock-music', JSON.stringify(next)); } catch { /* */ }
+      return next;
+    });
+  }, []);
+
+  const handleSfxToggle = useCallback(() => {
+    setSfxOn((prev: boolean) => {
+      const next = !prev;
+      setSfxEnabled(next);
+      return next;
+    });
+  }, []);
 
   const handleDrop = useCallback(
     (pieceIndex: number, row: number, col: number) => {
@@ -632,6 +653,10 @@ export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit
           volume={volume}
           onVolumeChange={handleVolumeChange}
           onToggleMute={handleToggleMute}
+          musicOn={musicOn}
+          sfxOn={sfxOn}
+          onMusicToggle={handleMusicToggle}
+          onSfxToggle={handleSfxToggle}
           themeId={themeId}
           onThemeChange={onThemeChange}
           onResume={() => setIsPaused(false)}

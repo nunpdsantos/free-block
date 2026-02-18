@@ -25,6 +25,7 @@ export function useAmbientMusic(
   streak: number,
   volume: number,
   lastDropTime: number,
+  musicEnabled: boolean,
 ): void {
   const startedRef = useRef(false);
   const playingRef = useRef(false);
@@ -36,7 +37,7 @@ export function useAmbientMusic(
   setAmbientTension(tension);
   setAmbientStreak(streak);
 
-  const shouldPlay = active && volume > 0 && !idle;
+  const shouldPlay = active && volume > 0 && !idle && musicEnabled;
 
   // Lifecycle: start/pause/resume driven by shouldPlay
   useEffect(() => {

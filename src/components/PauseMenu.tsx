@@ -8,6 +8,10 @@ type PauseMenuProps = {
   volume: number;
   onVolumeChange: (v: number) => void;
   onToggleMute: () => void;
+  musicOn: boolean;
+  sfxOn: boolean;
+  onMusicToggle: () => void;
+  onSfxToggle: () => void;
   themeId: string;
   onThemeChange: (id: string) => void;
   onResume: () => void;
@@ -37,6 +41,7 @@ function SpeakerIcon({ volume }: { volume: number }) {
 
 export function PauseMenu({
   volume, onVolumeChange, onToggleMute,
+  musicOn, sfxOn, onMusicToggle, onSfxToggle,
   themeId, onThemeChange,
   onResume, onRestart, onQuit,
   unlockedAchievements,
@@ -62,6 +67,30 @@ export function PauseMenu({
             aria-label="Volume"
           />
           <span className="pause-volume-value">{volume}</span>
+        </div>
+
+        <div className="pause-audio-toggles">
+          <button
+            className={`pause-toggle ${musicOn ? 'pause-toggle--on' : ''}`}
+            onClick={onMusicToggle}
+            aria-label={musicOn ? 'Disable music' : 'Enable music'}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6Z"/>
+            </svg>
+            Music
+          </button>
+          <button
+            className={`pause-toggle ${sfxOn ? 'pause-toggle--on' : ''}`}
+            onClick={onSfxToggle}
+            aria-label={sfxOn ? 'Disable effects' : 'Enable effects'}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill="currentColor" />
+              <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+            </svg>
+            Effects
+          </button>
         </div>
 
         <div className="pause-theme-section">
