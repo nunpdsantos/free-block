@@ -2,19 +2,14 @@ import { useState } from 'react';
 import { THEMES } from '../game/themes';
 import { getAchievementById } from '../game/achievements';
 import type { AchievementProgress } from '../game/types';
-import type { MusicTheme } from '../audio/ambient';
 import './PauseMenu.css';
 
 type PauseMenuProps = {
   volume: number;
   onVolumeChange: (v: number) => void;
   onToggleMute: () => void;
-  musicOn: boolean;
   sfxOn: boolean;
-  onMusicToggle: () => void;
   onSfxToggle: () => void;
-  musicTheme: MusicTheme;
-  onMusicThemeChange: (theme: MusicTheme) => void;
   themeId: string;
   onThemeChange: (id: string) => void;
   onResume: () => void;
@@ -42,17 +37,9 @@ function SpeakerIcon({ volume }: { volume: number }) {
   );
 }
 
-const MUSIC_THEMES: { id: MusicTheme; label: string }[] = [
-  { id: 'ambient', label: 'Ambient' },
-  { id: 'pulse',   label: 'Pulse'   },
-  { id: 'lofi',    label: 'Lo-fi'   },
-  { id: 'drift',   label: 'Drift'   },
-];
-
 export function PauseMenu({
   volume, onVolumeChange, onToggleMute,
-  musicOn, sfxOn, onMusicToggle, onSfxToggle,
-  musicTheme, onMusicThemeChange,
+  sfxOn, onSfxToggle,
   themeId, onThemeChange,
   onResume, onRestart, onQuit,
   unlockedAchievements,
@@ -82,16 +69,6 @@ export function PauseMenu({
 
         <div className="pause-audio-toggles">
           <button
-            className={`pause-toggle ${musicOn ? 'pause-toggle--on' : ''}`}
-            onClick={onMusicToggle}
-            aria-label={musicOn ? 'Disable music' : 'Enable music'}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6Z"/>
-            </svg>
-            Music
-          </button>
-          <button
             className={`pause-toggle ${sfxOn ? 'pause-toggle--on' : ''}`}
             onClick={onSfxToggle}
             aria-label={sfxOn ? 'Disable effects' : 'Enable effects'}
@@ -103,21 +80,6 @@ export function PauseMenu({
             Effects
           </button>
         </div>
-
-        {musicOn && (
-          <div className="pause-music-style">
-            {MUSIC_THEMES.map(({ id, label }) => (
-              <button
-                key={id}
-                className={`pause-music-style-btn ${musicTheme === id ? 'pause-music-style-btn--active' : ''}`}
-                onClick={() => onMusicThemeChange(id)}
-                aria-label={`Music style: ${label}`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-        )}
 
         <div className="pause-theme-section">
           <div className="pause-theme-label">Theme</div>

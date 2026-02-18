@@ -35,8 +35,6 @@ import { Confetti } from './Confetti';
 import { CellParticles } from './CellParticles';
 import { PlaceSparkles } from './PlaceSparkles';
 import type { PlacedCell } from './PlaceSparkles';
-import { useAmbientMusic } from '../hooks/useAmbientMusic';
-import type { MusicTheme } from '../audio/ambient';
 import { AmbientParticles } from './AmbientParticles';
 import './Game.css';
 
@@ -113,13 +111,6 @@ export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit
   const [screenFlash, setScreenFlash] = useState(false);
   const [settleCells, setSettleCells] = useState<Set<string>>(new Set());
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
-  const [lastDropTime, setLastDropTime] = useState(0);
-  const [musicOn, setMusicOn] = useState(() => {
-    try { const s = localStorage.getItem('gridlock-music'); return s !== null ? JSON.parse(s) as boolean : false; } catch { return false; }
-  });
-  const [musicTheme, setMusicThemeValue] = useState<MusicTheme>(() => {
-    try { return (localStorage.getItem('gridlock-music-theme') as MusicTheme) ?? 'ambient'; } catch { return 'ambient'; }
-  });
   const [sfxOn, setSfxOn] = useState(getSfxEnabled);
   const gameRef = useRef<HTMLDivElement>(null);
   const prevGameOverRef = useRef(false);
@@ -155,17 +146,6 @@ export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit
     const raw = state.movesSinceLastClear / SOLUTION_THRESHOLD;
     return raw < 0.25 ? 0 : Math.min(1, (raw - 0.25) / 0.75);
   }, [state.movesSinceLastClear]);
-
-  // Generative ambient music — reacts to tension, streak, and player pace
-  useAmbientMusic(
-    !isPaused && !state.isGameOver && !showGameOverUI,
-    tension,
-    state.streak,
-    volume,
-    lastDropTime,
-    musicOn,
-    musicTheme,
-  );
 
   useEffect(() => {
     const root = document.documentElement;
@@ -234,19 +214,6 @@ export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit
     }
   }, [volume, handleVolumeChange]);
 
-  const handleMusicToggle = useCallback(() => {
-    setMusicOn((prev: boolean) => {
-      const next = !prev;
-      try { localStorage.setItem('gridlock-music', JSON.stringify(next)); } catch { /* */ }
-      return next;
-    });
-  }, []);
-
-  const handleMusicThemeChange = useCallback((theme: MusicTheme) => {
-    setMusicThemeValue(theme);
-    try { localStorage.setItem('gridlock-music-theme', theme); } catch { /* */ }
-  }, []);
-
   const handleSfxToggle = useCallback(() => {
     setSfxOn((prev: boolean) => {
       const next = !prev;
@@ -262,7 +229,6 @@ export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit
       if (!canPlacePiece(state.board, piece, row, col)) return;
 
       const dropTimestamp = Date.now();
-      setLastDropTime(dropTimestamp);
 
       // Danger level for audio thinning — compute from current board
       const fr = getBoardFillRatio(state.board);
@@ -664,12 +630,8 @@ export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit
           volume={volume}
           onVolumeChange={handleVolumeChange}
           onToggleMute={handleToggleMute}
-          musicOn={musicOn}
           sfxOn={sfxOn}
-          onMusicToggle={handleMusicToggle}
           onSfxToggle={handleSfxToggle}
-          musicTheme={musicTheme}
-          onMusicThemeChange={handleMusicThemeChange}
           themeId={themeId}
           onThemeChange={onThemeChange}
           onResume={() => setIsPaused(false)}

@@ -1,6 +1,4 @@
 import { synthPlace, synthClear, synthAllClear, synthGameOver, synthRevive, synthAchievement, setMasterVolume } from './synth';
-import { duckMusic, getCurrentChordRoot, getAmbientTension, isAmbientRunning, triggerMusicEvent, triggerStreakShimmer, lockRhythmPeriod } from './ambient';
-import { recordPlacement, clearRhythmHistory } from './rhythmDetector';
 
 let volume = 80; // 0-100
 let sfxEnabled = true;
@@ -72,14 +70,6 @@ export function playPlace(dangerLevel: number = 0) {
   if (volume === 0) return;
   if (performance.now() - lastClearTime < PLACE_SILENCE_GAP) return;
   synthPlace(dangerLevel);
-  // Record for rhythm detection — beat clock syncs to player's natural tempo
-  recordPlacement();
-  lockRhythmPeriod();
-}
-
-/** Reset rhythm history on new game / revive */
-export function resetRhythmHistory(): void {
-  clearRhythmHistory();
 }
 
 /** Crystalline chime on line clear — ascending pentatonic with combo */
@@ -88,11 +78,7 @@ export function playClear(combo: number = 0, linesCleared: number = 1) {
   lastClearTime = performance.now();
   vibrate(linesCleared >= 2 ? [15, 30, 15] : 15);
   if (volume === 0) return;
-  synthClear(combo, linesCleared, isAmbientRunning() ? getCurrentChordRoot() : undefined);
-  // Harmonic shimmer ring at streak milestones — "leveling up" audio reward
-  if ((combo === 3 || combo === 5 || combo === 8 || combo >= 11) && isAmbientRunning()) {
-    triggerStreakShimmer(combo);
-  }
+  synthClear(combo, linesCleared);
 }
 
 /** Triumphant major chord on all-clear */
@@ -100,9 +86,7 @@ export function playAllClear() {
   if (!sfxEnabled) return;
   vibrate([20, 40, 20, 40, 20]);
   if (volume === 0) return;
-  duckMusic(0.45, 0.8); // duck 55% for 800ms — all-clear chord is loud
   synthAllClear();
-  if (isAmbientRunning()) triggerMusicEvent('allClear');
 }
 
 /** Gentle descending tone on game over */
@@ -110,8 +94,7 @@ export function playGameOver() {
   if (!sfxEnabled) return;
   vibrate([40, 60, 80]);
   if (volume === 0) return;
-  synthGameOver(isAmbientRunning() ? getCurrentChordRoot() : undefined);
-  if (isAmbientRunning()) triggerMusicEvent('gameOver');
+  synthGameOver();
 }
 
 /** Hopeful ascending tone on revive */
@@ -119,8 +102,7 @@ export function playRevive() {
   if (!sfxEnabled) return;
   vibrate([10, 20, 10]);
   if (volume === 0) return;
-  synthRevive(getAmbientTension());
-  if (isAmbientRunning()) triggerMusicEvent('revive');
+  synthRevive(0);
 }
 
 /** Celebratory fanfare on achievement unlock */
@@ -128,6 +110,5 @@ export function playAchievement() {
   if (!sfxEnabled) return;
   vibrate([15, 30, 15, 30, 15]);
   if (volume === 0) return;
-  duckMusic(0.5, 0.6); // duck 50% for 600ms — fanfare needs headroom
   synthAchievement();
 }
