@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gridlock — Game Reference</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #1a1a2e;
+    color: #e0e0e0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    padding: 32px;
+    min-height: 100vh;
+  }
+  h1 {
+    text-align: center;
+    font-size: 28px;
+    font-weight: 800;
+    margin-bottom: 8px;
+    background: linear-gradient(135deg, #5B8DEF, #42C6EA, #AB47BC);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .subtitle {
+    text-align: center;
+    color: #888;
+    font-size: 14px;
+    margin-bottom: 40px;
+  }
+
+  /* Tabs */
+  .tabs {
+    display: flex;
+    justify-content: center;
+    gap: 4px;
+    margin-bottom: 32px;
+  }
+  .tab-btn {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.08);
+    color: #888;
+    font-size: 14px;
+    font-weight: 600;
+    padding: 10px 24px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .tab-btn:hover { background: rgba(255,255,255,0.1); color: #ccc; }
+  .tab-btn.active {
+    background: rgba(91,141,239,0.15);
+    border-color: rgba(91,141,239,0.3);
+    color: #5B8DEF;
+  }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* Stats bar */
+  .stats-bar {
+    display: flex;
+    justify-content: center;
+    gap: 32px;
+    margin-bottom: 32px;
+    padding: 16px;
+    background: rgba(255,255,255,0.03);
+    border-radius: 10px;
+  }
+  .stat { text-align: center; }
+  .stat-value { font-size: 28px; font-weight: 800; color: #fff; }
+  .stat-label { font-size: 11px; color: #666; text-transform: uppercase; letter-spacing: 0.5px; }
+
+  /* Tier sections */
+  .tier-section { margin-bottom: 40px; }
+  .tier-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+  }
+  .tier-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    font-weight: 800;
+    font-size: 13px;
+    color: #fff;
+    flex-shrink: 0;
+  }
+  .tier-badge.easy { background: #66BB6A; }
+  .tier-badge.medium { background: #FFA726; }
+  .tier-badge.hard { background: #EF5350; }
+  .tier-label { font-size: 18px; font-weight: 700; }
+  .tier-count { color: #666; font-size: 13px; margin-left: auto; }
+
+  /* Piece cards */
+  .family-section { margin-bottom: 28px; }
+  .family-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: #aaa;
+    margin-bottom: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .pieces-row { display: flex; flex-wrap: wrap; gap: 16px; }
+  .piece-card {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 10px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    min-width: 80px;
+    transition: background 0.15s;
+  }
+  .piece-card:hover { background: rgba(255,255,255,0.08); }
+  .piece-grid { display: grid; gap: 2px; }
+  .piece-cell { width: 20px; height: 20px; border-radius: 3px; }
+  .piece-cell.filled {
+    box-shadow: inset 0 -2px 0 rgba(0,0,0,0.2), 0 1px 3px rgba(0,0,0,0.3);
+  }
+  .piece-cell.empty { background: transparent; }
+  .piece-id { font-size: 10px; color: #555; font-family: 'SF Mono', 'Menlo', monospace; }
+  .piece-meta { font-size: 10px; color: #444; }
+
+  /* Rules section */
+  .rules-section {
+    max-width: 680px;
+    margin: 0 auto;
+  }
+  .rule-group {
+    margin-bottom: 32px;
+  }
+  .rule-group-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+  }
+  .rule-card {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin-bottom: 12px;
+  }
+  .rule-card h4 {
+    font-size: 14px;
+    font-weight: 700;
+    color: #ddd;
+    margin-bottom: 6px;
+  }
+  .rule-card p {
+    font-size: 13px;
+    color: #999;
+    line-height: 1.6;
+  }
+  .rule-card .highlight {
+    color: #fff;
+    font-weight: 600;
+  }
+  .rule-card .gold { color: #FFD700; font-weight: 700; }
+  .rule-card .red { color: #EF5350; font-weight: 700; }
+  .rule-card .green { color: #66BB6A; font-weight: 700; }
+  .rule-card .blue { color: #5B8DEF; font-weight: 700; }
+
+  /* Speed table */
+  .speed-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+  }
+  .speed-table th {
+    font-size: 11px;
+    font-weight: 600;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    text-align: left;
+    padding: 6px 12px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+  }
+  .speed-table td {
+    font-size: 14px;
+    padding: 8px 12px;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+  .speed-table tr.fast td { color: #FFD700; font-weight: 700; }
+  .speed-table tr.neutral td { color: #e0e0e0; }
+  .speed-table tr.slow td { color: #999; }
+  .speed-table tr.floor td { color: #666; }
+
+  /* Formula */
+  .formula {
+    background: rgba(91,141,239,0.08);
+    border: 1px solid rgba(91,141,239,0.2);
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin-top: 12px;
+    font-family: 'SF Mono', 'Menlo', monospace;
+    font-size: 13px;
+    color: #5B8DEF;
+    text-align: center;
+    line-height: 1.8;
+  }
+  .formula .op { color: #888; }
+  .formula .val { color: #FFD700; }
+</style>
+</head>
+<body>
+
+<h1>Gridlock Game Reference</h1>
+<p class="subtitle">Complete piece catalog, scoring system, and game rules</p>
+
+<div class="tabs">
+  <button class="tab-btn active" onclick="showTab('pieces')">Pieces</button>
+  <button class="tab-btn" onclick="showTab('rules')">Scoring &amp; Rules</button>
+</div>
+
+<!-- PIECES TAB -->
+<div id="tab-pieces" class="tab-content active">
+  <div class="stats-bar">
+    <div class="stat"><div class="stat-value">18</div><div class="stat-label">Families</div></div>
+    <div class="stat"><div class="stat-value">46</div><div class="stat-label">Orientations</div></div>
+    <div class="stat"><div class="stat-value" style="color:#66BB6A">11</div><div class="stat-label">Easy</div></div>
+    <div class="stat"><div class="stat-value" style="color:#FFA726">15</div><div class="stat-label">Medium</div></div>
+    <div class="stat"><div class="stat-value" style="color:#EF5350">20</div><div class="stat-label">Hard</div></div>
+  </div>
+  <div id="catalog"></div>
+</div>
+
+<!-- RULES TAB -->
+<div id="tab-rules" class="tab-content">
+  <div class="rules-section">
+
+    <div class="rule-group">
+      <div class="rule-group-title">Objective</div>
+      <div class="rule-card">
+        <p>Place pieces from the tray onto the <span class="highlight">8x8 board</span>. Fill entire rows or columns to clear them and earn points. The game ends when no remaining piece can fit on the board.</p>
+      </div>
+    </div>
+
+    <div class="rule-group">
+      <div class="rule-group-title">Base Scoring</div>
+      <div class="rule-card">
+        <h4>Cell Points</h4>
+        <p>Each cell cleared earns <span class="highlight">10 points</span>. Clearing a full row or column of 8 cells = 80 base points.</p>
+      </div>
+      <div class="rule-card">
+        <h4>Combo Bonus</h4>
+        <p>Clear multiple lines with a single placement for combo bonuses. First extra line adds <span class="highlight">+20 points</span>, each subsequent line adds <span class="highlight">+10 more</span>.</p>
+        <p style="margin-top:6px">1 line = 80 pts &middot; 2 lines = 180 pts &middot; 3 lines = 290 pts &middot; 4 lines = 410 pts</p>
+      </div>
+      <div class="rule-card">
+        <h4>All-Clear Bonus</h4>
+        <p>Clear the entire board for a <span class="gold">+500 point</span> bonus.</p>
+      </div>
+    </div>
+
+    <div class="rule-group">
+      <div class="rule-group-title">Speed Bonus (Dominant Factor)</div>
+      <div class="rule-card">
+        <h4>Time Between Clears</h4>
+        <p>The time since your last line clear determines a multiplier applied to all points earned. Fast play is heavily rewarded, slow play is penalized.</p>
+        <table class="speed-table">
+          <thead><tr><th>Time</th><th>Multiplier</th><th>Effect</th></tr></thead>
+          <tbody>
+            <tr class="fast"><td>&le; 3 seconds</td><td>3.0x</td><td>Triple points</td></tr>
+            <tr class="neutral"><td>~10 seconds</td><td>1.0x</td><td>Baseline</td></tr>
+            <tr class="slow"><td>~20 seconds</td><td>0.5x</td><td>Half points</td></tr>
+            <tr class="floor"><td>&gt; 20 seconds</td><td>0.3x</td><td>Minimum (severe)</td></tr>
+          </tbody>
+        </table>
+        <p style="margin-top:10px;color:#666">First clear of the game and post-revive clears start at 1.0x (no reference time).</p>
+      </div>
+    </div>
+
+    <div class="rule-group">
+      <div class="rule-group-title">Streak Multiplier</div>
+      <div class="rule-card">
+        <h4>Consecutive Clears</h4>
+        <p>Every placement that clears at least one line increases your streak. Each streak level adds <span class="highlight">+0.5x</span> to the multiplier, capping at <span class="gold">8.0x</span>.</p>
+        <p style="margin-top:6px">Streak 1 = 1.5x &middot; Streak 2 = 2.0x &middot; Streak 4 = 3.0x &middot; Streak 8+ = 8.0x (cap)</p>
+        <p style="margin-top:6px;color:#EF5350">Place a piece without clearing a line and the streak resets to 0.</p>
+      </div>
+    </div>
+
+    <div class="rule-group">
+      <div class="rule-group-title">Score Formula</div>
+      <div class="rule-card">
+        <div class="formula">
+          <span class="op">(</span> cells <span class="op">&times;</span> 10 <span class="op">+</span> combo bonus <span class="op">)</span>
+          <span class="op">&times;</span> <span class="val">speed mult</span>
+          <span class="op">&times;</span> <span class="val">streak mult</span>
+        </div>
+        <p style="margin-top:12px">Example: Clear 2 lines (16 cells) with 3.0x speed and streak 4 (3.0x):<br>
+        <span class="highlight">(160 + 20) &times; 3.0 &times; 3.0 = 1,620 points</span></p>
+      </div>
+    </div>
+
+    <div class="rule-group">
+      <div class="rule-group-title">Revives</div>
+      <div class="rule-card">
+        <h4>Second Chances</h4>
+        <p>You get <span class="red">2 revives</span> per game (classic mode only, not available in daily challenge). When no pieces fit, a revive clears the minimum cells needed to fit 3 new easy pieces on the board.</p>
+        <p style="margin-top:6px">Reviving resets your streak to 0 and your speed timer. If you can't place all 3 post-revive pieces, you lose 1 extra revive as penalty.</p>
+      </div>
+    </div>
+
+    <div class="rule-group">
+      <div class="rule-group-title">Adaptive Difficulty (DDA)</div>
+      <div class="rule-card">
+        <h4>Piece Generation</h4>
+        <p>The pieces you receive are not purely random. Five systems adjust piece weights in real-time:</p>
+        <p style="margin-top:8px"><span class="blue">Score ramp</span> &mdash; As your score climbs (3,000&ndash;20,000), harder pieces appear more often and easier pieces less.</p>
+        <p style="margin-top:4px"><span class="blue">Streak pushback</span> &mdash; Consecutive clears beyond 2 tilt the next tray toward harder pieces.</p>
+        <p style="margin-top:4px"><span class="blue">Board awareness</span> &mdash; An open board (&gt;60% empty) draws harder pieces. A critical board (&lt;25% empty) draws easier ones.</p>
+        <p style="margin-top:4px"><span class="green">Pity timer</span> &mdash; 7+ placements without a clear boosts pieces with many valid positions.</p>
+        <p style="margin-top:4px"><span class="green">Solution boost</span> &mdash; 15+ placements without a clear heavily favors pieces that can enable a line clear.</p>
+      </div>
+    </div>
+
+    <div class="rule-group">
+      <div class="rule-group-title">Daily Challenge</div>
+      <div class="rule-card">
+        <p>A seeded puzzle that's identical for all players each day. Uses flat piece weights (no DDA), no revives, no undo. Resets at local midnight. Completing daily challenges builds a <span class="gold">daily streak</span>.</p>
+      </div>
+    </div>
+
+    <div class="rule-group">
+      <div class="rule-group-title">Piece Tiers</div>
+      <div class="rule-card">
+        <p><span class="green">Easy</span> &mdash; 1&ndash;3 cells, compact shapes. Fit almost anywhere. (11 orientations)</p>
+        <p style="margin-top:4px"><span style="color:#FFA726;font-weight:600">Medium</span> &mdash; 4 cells, standard tetromino shapes. Moderate placement constraints. (15 orientations)</p>
+        <p style="margin-top:4px"><span class="red">Hard</span> &mdash; 2&ndash;9 cells. Large, diagonal, or awkward shapes that fragment the board. (20 orientations)</p>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+function showTab(name) {
+  document.querySelectorAll('.tab-content').forEach(function(el) { el.classList.remove('active'); });
+  document.querySelectorAll('.tab-btn').forEach(function(el) { el.classList.remove('active'); });
+  document.getElementById('tab-' + name).classList.add('active');
+  var btns = document.querySelectorAll('.tab-btn');
+  for (var i = 0; i < btns.length; i++) {
+    if (btns[i].textContent.toLowerCase().indexOf(name) !== -1 ||
+        (name === 'rules' && btns[i].textContent.indexOf('Scoring') !== -1)) {
+      btns[i].classList.add('active');
+    }
+  }
+}
+
+var PIECE_COLORS = {
+  blue: '#5B8DEF', cyan: '#42C6EA', red: '#EF5350', orange: '#FFA726',
+  yellow: '#FFCA28', green: '#66BB6A', purple: '#AB47BC', pink: '#EC407A',
+};
+var colorKeys = Object.keys(PIECE_COLORS);
+
+var cc = function(row, col) { return { row: row, col: col }; };
+
+var families = [
+  {
+    name: 'Monomino', tier: 'easy',
+    pieces: [
+      { id: 'mono', coords: [cc(0,0)], weight: 3 },
+    ]
+  },
+  {
+    name: 'Domino', tier: 'easy',
+    pieces: [
+      { id: 'dom-h', coords: [cc(0,0), cc(0,1)], weight: 6 },
+      { id: 'dom-v', coords: [cc(0,0), cc(1,0)], weight: 6 },
+    ]
+  },
+  {
+    name: 'Triomino Line', tier: 'easy',
+    pieces: [
+      { id: 'tri-h', coords: [cc(0,0), cc(0,1), cc(0,2)], weight: 6 },
+      { id: 'tri-v', coords: [cc(0,0), cc(1,0), cc(2,0)], weight: 6 },
+    ]
+  },
+  {
+    name: 'Triomino L-corner', tier: 'easy',
+    pieces: [
+      { id: 'tri-l-1', coords: [cc(0,0), cc(1,0), cc(1,1)], weight: 5 },
+      { id: 'tri-l-2', coords: [cc(0,0), cc(0,1), cc(1,0)], weight: 5 },
+      { id: 'tri-l-3', coords: [cc(0,0), cc(0,1), cc(1,1)], weight: 5 },
+      { id: 'tri-l-4', coords: [cc(0,1), cc(1,0), cc(1,1)], weight: 5 },
+    ]
+  },
+  {
+    name: 'Tetromino Line', tier: 'medium',
+    pieces: [
+      { id: 'tet-h', coords: [cc(0,0), cc(0,1), cc(0,2), cc(0,3)], weight: 4 },
+      { id: 'tet-v', coords: [cc(0,0), cc(1,0), cc(2,0), cc(3,0)], weight: 4 },
+    ]
+  },
+  {
+    name: 'Square 2x2', tier: 'medium',
+    pieces: [
+      { id: 'sq-2', coords: [cc(0,0), cc(0,1), cc(1,0), cc(1,1)], weight: 8 },
+    ]
+  },
+  {
+    name: 'L-shape', tier: 'medium',
+    pieces: [
+      { id: 'l-1', coords: [cc(0,0), cc(1,0), cc(2,0), cc(2,1)], weight: 4 },
+      { id: 'l-2', coords: [cc(0,0), cc(0,1), cc(0,2), cc(1,0)], weight: 4 },
+      { id: 'l-3', coords: [cc(0,0), cc(0,1), cc(1,1), cc(2,1)], weight: 4 },
+      { id: 'l-4', coords: [cc(0,2), cc(1,0), cc(1,1), cc(1,2)], weight: 4 },
+    ]
+  },
+  {
+    name: 'J-shape', tier: 'medium',
+    pieces: [
+      { id: 'j-1', coords: [cc(0,0), cc(0,1), cc(1,0), cc(2,0)], weight: 4 },
+      { id: 'j-2', coords: [cc(0,0), cc(1,0), cc(1,1), cc(1,2)], weight: 4 },
+      { id: 'j-3', coords: [cc(0,1), cc(1,1), cc(2,0), cc(2,1)], weight: 4 },
+      { id: 'j-4', coords: [cc(0,0), cc(0,1), cc(0,2), cc(1,2)], weight: 4 },
+    ]
+  },
+  {
+    name: 'T-shape', tier: 'medium',
+    pieces: [
+      { id: 't-1', coords: [cc(0,0), cc(0,1), cc(0,2), cc(1,1)], weight: 4 },
+      { id: 't-2', coords: [cc(0,0), cc(1,0), cc(1,1), cc(2,0)], weight: 4 },
+      { id: 't-3', coords: [cc(0,1), cc(1,0), cc(1,1), cc(1,2)], weight: 4 },
+      { id: 't-4', coords: [cc(0,1), cc(1,0), cc(1,1), cc(2,1)], weight: 4 },
+    ]
+  },
+  {
+    name: 'S-shape', tier: 'hard',
+    pieces: [
+      { id: 's-1', coords: [cc(0,1), cc(0,2), cc(1,0), cc(1,1)], weight: 4 },
+      { id: 's-2', coords: [cc(0,0), cc(1,0), cc(1,1), cc(2,1)], weight: 4 },
+    ]
+  },
+  {
+    name: 'Z-shape', tier: 'hard',
+    pieces: [
+      { id: 'z-1', coords: [cc(0,0), cc(0,1), cc(1,1), cc(1,2)], weight: 4 },
+      { id: 'z-2', coords: [cc(0,1), cc(1,0), cc(1,1), cc(2,0)], weight: 4 },
+    ]
+  },
+  {
+    name: 'Pentomino Line', tier: 'hard',
+    pieces: [
+      { id: 'pent-h', coords: [cc(0,0), cc(0,1), cc(0,2), cc(0,3), cc(0,4)], weight: 3 },
+      { id: 'pent-v', coords: [cc(0,0), cc(1,0), cc(2,0), cc(3,0), cc(4,0)], weight: 3 },
+    ]
+  },
+  {
+    name: 'Big L', tier: 'hard',
+    pieces: [
+      { id: 'big-l-1', coords: [cc(0,0), cc(1,0), cc(2,0), cc(2,1), cc(2,2)], weight: 3 },
+      { id: 'big-l-2', coords: [cc(0,0), cc(0,1), cc(0,2), cc(1,0), cc(2,0)], weight: 3 },
+      { id: 'big-l-3', coords: [cc(0,0), cc(0,1), cc(0,2), cc(1,2), cc(2,2)], weight: 3 },
+      { id: 'big-l-4', coords: [cc(0,2), cc(1,2), cc(2,0), cc(2,1), cc(2,2)], weight: 3 },
+    ]
+  },
+  {
+    name: 'Rectangle', tier: 'hard',
+    pieces: [
+      { id: 'rect-2x3', coords: [cc(0,0), cc(0,1), cc(0,2), cc(1,0), cc(1,1), cc(1,2)], weight: 1 },
+      { id: 'rect-3x2', coords: [cc(0,0), cc(0,1), cc(1,0), cc(1,1), cc(2,0), cc(2,1)], weight: 1 },
+    ]
+  },
+  {
+    name: 'Square 3x3', tier: 'hard',
+    pieces: [
+      { id: 'sq-3', coords: [cc(0,0),cc(0,1),cc(0,2),cc(1,0),cc(1,1),cc(1,2),cc(2,0),cc(2,1),cc(2,2)], weight: 1 },
+    ]
+  },
+  {
+    name: 'Diagonal Domino', tier: 'hard',
+    pieces: [
+      { id: 'diag-dom-1', coords: [cc(0,0), cc(1,1)], weight: 3 },
+      { id: 'diag-dom-2', coords: [cc(0,1), cc(1,0)], weight: 3 },
+    ]
+  },
+  {
+    name: 'Diagonal', tier: 'hard',
+    pieces: [
+      { id: 'diag-1', coords: [cc(0,0), cc(1,1), cc(2,2)], weight: 3 },
+      { id: 'diag-2', coords: [cc(0,2), cc(1,1), cc(2,0)], weight: 3 },
+    ]
+  },
+  {
+    name: 'Big T', tier: 'hard',
+    pieces: [
+      { id: 'big-t-1', coords: [cc(0,0), cc(0,1), cc(0,2), cc(1,1), cc(2,1)], weight: 2 },
+      { id: 'big-t-2', coords: [cc(0,0), cc(1,0), cc(1,1), cc(1,2), cc(2,0)], weight: 2 },
+      { id: 'big-t-3', coords: [cc(0,1), cc(1,1), cc(2,0), cc(2,1), cc(2,2)], weight: 2 },
+      { id: 'big-t-4', coords: [cc(0,2), cc(1,0), cc(1,1), cc(1,2), cc(2,2)], weight: 2 },
+    ]
+  },
+];
+
+var familyColors = {};
+families.forEach(function(fam, i) {
+  familyColors[fam.name] = PIECE_COLORS[colorKeys[i % colorKeys.length]];
+});
+
+function renderPiece(piece, color) {
+  var maxR = 0, maxC = 0;
+  piece.coords.forEach(function(coord) {
+    if (coord.row > maxR) maxR = coord.row;
+    if (coord.col > maxC) maxC = coord.col;
+  });
+  maxR++; maxC++;
+  var coordSet = {};
+  piece.coords.forEach(function(coord) { coordSet[coord.row + ',' + coord.col] = true; });
+
+  var grid = document.createElement('div');
+  grid.className = 'piece-grid';
+  grid.style.gridTemplateColumns = 'repeat(' + maxC + ', 20px)';
+  grid.style.gridTemplateRows = 'repeat(' + maxR + ', 20px)';
+
+  for (var r = 0; r < maxR; r++) {
+    for (var col = 0; col < maxC; col++) {
+      var cell = document.createElement('div');
+      cell.className = 'piece-cell';
+      if (coordSet[r + ',' + col]) {
+        cell.classList.add('filled');
+        cell.style.backgroundColor = color;
+      } else {
+        cell.classList.add('empty');
+      }
+      grid.appendChild(cell);
+    }
+  }
+  return grid;
+}
+
+function render() {
+  var catalog = document.getElementById('catalog');
+  var tiers = { easy: [], medium: [], hard: [] };
+  families.forEach(function(f) { tiers[f.tier].push(f); });
+
+  var tierMeta = {
+    easy: { label: 'Easy', badge: 'E' },
+    medium: { label: 'Medium', badge: 'M' },
+    hard: { label: 'Hard', badge: 'H' },
+  };
+
+  ['easy', 'medium', 'hard'].forEach(function(tier) {
+    var section = document.createElement('div');
+    section.className = 'tier-section';
+
+    var totalOrientations = tiers[tier].reduce(function(sum, f) { return sum + f.pieces.length; }, 0);
+
+    var header = document.createElement('div');
+    header.className = 'tier-header';
+
+    var badge = document.createElement('span');
+    badge.className = 'tier-badge ' + tier;
+    badge.textContent = tierMeta[tier].badge;
+    header.appendChild(badge);
+
+    var label = document.createElement('span');
+    label.className = 'tier-label';
+    label.textContent = tierMeta[tier].label;
+    header.appendChild(label);
+
+    var count = document.createElement('span');
+    count.className = 'tier-count';
+    count.textContent = tiers[tier].length + ' families \u00b7 ' + totalOrientations + ' orientations';
+    header.appendChild(count);
+
+    section.appendChild(header);
+
+    tiers[tier].forEach(function(family) {
+      var famDiv = document.createElement('div');
+      famDiv.className = 'family-section';
+
+      var nameDiv = document.createElement('div');
+      nameDiv.className = 'family-name';
+      nameDiv.textContent = family.name;
+      famDiv.appendChild(nameDiv);
+
+      var row = document.createElement('div');
+      row.className = 'pieces-row';
+
+      var color = familyColors[family.name];
+
+      family.pieces.forEach(function(piece) {
+        var card = document.createElement('div');
+        card.className = 'piece-card';
+        card.appendChild(renderPiece(piece, color));
+
+        var idLabel = document.createElement('div');
+        idLabel.className = 'piece-id';
+        idLabel.textContent = piece.id;
+        card.appendChild(idLabel);
+
+        var meta = document.createElement('div');
+        meta.className = 'piece-meta';
+        meta.textContent = piece.coords.length + ' cells \u00b7 w' + piece.weight;
+        card.appendChild(meta);
+
+        row.appendChild(card);
+      });
+
+      famDiv.appendChild(row);
+      section.appendChild(famDiv);
+    });
+
+    catalog.appendChild(section);
+  });
+}
+
+render();
+</script>
+</body>
+</html>
