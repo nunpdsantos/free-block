@@ -35,6 +35,7 @@ import { Confetti } from './Confetti';
 import { CellParticles } from './CellParticles';
 import { PlaceSparkles } from './PlaceSparkles';
 import type { PlacedCell } from './PlaceSparkles';
+import { useAmbientMusic } from '../hooks/useAmbientMusic';
 import { AmbientParticles } from './AmbientParticles';
 import './Game.css';
 
@@ -145,6 +146,14 @@ export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit
     const raw = state.movesSinceLastClear / SOLUTION_THRESHOLD;
     return raw < 0.25 ? 0 : Math.min(1, (raw - 0.25) / 0.75);
   }, [state.movesSinceLastClear]);
+
+  // Generative ambient music — reacts to tension + streak, pauses/resumes with game
+  useAmbientMusic(
+    !isPaused && !state.isGameOver && !showGameOverUI,
+    tension,
+    state.streak,
+    volume,
+  );
 
   useEffect(() => {
     const root = document.documentElement;
