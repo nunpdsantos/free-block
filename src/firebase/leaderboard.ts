@@ -187,8 +187,9 @@ export async function retryPendingScores(): Promise<void> {
   if (pending.length === 0) return;
 
   console.log(`[Gridlock] Retrying ${pending.length} pending score(s)`);
-  setPending([]);
 
+  // Don't clear the pending list upfront — only write back what failed.
+  // Clearing early means a tab-close mid-loop would silently lose scores.
   const stillPending: PendingScore[] = [];
   for (const entry of pending) {
     try {
@@ -197,9 +198,7 @@ export async function retryPendingScores(): Promise<void> {
       stillPending.push(entry);
     }
   }
-  if (stillPending.length > 0) {
-    setPending(stillPending);
-  }
+  setPending(stillPending);
 }
 
 /**

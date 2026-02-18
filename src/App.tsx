@@ -301,13 +301,12 @@ export default function App() {
         return pruned;
       });
 
-      // Update daily streak
+      // Update daily streak — reuse date strings captured above so a
+      // midnight rollover between setState calls can't corrupt the streak.
+      const yesterday = getYesterdayDateStr();
       setDailyStreak(prev => {
-        const today = getTodayDateStr();
-        const yesterday = getYesterdayDateStr();
         let newStreak: number;
-        if (prev.lastPlayedDate === today) {
-          // Already played today, no change
+        if (prev.lastPlayedDate === date) {
           return prev;
         } else if (prev.lastPlayedDate === yesterday) {
           newStreak = prev.currentStreak + 1;
@@ -317,7 +316,7 @@ export default function App() {
         return {
           currentStreak: newStreak,
           bestStreak: Math.max(newStreak, prev.bestStreak),
-          lastPlayedDate: today,
+          lastPlayedDate: date,
         };
       });
 
