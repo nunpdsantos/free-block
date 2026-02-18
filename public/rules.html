@@ -1,0 +1,498 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gridlock — Rules &amp; Pieces</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Nunito', sans-serif;
+      background: #1a1f3a;
+      color: #e8eaf6;
+      min-height: 100vh;
+      padding: 40px 20px 80px;
+    }
+
+    .page { max-width: 760px; margin: 0 auto; }
+
+    /* Header */
+    header { text-align: center; margin-bottom: 52px; }
+
+    .logo {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+
+    .logo-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 10px);
+      grid-template-rows: repeat(3, 10px);
+      gap: 2px;
+    }
+
+    h1 {
+      font-size: 2.4rem;
+      font-weight: 900;
+      letter-spacing: -0.5px;
+      background: linear-gradient(135deg, #7c9ef8, #a78bfa);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .subtitle {
+      color: #8891c5;
+      font-size: 1rem;
+      font-weight: 700;
+      margin-top: 4px;
+    }
+
+    .play-link {
+      display: inline-block;
+      margin-top: 20px;
+      padding: 12px 32px;
+      background: linear-gradient(135deg, #5b8def, #7c6cf0);
+      color: #fff;
+      text-decoration: none;
+      border-radius: 24px;
+      font-size: 1rem;
+      font-weight: 800;
+      letter-spacing: 0.3px;
+      transition: opacity 0.15s;
+    }
+    .play-link:hover { opacity: 0.85; }
+
+    /* Sections */
+    section { margin-bottom: 48px; }
+
+    h2 {
+      font-size: 1.3rem;
+      font-weight: 900;
+      color: #a5b4fc;
+      margin-bottom: 20px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid rgba(165, 180, 252, 0.15);
+      letter-spacing: 0.3px;
+    }
+
+    /* Rules */
+    .rules-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 14px;
+    }
+
+    .rule-card {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 14px;
+      padding: 18px 16px;
+    }
+
+    .rule-icon { font-size: 1.5rem; margin-bottom: 8px; }
+
+    .rule-title {
+      font-size: 0.85rem;
+      font-weight: 800;
+      color: #c7d0f8;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+    }
+
+    .rule-body {
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: #8891c5;
+      line-height: 1.5;
+    }
+
+    /* Scoring */
+    .scoring-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; font-weight: 700; }
+
+    .scoring-table th {
+      text-align: left;
+      color: #8891c5;
+      font-weight: 800;
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      padding: 0 12px 10px 0;
+    }
+
+    .scoring-table td {
+      padding: 8px 12px 8px 0;
+      color: #c7d0f8;
+      border-top: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .scoring-table td.value { color: #a5b4fc; font-weight: 800; }
+    .score-good  { color: #86efac; }
+    .score-warn  { color: #fca5a5; }
+    .scoring-note {
+      margin-top: 14px;
+      font-size: 0.82rem;
+      color: #8891c5;
+      font-weight: 700;
+    }
+
+    /* Pieces */
+    .tier-label {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+      margin-top: 28px;
+    }
+    .tier-label:first-of-type { margin-top: 0; }
+
+    .tier-badge {
+      padding: 3px 10px;
+      border-radius: 10px;
+      font-size: 0.75rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+    }
+    .tier-badge.easy   { background: rgba(102,187,106,0.15); color: #86efac; }
+    .tier-badge.medium { background: rgba(255,167,38,0.15);  color: #fcd34d; }
+    .tier-badge.hard   { background: rgba(239,83,80,0.15);   color: #fca5a5; }
+
+    .tier-desc { color: #8891c5; font-size: 0.82rem; font-weight: 700; }
+
+    .pieces-row { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 8px; }
+
+    .piece-card {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 10px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 7px;
+      min-width: 68px;
+    }
+
+    .piece-name {
+      font-size: 0.68rem;
+      font-weight: 800;
+      text-align: center;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .piece-grid { display: grid; gap: 2px; }
+    .pc { width: 14px; height: 14px; border-radius: 2px; }
+    .pc.empty { background: rgba(255,255,255,0.04); }
+
+    /* Tips */
+    .tips-list { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+
+    .tips-list li {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: #8891c5;
+      line-height: 1.5;
+    }
+
+    .tip-arrow { color: #5b8def; flex-shrink: 0; margin-top: 1px; }
+    .tips-list li strong { color: #c7d0f8; }
+
+    footer {
+      text-align: center;
+      color: #4a527a;
+      font-size: 0.8rem;
+      font-weight: 700;
+      margin-top: 60px;
+    }
+
+    footer a { color: #5b8def; text-decoration: none; }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <header>
+    <div class="logo">
+      <div class="logo-grid" id="logo-grid"></div>
+      <h1>Gridlock</h1>
+    </div>
+    <p class="subtitle">Block puzzle · 8 × 8 grid</p>
+    <a class="play-link" href="/">Play Now</a>
+  </header>
+
+  <!-- HOW TO PLAY -->
+  <section>
+    <h2>How to Play</h2>
+    <div class="rules-grid" id="rules-grid"></div>
+  </section>
+
+  <!-- SCORING -->
+  <section>
+    <h2>Scoring</h2>
+    <table class="scoring-table">
+      <thead>
+        <tr>
+          <th>Component</th>
+          <th>Formula</th>
+          <th>Value</th>
+        </tr>
+      </thead>
+      <tbody id="scoring-body"></tbody>
+    </table>
+    <p class="scoring-note">
+      Final = (base + combo) × streak multiplier × speed multiplier + all-clear bonus
+    </p>
+  </section>
+
+  <!-- PIECES -->
+  <section>
+    <h2>All Pieces</h2>
+    <div id="pieces-container"></div>
+  </section>
+
+  <!-- TIPS -->
+  <section>
+    <h2>Tips</h2>
+    <ul class="tips-list" id="tips-list"></ul>
+  </section>
+
+  <footer>
+    <p>Gridlock · <a href="/">gridlock-gilt.vercel.app</a></p>
+  </footer>
+</div>
+
+<script>
+  'use strict';
+
+  // ── Helpers ───────────────────────────────────────────────────────────────
+  function el(tag, cls, text) {
+    const e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text !== undefined) e.textContent = text;
+    return e;
+  }
+
+  function span(cls, text) { return el('span', cls, text); }
+  function div(cls)        { return el('div', cls); }
+
+  // ── Colors ────────────────────────────────────────────────────────────────
+  const COLORS = ['#5B8DEF','#42C6EA','#EF5350','#FFA726','#FFCA28','#66BB6A','#AB47BC','#EC407A'];
+  const TIER_COLORS = { easy: '#86efac', medium: '#fcd34d', hard: '#fca5a5' };
+
+  let colorIdx = 0;
+  function nextColor() { return COLORS[colorIdx++ % COLORS.length]; }
+
+  // ── Logo ──────────────────────────────────────────────────────────────────
+  const logoPat  = [1,1,0, 1,0,1, 1,1,0];
+  const logoClrs = ['#5B8DEF','#7c9ef8','','#AB47BC','','#a78bfa','#5B8DEF','#7c9ef8',''];
+  const logoGrid = document.getElementById('logo-grid');
+  logoPat.forEach((filled, i) => {
+    const c = document.createElement('div');
+    c.style.cssText = 'width:10px;height:10px;border-radius:2px;background:' +
+      (filled ? (logoClrs[i] || '#5B8DEF') : 'rgba(255,255,255,0.08)') + ';';
+    logoGrid.appendChild(c);
+  });
+
+  // ── Rules ─────────────────────────────────────────────────────────────────
+  const RULES = [
+    { icon:'🎯', title:'Place Pieces',  body:'Drag pieces from the tray onto the 8 × 8 board. All three tray pieces refresh once all are placed.' },
+    { icon:'✨', title:'Clear Lines',   body:'Fill a complete row or column to clear it. Clearing multiple lines at once earns a combo bonus.' },
+    { icon:'🔥', title:'Build Streaks', body:'Clearing on consecutive placements builds a streak. Each level multiplies your score.' },
+    { icon:'⚡', title:'Play Fast',     body:'Clearing within 3 s of your last clear earns a 3× speed bonus. Taking longer than 20 s drops to 0.3×.' },
+    { icon:'💀', title:'Game Over',     body:'The game ends when none of the three tray pieces can fit anywhere on the board.' },
+    { icon:'💊', title:'Revive',        body:'2 revives per classic game. Each revive surgically clears cells to fit three new pieces and resets your streak.' },
+  ];
+
+  const rulesGrid = document.getElementById('rules-grid');
+  RULES.forEach(r => {
+    const card = div('rule-card');
+    const icon = div('rule-icon'); icon.textContent = r.icon;
+    card.appendChild(icon);
+    card.appendChild(el('div', 'rule-title', r.title));
+    card.appendChild(el('div', 'rule-body',  r.body));
+    rulesGrid.appendChild(card);
+  });
+
+  // ── Scoring ───────────────────────────────────────────────────────────────
+  const SCORING_ROWS = [
+    ['Base points',               '10 pts × cells cleared',             null,      '10 – 90 pts'],
+    ['Combo bonus',               '20 + (extra lines × 10)',            null,      '+20 to +50 pts'],
+    ['Streak multiplier',         '1 + (streak × 0.5), max 8×',         null,      '1× – 8×'],
+    ['Speed — blazing (≤ 3 s)',   'Max bonus',                          'good',    '3×'],
+    ['Speed — fast (3 – 10 s)',   'Linear decay to 1×',                 null,      '1× – 3×'],
+    ['Speed — slow (10 – 20 s)',  'Linear decay to 0.5×',               null,      '0.5× – 1×'],
+    ['Speed — very slow (> 20 s)','Penalty floor',                      'warn',    '0.3×'],
+    ['All-clear bonus',           'Board completely empty after clear',  'good',    '+500 pts'],
+  ];
+
+  const tbody = document.getElementById('scoring-body');
+  SCORING_ROWS.forEach(([label, formula, mood, value]) => {
+    const tr = document.createElement('tr');
+    const tdLabel   = document.createElement('td'); tdLabel.textContent = label;
+    const tdFormula = document.createElement('td'); tdFormula.textContent = formula;
+    const tdValue   = document.createElement('td'); tdValue.className = 'value';
+    const vspan = document.createElement('span');
+    if (mood === 'good') vspan.className = 'score-good';
+    else if (mood === 'warn') vspan.className = 'score-warn';
+    vspan.textContent = value;
+    tdValue.appendChild(vspan);
+    tr.appendChild(tdLabel);
+    tr.appendChild(tdFormula);
+    tr.appendChild(tdValue);
+    tbody.appendChild(tr);
+  });
+
+  // ── Pieces ────────────────────────────────────────────────────────────────
+  const c = (r, col) => ({ r, c: col });
+
+  const TIERS = [
+    {
+      id: 'easy', label: 'Easy', desc: '1 – 3 cells · many valid positions',
+      pieces: [
+        { name: 'Single',    coords: [c(0,0)] },
+        { name: 'H-2',       coords: [c(0,0),c(0,1)] },
+        { name: 'V-2',       coords: [c(0,0),c(1,0)] },
+        { name: 'H-3',       coords: [c(0,0),c(0,1),c(0,2)] },
+        { name: 'V-3',       coords: [c(0,0),c(1,0),c(2,0)] },
+        { name: 'Corner',    coords: [c(0,0),c(1,0),c(1,1)] },
+        { name: 'Corner',    coords: [c(0,0),c(0,1),c(1,0)] },
+        { name: 'Corner',    coords: [c(0,0),c(0,1),c(1,1)] },
+        { name: 'Corner',    coords: [c(0,1),c(1,0),c(1,1)] },
+      ],
+    },
+    {
+      id: 'medium', label: 'Medium', desc: '4 cells · balanced placement',
+      pieces: [
+        { name: 'H-4', coords: [c(0,0),c(0,1),c(0,2),c(0,3)] },
+        { name: 'V-4', coords: [c(0,0),c(1,0),c(2,0),c(3,0)] },
+        { name: '2×2', coords: [c(0,0),c(0,1),c(1,0),c(1,1)] },
+        { name: 'L',   coords: [c(0,0),c(1,0),c(2,0),c(2,1)] },
+        { name: 'L',   coords: [c(0,0),c(0,1),c(0,2),c(1,0)] },
+        { name: 'L',   coords: [c(0,0),c(0,1),c(1,1),c(2,1)] },
+        { name: 'L',   coords: [c(0,2),c(1,0),c(1,1),c(1,2)] },
+        { name: 'J',   coords: [c(0,0),c(0,1),c(1,0),c(2,0)] },
+        { name: 'J',   coords: [c(0,0),c(1,0),c(1,1),c(1,2)] },
+        { name: 'J',   coords: [c(0,1),c(1,1),c(2,0),c(2,1)] },
+        { name: 'J',   coords: [c(0,0),c(0,1),c(0,2),c(1,2)] },
+        { name: 'T',   coords: [c(0,0),c(0,1),c(0,2),c(1,1)] },
+        { name: 'T',   coords: [c(0,0),c(1,0),c(1,1),c(2,0)] },
+        { name: 'T',   coords: [c(0,1),c(1,0),c(1,1),c(1,2)] },
+        { name: 'T',   coords: [c(0,1),c(1,0),c(1,1),c(2,1)] },
+      ],
+    },
+    {
+      id: 'hard', label: 'Hard', desc: '5 – 9 cells or awkward geometry · few valid positions',
+      pieces: [
+        { name: 'S',      coords: [c(0,1),c(0,2),c(1,0),c(1,1)] },
+        { name: 'S',      coords: [c(0,0),c(1,0),c(1,1),c(2,1)] },
+        { name: 'Z',      coords: [c(0,0),c(0,1),c(1,1),c(1,2)] },
+        { name: 'Z',      coords: [c(0,1),c(1,0),c(1,1),c(2,0)] },
+        { name: 'H-5',    coords: [c(0,0),c(0,1),c(0,2),c(0,3),c(0,4)] },
+        { name: 'V-5',    coords: [c(0,0),c(1,0),c(2,0),c(3,0),c(4,0)] },
+        { name: 'Big-L',  coords: [c(0,0),c(1,0),c(2,0),c(2,1),c(2,2)] },
+        { name: 'Big-L',  coords: [c(0,0),c(0,1),c(0,2),c(1,0),c(2,0)] },
+        { name: 'Big-L',  coords: [c(0,0),c(0,1),c(0,2),c(1,2),c(2,2)] },
+        { name: 'Big-L',  coords: [c(0,2),c(1,2),c(2,0),c(2,1),c(2,2)] },
+        { name: '2×3',    coords: [c(0,0),c(0,1),c(0,2),c(1,0),c(1,1),c(1,2)] },
+        { name: '3×2',    coords: [c(0,0),c(0,1),c(1,0),c(1,1),c(2,0),c(2,1)] },
+        { name: '3×3',    coords: [c(0,0),c(0,1),c(0,2),c(1,0),c(1,1),c(1,2),c(2,0),c(2,1),c(2,2)] },
+        { name: 'Diag-2', coords: [c(0,0),c(1,1)] },
+        { name: 'Diag-2', coords: [c(0,1),c(1,0)] },
+        { name: 'Diag-3', coords: [c(0,0),c(1,1),c(2,2)] },
+        { name: 'Diag-3', coords: [c(0,2),c(1,1),c(2,0)] },
+        { name: 'Big-T',  coords: [c(0,0),c(0,1),c(0,2),c(1,1),c(2,1)] },
+        { name: 'Big-T',  coords: [c(0,0),c(1,0),c(1,1),c(1,2),c(2,0)] },
+        { name: 'Big-T',  coords: [c(0,1),c(1,1),c(2,0),c(2,1),c(2,2)] },
+        { name: 'Big-T',  coords: [c(0,2),c(1,0),c(1,1),c(1,2),c(2,2)] },
+      ],
+    },
+  ];
+
+  function renderPieceGrid(coords) {
+    const rows = coords.map(p => p.r);
+    const cols = coords.map(p => p.c);
+    const maxR = Math.max(...rows);
+    const maxC = Math.max(...cols);
+    const filled = new Set(coords.map(p => p.r + ',' + p.c));
+    const color = nextColor();
+
+    const grid = div('piece-grid');
+    grid.style.gridTemplateColumns = 'repeat(' + (maxC + 1) + ', 14px)';
+    grid.style.gridTemplateRows    = 'repeat(' + (maxR + 1) + ', 14px)';
+
+    for (let r = 0; r <= maxR; r++) {
+      for (let col2 = 0; col2 <= maxC; col2++) {
+        const cell = div('pc');
+        if (filled.has(r + ',' + col2)) {
+          cell.classList.add('filled');
+          cell.style.background = color;
+        } else {
+          cell.classList.add('empty');
+        }
+        grid.appendChild(cell);
+      }
+    }
+    return grid;
+  }
+
+  const piecesContainer = document.getElementById('pieces-container');
+
+  TIERS.forEach(tier => {
+    const labelRow = div('tier-label');
+    const badge = span('tier-badge ' + tier.id, tier.label);
+    const desc  = span('tier-desc', tier.desc);
+    labelRow.appendChild(badge);
+    labelRow.appendChild(desc);
+    piecesContainer.appendChild(labelRow);
+
+    const row = div('pieces-row');
+    tier.pieces.forEach(piece => {
+      const card = div('piece-card');
+      card.appendChild(renderPieceGrid(piece.coords));
+      const nameEl = el('div', 'piece-name', piece.name);
+      nameEl.style.color = TIER_COLORS[tier.id];
+      card.appendChild(nameEl);
+      row.appendChild(card);
+    });
+    piecesContainer.appendChild(row);
+  });
+
+  // ── Tips ──────────────────────────────────────────────────────────────────
+  const TIPS = [
+    ['Think in lines, not shapes.', 'Always ask: does placing this piece help complete a row or column?'],
+    ['Chain clears back-to-back.', 'Every consecutive clear extends your streak. A 10-streak = 6× — never break it cheaply.'],
+    ['Keep corners open.', 'Hard pieces like the 3 × 3 square and Big-L need corner real-estate. Crowding corners early is the #1 game-ender.'],
+    ['Diagonal pieces create permanent gaps.', 'Place them so the isolated cells can later be part of a clear column or row.'],
+    ['Speed = triple points.', 'Clear within 3 s of your last clear for 3× score. Burst-clearing is the fastest path to high scores.'],
+    ['Save revives for late game.', 'Revives reset your streak to 0 — using one early is almost never worth it.'],
+    ['Daily mode has no revives.', 'One life only. Choose every placement carefully.'],
+  ];
+
+  const tipsList = document.getElementById('tips-list');
+  TIPS.forEach(([bold, rest]) => {
+    const li   = document.createElement('li');
+    const arr  = span('tip-arrow', '→');
+    const txt  = document.createElement('span');
+    const b    = document.createElement('strong');
+    b.textContent = bold + ' ';
+    txt.appendChild(b);
+    txt.appendChild(document.createTextNode(rest));
+    li.appendChild(arr);
+    li.appendChild(txt);
+    tipsList.appendChild(li);
+  });
+</script>
+</body>
+</html>
