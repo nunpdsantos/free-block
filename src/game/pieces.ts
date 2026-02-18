@@ -99,12 +99,12 @@ const PIECE_DEFS: PieceDef[] = [
   ], weight: 1, tier: 'hard' },
 
   // Diagonal domino (2 cells, 2 orientations) — hard (non-adjacent, creates guaranteed gap)
-  { id: 'diag-dom-1', coords: [c(0,0), c(1,1)], weight: 3, tier: 'hard' },
-  { id: 'diag-dom-2', coords: [c(0,1), c(1,0)], weight: 3, tier: 'hard' },
+  { id: 'diag-dom-1', coords: [c(0,0), c(1,1)], weight: 1, tier: 'hard' },
+  { id: 'diag-dom-2', coords: [c(0,1), c(1,0)], weight: 1, tier: 'hard' },
 
   // Diagonal (3 cells, 2 orientations) — hard (non-adjacent, fragments board)
-  { id: 'diag-1', coords: [c(0,0), c(1,1), c(2,2)], weight: 3, tier: 'hard' }, // top-left to bottom-right
-  { id: 'diag-2', coords: [c(0,2), c(1,1), c(2,0)], weight: 3, tier: 'hard' }, // top-right to bottom-left
+  { id: 'diag-1', coords: [c(0,0), c(1,1), c(2,2)], weight: 1, tier: 'hard' }, // top-left to bottom-right
+  { id: 'diag-2', coords: [c(0,2), c(1,1), c(2,0)], weight: 1, tier: 'hard' }, // top-right to bottom-left
 
   // Big T (5 cells, 4 orientations) — hard (3x3 bounding box T)
   { id: 'big-t-1', coords: [c(0,0), c(0,1), c(0,2), c(1,1), c(2,1)], weight: 2, tier: 'hard' }, // T down
