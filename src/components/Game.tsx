@@ -602,6 +602,7 @@ export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit
           isShattered={isShattered}
           dangerLevel={dangerLevel}
           settleCells={settleCells}
+          isDragging={dragState !== null}
         />
         <CelebrationText
           text={state.celebrationText}

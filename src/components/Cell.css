@@ -71,10 +71,10 @@
 
 @keyframes ghost-completing-pulse {
   from {
-    opacity: 0.35;
+    opacity: 0.6;
   }
   to {
-    opacity: 0.65;
+    opacity: 0.9;
   }
 }
 
@@ -88,8 +88,22 @@
 }
 
 @keyframes preview-clear-pulse {
-  from { opacity: 0.7; }
+  from { opacity: 0.75; }
   to { opacity: 1; }
+}
+
+/* During active drag: ghost cells snap in instantly — no fade-in lag */
+.board--dragging .cell--ghost-valid {
+  animation: none;
+  opacity: 0.78;
+}
+.board--dragging .cell--ghost-completing {
+  animation: none;
+  opacity: 0.9;
+}
+.board--dragging .cell--preview-clear {
+  animation: none;
+  opacity: 0.95;
 }
 
 /* Anticipation pulse — all clearing cells flash simultaneously before cascade */
@@ -185,10 +199,10 @@
 /* Ghost pulse */
 @keyframes ghost-pulse {
   from {
-    opacity: 0.4;
+    opacity: 0.65;
   }
   to {
-    opacity: 0.75;
+    opacity: 0.9;
   }
 }
 

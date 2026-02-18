@@ -17,6 +17,7 @@ type BoardProps = {
   isShattered?: boolean;
   dangerLevel?: number;
   settleCells?: Set<string>;
+  isDragging?: boolean;
 };
 
 /** Compute deterministic shatter offsets from cell position */
@@ -46,6 +47,7 @@ export const Board = memo(function Board({
   isShattered,
   dangerLevel = 0,
   settleCells,
+  isDragging = false,
 }: BoardProps) {
   const cells = [];
   for (let r = 0; r < GRID_SIZE; r++) {
@@ -104,6 +106,7 @@ export const Board = memo(function Board({
   }, [clearedLines]);
 
   let boardClass = 'board';
+  if (isDragging) boardClass += ' board--dragging';
   if (dangerLevel >= 2) boardClass += ' board--danger';
   else if (dangerLevel >= 1) boardClass += ' board--warning';
 
