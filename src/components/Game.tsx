@@ -27,7 +27,6 @@ import {
 import { playPlace, playClear, playAllClear, playGameOver, playRevive, getVolume, setVolume } from '../audio/sounds';
 import { Board } from './Board';
 import { PieceTray } from './PieceTray';
-import { DragOverlay } from './DragOverlay';
 import { ScoreDisplay } from './ScoreDisplay';
 import { GameOver } from './GameOver';
 import { CelebrationText } from './CelebrationText';
@@ -613,8 +612,6 @@ export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit
           Undo
         </button>
       )}
-
-      <DragOverlay dragState={dragState} />
 
       {screenFlash && <div className="screen-flash" />}
 

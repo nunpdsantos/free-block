@@ -11,14 +11,9 @@ export type Board = (string | null)[][];
 export type DragState = {
   piece: PieceShape;
   pieceIndex: number;
-  pointerX: number;
-  pointerY: number;
   boardRow: number | null;
   boardCol: number | null;
   isValid: boolean;
-  cellSize: number;
-  cellGap: number;
-  fingerOffset: number;
 };
 
 export type GhostCells = Map<string, boolean>; // "row,col" -> valid
