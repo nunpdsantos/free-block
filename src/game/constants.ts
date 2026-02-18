@@ -33,8 +33,8 @@ export const REVIVES_PER_GAME = 2;
 export const UNDOS_PER_GAME = 0;
 
 // Adaptive piece generation — mercy (when struggling)
-export const PITY_THRESHOLD = 7;
-export const SOLUTION_THRESHOLD = 15;
+export const PITY_THRESHOLD = 11;
+export const SOLUTION_THRESHOLD = 25;
 export const PITY_WEIGHT_BOOST = 3.0;
 export const SOLUTION_WEIGHT_BOOST = 5.0;
 
