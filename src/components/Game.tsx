@@ -115,7 +115,7 @@ export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
   const [lastDropTime, setLastDropTime] = useState(0);
   const [musicOn, setMusicOn] = useState(() => {
-    try { const s = localStorage.getItem('gridlock-music'); return s !== null ? JSON.parse(s) as boolean : true; } catch { return true; }
+    try { const s = localStorage.getItem('gridlock-music'); return s !== null ? JSON.parse(s) as boolean : false; } catch { return false; }
   });
   const [musicTheme, setMusicThemeValue] = useState<MusicTheme>(() => {
     try { return (localStorage.getItem('gridlock-music-theme') as MusicTheme) ?? 'ambient'; } catch { return 'ambient'; }
