@@ -1,5 +1,5 @@
 import { synthPlace, synthClear, synthAllClear, synthGameOver, synthRevive, synthAchievement, setMasterVolume } from './synth';
-import { duckMusic, getCurrentChordRoot, isAmbientRunning } from './ambient';
+import { duckMusic, getCurrentChordRoot, getAmbientTension, isAmbientRunning, triggerMusicEvent } from './ambient';
 
 let volume = 80; // 0-100
 let sfxEnabled = true;
@@ -89,6 +89,7 @@ export function playAllClear() {
   if (volume === 0) return;
   duckMusic(0.45, 0.8); // duck 55% for 800ms — all-clear chord is loud
   synthAllClear();
+  if (isAmbientRunning()) triggerMusicEvent('allClear');
 }
 
 /** Gentle descending tone on game over */
@@ -96,7 +97,8 @@ export function playGameOver() {
   if (!sfxEnabled) return;
   vibrate([40, 60, 80]);
   if (volume === 0) return;
-  synthGameOver();
+  synthGameOver(isAmbientRunning() ? getCurrentChordRoot() : undefined);
+  if (isAmbientRunning()) triggerMusicEvent('gameOver');
 }
 
 /** Hopeful ascending tone on revive */
@@ -104,7 +106,8 @@ export function playRevive() {
   if (!sfxEnabled) return;
   vibrate([10, 20, 10]);
   if (volume === 0) return;
-  synthRevive();
+  synthRevive(getAmbientTension());
+  if (isAmbientRunning()) triggerMusicEvent('revive');
 }
 
 /** Celebratory fanfare on achievement unlock */

@@ -46,6 +46,7 @@ const MUSIC_THEMES: { id: MusicTheme; label: string }[] = [
   { id: 'ambient', label: 'Ambient' },
   { id: 'pulse',   label: 'Pulse'   },
   { id: 'lofi',    label: 'Lo-fi'   },
+  { id: 'drift',   label: 'Drift'   },
 ];
 
 export function PauseMenu({

@@ -18,6 +18,7 @@
 let ctx: AudioContext | null = null;
 let masterGain: GainNode | null = null;
 let compressor: DynamicsCompressorNode | null = null;
+let analyser: AnalyserNode | null = null;
 
 export function getCtx(): AudioContext {
   if (!ctx) {
@@ -35,6 +36,12 @@ export function getCtx(): AudioContext {
 
     masterGain.connect(compressor);
     compressor.connect(ctx.destination);
+
+    // Analyser tap — side-chain read of output energy for visual feedback
+    analyser = ctx.createAnalyser();
+    analyser.fftSize = 256;
+    analyser.smoothingTimeConstant = 0.8;
+    compressor.connect(analyser); // reads energy; no output connection needed
   }
   if (ctx.state === 'suspended') ctx.resume().catch(() => {});
   return ctx;
@@ -43,6 +50,11 @@ export function getCtx(): AudioContext {
 export function getMaster(): GainNode {
   getCtx();
   return masterGain!;
+}
+
+/** Returns the AnalyserNode tapping the master bus — used by visuals to read audio energy. */
+export function getAnalyserNode(): AnalyserNode | null {
+  return analyser;
 }
 
 /** Set master volume (0.0 to 1.0). Applies to all subsequent and currently playing sounds. */
@@ -84,6 +96,7 @@ function tone(
   release: number,
   delay: number = 0,
   detune: number = 0,
+  extraDest?: AudioNode,
 ): void {
   const ac = getCtx();
   const t = ac.currentTime + delay;
@@ -109,6 +122,7 @@ function tone(
 
   osc.connect(gain);
   gain.connect(getMaster());
+  if (extraDest) gain.connect(extraDest);
 
   osc.start(t);
   osc.stop(t + attack + decay + release + 0.05);
@@ -124,6 +138,7 @@ function noiseBurst(
   duration: number,
   filterFreq: number,
   delay: number = 0,
+  extraDest?: AudioNode,
 ): void {
   const ac = getCtx();
   const t = ac.currentTime + delay;
@@ -150,6 +165,7 @@ function noiseBurst(
   src.connect(filter);
   filter.connect(gain);
   gain.connect(getMaster());
+  if (extraDest) gain.connect(extraDest);
 
   src.start(t);
   src.stop(t + duration + 0.01);
@@ -311,12 +327,25 @@ export function synthAllClear(): void {
 
 /**
  * Gentle descending tone on game over.
- * A5 → G5 → E5 → C5 — upper octave so it's audible on phone speakers.
+ * Default: A5 → G5 → E5 → C5. When chordRoot provided, descent starts
+ * from the nearest pentatonic step to that root so it stays in key.
  * Each step adds a soft sub layer one octave below for depth.
  * Total duration: ~1000ms.
  */
-export function synthGameOver(): void {
-  const notes = [880, 783.99, 659.25, 523.25]; // A5 G5 E5 C5
+export function synthGameOver(chordRoot?: number): void {
+  // Build 4-note descent starting from closest pentatonic step to chord root
+  const PENTA = CLEAR_SCALE.slice(0, 6); // C5 D5 E5 G5 A5 C6
+  let startIdx = 4; // default: A5
+  if (chordRoot !== undefined) {
+    let r = chordRoot;
+    while (r < PENTA[0]) r *= 2;
+    while (r >= PENTA[0] * 2) r /= 2;
+    const closestIdx = PENTA.reduce((bi, f, i) =>
+      Math.abs(f - r) < Math.abs(PENTA[bi] - r) ? i : bi, 0);
+    startIdx = Math.max(3, closestIdx); // at least G5 so descent has room
+  }
+  const notes = [0, -1, -2, -3].map(offset => PENTA[startIdx + offset]);
+
   notes.forEach((freq, i) => {
     const d = i * 0.18;
     const v = 0.11 - i * 0.015;
@@ -327,47 +356,105 @@ export function synthGameOver(): void {
 }
 
 /**
- * Hopeful ascending tone on revive — "second chance" feel.
- * C5 → E5 → G5 — rising major arpeggio, bright and quick.
- * Each voice gets a shimmer overtone. Warm sweep at the end.
- * Total duration: ~500ms.
+ * Ascending tone on revive — "second chance" feel.
+ * Major arpeggio (C5→E5→G5) at low tension; minor (C5→Eb5→G5) at high tension.
+ * AM tremolo shimmer added on the final note for "power surge" sensation.
+ * Total duration: ~550ms.
  */
-export function synthRevive(): void {
-  const notes = [523.25, 659.25, 783.99]; // C5 E5 G5
+export function synthRevive(reviveTension: number = 0): void {
+  const ac = getCtx();
+  // High tension → narrow escape (minor 3rd); calm → triumphant (major 3rd)
+  const notes = reviveTension > 0.6
+    ? [523.25, 622.25, 783.99] // C5, Eb5, G5
+    : [523.25, 659.25, 783.99]; // C5, E5, G5
+
   notes.forEach((freq, i) => {
     const d = i * 0.08;
-    const v = 0.09 + i * 0.015; // crescendo — gets brighter
+    const v = 0.09 + i * 0.015;
     tone(freq, 'triangle', v, 0.008, 0.12, 0.25, d);
-    // Shimmer overtone — capped for phone speakers
     const shimmerFreq = Math.min(freq * 2, 2000);
     tone(shimmerFreq, 'sine', 0.02, 0.01, 0.08, 0.15, d + 0.01);
   });
-  // Warm resolve sweep
   noiseBurst(0.02, 0.04, 1600, 0.2);
+
+  // AM tremolo overlay on final note — begins in its decay tail (power-surge feel)
+  const tFinal = ac.currentTime + 2 * 0.08 + 0.25; // 0.25s into final note's sustain
+  const finalFreq = notes[2];
+  const tOsc = ac.createOscillator();
+  const tEnv = ac.createGain();
+  const treOsc = ac.createOscillator();
+  const treGain = ac.createGain();
+
+  tOsc.type = 'triangle';
+  tOsc.frequency.value = finalFreq;
+  treOsc.type = 'sine';
+  treOsc.frequency.value = 4; // 4 Hz AM tremolo
+  treGain.gain.value = 0.018;
+  treOsc.connect(treGain);
+  treGain.connect(tEnv.gain); // modulates envelope amplitude
+
+  tEnv.gain.setValueAtTime(0.0001, tFinal);
+  tEnv.gain.linearRampToValueAtTime(0.032, tFinal + 0.02);
+  tEnv.gain.exponentialRampToValueAtTime(0.0001, tFinal + 0.30);
+
+  tOsc.connect(tEnv);
+  tEnv.connect(getMaster());
+  tOsc.start(tFinal);
+  tOsc.stop(tFinal + 0.35);
+  treOsc.start(tFinal);
+  treOsc.stop(tFinal + 0.35);
+
+  tOsc.onended = () => {
+    tOsc.disconnect(); tEnv.disconnect();
+    treOsc.disconnect(); treGain.disconnect();
+  };
 }
 
 /**
- * Achievement unlock fanfare — celebratory "ding-DING!" with sparkle.
- * Two-note rising perfect 5th (C5 → G5) with a layered 3rd (E5) for richness.
- * Brighter and more resonant than clear chimes — needs to feel special.
- * Total duration: ~600ms.
+ * Achievement unlock fanfare — celebratory "ding-DING!-C6" with reverb tail.
+ * C5 → G5 → C6 (rising octave resolution) with E5 inner voice and sparkle.
+ * All voices routed through a 1.5s algorithmic reverb send (prestigious ring-out).
+ * Total duration: ~900ms (+ reverb tail).
  */
 export function synthAchievement(): void {
+  const ac = getCtx();
+
+  // Reverb tail: 1.5s algorithmic room, 0.4 wet — achievement deserves to linger
+  const conv = ac.createConvolver();
+  const convGain = ac.createGain();
+  convGain.gain.value = 0.4;
+  const irLen = Math.ceil(ac.sampleRate * 1.5);
+  const ir = ac.createBuffer(2, irLen, ac.sampleRate);
+  for (let c = 0; c < 2; c++) {
+    const d = ir.getChannelData(c);
+    for (let i = 0; i < irLen; i++) {
+      d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / irLen, 4);
+    }
+  }
+  conv.buffer = ir;
+  conv.connect(convGain);
+  convGain.connect(getMaster());
+  setTimeout(() => { try { conv.disconnect(); convGain.disconnect(); } catch { /* */ } }, 3000);
+
   // First note — C5, warm body
-  tone(CHORD_NOTES.C5, 'triangle', 0.13, 0.006, 0.1, 0.2);
-  tone(CHORD_NOTES.C5, 'sine', 0.03, 0.01, 0.08, 0.15, 0, 5);
+  tone(CHORD_NOTES.C5, 'triangle', 0.13, 0.006, 0.1, 0.2, 0, 0, conv);
+  tone(CHORD_NOTES.C5, 'sine', 0.03, 0.01, 0.08, 0.15, 0, 5, conv);
 
   // Second note — G5, brighter and louder (the "DING")
-  tone(CHORD_NOTES.G5, 'triangle', 0.16, 0.006, 0.15, 0.35, 0.09);
-  tone(CHORD_NOTES.G5, 'sine', 0.035, 0.01, 0.1, 0.25, 0.09, 6);
+  tone(CHORD_NOTES.G5, 'triangle', 0.16, 0.006, 0.15, 0.35, 0.09, 0, conv);
+  tone(CHORD_NOTES.G5, 'sine', 0.035, 0.01, 0.1, 0.25, 0.09, 6, conv);
 
   // Layered 3rd (E5) — fills out the chord subtly
-  tone(CHORD_NOTES.E5, 'sine', 0.04, 0.01, 0.12, 0.28, 0.09);
+  tone(CHORD_NOTES.E5, 'sine', 0.04, 0.01, 0.12, 0.28, 0.09, 0, conv);
 
   // Shimmer overtone on the resolution
-  tone(Math.min(CHORD_NOTES.G5 * 2, 2000), 'sine', 0.02, 0.015, 0.08, 0.2, 0.1);
+  tone(Math.min(CHORD_NOTES.G5 * 2, 2000), 'sine', 0.02, 0.015, 0.08, 0.2, 0.1, 0, conv);
+
+  // C6 completion sparkle — resolves the fanfare up the octave
+  tone(CHORD_NOTES.C6, 'triangle', 0.065, 0.008, 0.06, 0.30, 0.40, 0, conv);
+  tone(Math.min(CHORD_NOTES.C6 * 2, 2000), 'sine', 0.016, 0.01, 0.04, 0.18, 0.40, 0, conv);
 
   // Sparkle noise
-  noiseBurst(0.025, 0.04, 2400, 0.08);
-  noiseBurst(0.015, 0.03, 3200, 0.14);
+  noiseBurst(0.025, 0.04, 2400, 0.08, conv);
+  noiseBurst(0.015, 0.03, 3200, 0.14, conv);
 }

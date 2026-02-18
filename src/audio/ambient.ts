@@ -26,11 +26,12 @@
 
 import { getCtx, getMaster } from './synth';
 
-export type MusicTheme = 'ambient' | 'pulse' | 'lofi';
+export type MusicTheme = 'ambient' | 'pulse' | 'lofi' | 'drift';
 
 // ─── Frequency table ──────────────────────────────────────────
 
 const NOTE = {
+  C3: 130.81, G3: 196.00,
   C4: 261.63, E4: 329.63, G4: 392.00, A4: 440.00,
   C5: 523.25, D5: 587.33, E5: 659.25, G5: 783.99, A5: 880.00,
   C6: 1046.50,
@@ -59,6 +60,14 @@ const PROGRESSION_TENSE: Chord[] = [
   { name: 'V',     root: NOTE.D5, tones: [NOTE.D5, NOTE.A5, NOTE.C6] },
 ];
 
+// Extreme-tension minor progression (Am → Em → Dm) — modal darkening above tension 0.8.
+// Uses only existing pentatonic notes, no new frequencies needed.
+const PROGRESSION_EXTREME: Chord[] = [
+  { name: 'Am', root: NOTE.A4, tones: [NOTE.A4, NOTE.C5, NOTE.E5, NOTE.A5] },
+  { name: 'Em', root: NOTE.E4, tones: [NOTE.E4, NOTE.G4, NOTE.A4, NOTE.E5] },
+  { name: 'Dm', root: NOTE.D5, tones: [NOTE.D5, NOTE.A5, NOTE.C6] },
+];
+
 const CHORD_DURATION_SEC = 20;
 
 // ─── Voice config ─────────────────────────────────────────────
@@ -79,6 +88,8 @@ type VoiceConfig = {
   pan?: number;
   tapeWobble?: boolean;  // tape wow/flutter pitch LFOs (lo-fi piano)
   karplus?: boolean;     // Karplus-Strong synthesis instead of oscillator
+  fmBell?: boolean;      // FM bell synthesis (Chowning — carrier + inharmonic modulator)
+  amBreath?: boolean;    // AM breathing (3 Hz tremolo on output amplitude)
 };
 
 // ─── Beat clock grid (pulse theme) ────────────────────────────
@@ -107,7 +118,7 @@ const VOICES_AMBIENT: VoiceConfig[] = [
   },
   {
     name: 'padMid',
-    cycleSec: 17, paceInfluence: 0.3,
+    cycleSec: 16, paceInfluence: 0.3, // 16s (3:4 polyrhythm with shimmer at 12s)
     calmPool: [NOTE.E4, NOTE.C5, NOTE.G5], tensePool: [NOTE.C4, NOTE.A4, NOTE.D5],
     oscType: 'triangle', baseVol: 0.025,
     attack: 2.5, sustain: 8, release: 5,
@@ -123,7 +134,7 @@ const VOICES_AMBIENT: VoiceConfig[] = [
   },
   {
     name: 'shimmer',
-    cycleSec: 19, paceInfluence: 0.15,
+    cycleSec: 12, paceInfluence: 0.15, // 12s (3:4 polyrhythm with padMid at 16s — align every 48s)
     calmPool: [NOTE.C5, NOTE.G5, NOTE.C6], tensePool: [NOTE.E5, NOTE.A5],
     oscType: 'sine', baseVol: 0.010,
     attack: 3.5, sustain: 10, release: 4,
@@ -240,6 +251,59 @@ const VOICES_LOFI: VoiceConfig[] = [
   },
 ];
 
+// ─── Theme: Drift ─────────────────────────────────────────────
+//
+// Eno × ocean aesthetic. Sparse, very long cycles, no beat clock.
+// bellTone: FM synthesis (Chowning bell — inharmonic attack, pure tail)
+// breathPad: AM breath (3 Hz tremolo — cassette bellows effect)
+// waterDrop: Karplus-Strong pluck (percussive droplet)
+// deepSub: pure sine at C3/G3 — felt more than heard on phone speakers
+
+const VOICES_DRIFT: VoiceConfig[] = [
+  {
+    name: 'oceanPad',
+    cycleSec: 18, paceInfluence: 0.1,
+    calmPool: [NOTE.C4, NOTE.G4, NOTE.C5], tensePool: [NOTE.C4, NOTE.E4, NOTE.G4],
+    oscType: 'sine', baseVol: 0.028,
+    attack: 4, sustain: 12, release: 6,
+    pan: 0.0,
+  },
+  {
+    name: 'bellTone',
+    cycleSec: 12, paceInfluence: 0.3,
+    calmPool: [NOTE.E5, NOTE.G5, NOTE.C6], tensePool: [NOTE.A4, NOTE.D5, NOTE.E5],
+    oscType: 'sine', baseVol: 0.022,
+    attack: 0.01, sustain: 0.0, release: 3.0,
+    pan: 0.0, fmBell: true,
+  },
+  {
+    name: 'breathPad',
+    cycleSec: 14, paceInfluence: 0.2,
+    calmPool: [NOTE.G4, NOTE.C5, NOTE.E5], tensePool: [NOTE.E4, NOTE.G4, NOTE.A4],
+    oscType: 'sine', baseVol: 0.020,
+    attack: 3, sustain: 8, release: 5,
+    pan: 0.3, amBreath: true,
+  },
+  {
+    name: 'waterDrop',
+    cycleSec: 3, paceInfluence: 1.0,
+    calmPool: [NOTE.C5, NOTE.E5, NOTE.G5, NOTE.A5, NOTE.C6],
+    tensePool: [NOTE.A4, NOTE.C5, NOTE.D5],
+    oscType: 'sine', baseVol: 0.025,
+    attack: 0.01, sustain: 0.3, release: 1.2,
+    paceMult: 3.0, streakSubdivide: true,
+    pan: 0.0, karplus: true,
+  },
+  {
+    name: 'deepSub',
+    cycleSec: 30, paceInfluence: 0.05,
+    calmPool: [NOTE.C3, NOTE.G3], tensePool: [NOTE.C3, NOTE.G3],
+    oscType: 'sine', baseVol: 0.015,
+    attack: 5, sustain: 20, release: 8,
+    pan: 0.0,
+  },
+];
+
 // ─── Engine state ─────────────────────────────────────────────
 
 let ambientGain: GainNode | null = null;
@@ -291,6 +355,11 @@ const lastNotePerVoice = new Map<string, number>();
 let lofiArpFireCount = 0;
 const SWING_AMOUNT = 0.08;
 
+// Motif development: arp follows a pool-index pattern that evolves every 4 chord changes
+let motifPattern: number[] = [0, 2, 1, 3, 0, 1, 2, 0];
+let motifPos = 0;
+let chordChangeCount = 0;
+
 const AMBIENT_BASE_VOL = 0.06;
 const LFO_DEPTH = 0.025;
 const DEFAULT_LFO_FREQ = 0.25;
@@ -328,6 +397,7 @@ function getThemeReverbCfg(): ReverbCfg {
   switch (currentTheme) {
     case 'pulse': return { duration: 0.3, decay: 8.0, wet: 0.12, satDrive: 1.5 };
     case 'lofi':  return { duration: 0.6, decay: 6.0, wet: 0.20, satDrive: 3.0 };
+    case 'drift': return { duration: 3.5, decay: 2.0, wet: 0.55, satDrive: 1.5 };
     default:      return { duration: 2.5, decay: 3.0, wet: 0.38, satDrive: 2.0 };
   }
 }
@@ -503,6 +573,63 @@ function karplusPluck(freq: number, vol: number, pan: number): void {
   }, (duration + 0.3) * 1000);
 }
 
+// ─── FM bell synthesis (Drift theme bellTone voice) ───────────
+
+/**
+ * Classic Chowning FM bell: inharmonic modulator (ratio 1.4) gives bright attack
+ * transient; modulation index decays to zero leaving a pure sine tail.
+ * Bell strikes alternate L/R pan for spatial drift character.
+ */
+function fmBell(freq: number, cfg: VoiceConfig, volMult: number): void {
+  if (!ambientGain) return;
+  const ac = getCtx();
+  const t = ac.currentTime;
+
+  const carrier   = ac.createOscillator();
+  const modulator = ac.createOscillator();
+  const modGain   = ac.createGain();
+  const envGain   = ac.createGain();
+  const panner    = ac.createStereoPanner();
+
+  carrier.type   = 'sine';
+  carrier.frequency.value = freq;
+  modulator.type = 'sine';
+  modulator.frequency.value = freq * 1.4; // slightly inharmonic = bell character
+
+  // Modulation index: bright transient on attack → pure sine on decay
+  const totalDur = cfg.attack + cfg.sustain + cfg.release;
+  modGain.gain.setValueAtTime(freq * 3, t);
+  modGain.gain.exponentialRampToValueAtTime(0.001, t + Math.min(totalDur * 0.6, 2.0));
+
+  // Bell amplitude: sharp attack, long exponential decay
+  const peakVol = cfg.baseVol * volMult;
+  envGain.gain.setValueAtTime(0.0001, t);
+  envGain.gain.linearRampToValueAtTime(peakVol, t + cfg.attack);
+  envGain.gain.exponentialRampToValueAtTime(0.0001, t + totalDur);
+
+  // Wide alternating stereo — bells drift L/R to fill the space
+  panner.pan.value = Math.max(-1, Math.min(1, (Math.random() < 0.5 ? 0.65 : -0.65)));
+
+  modulator.connect(modGain);
+  modGain.connect(carrier.frequency);
+  carrier.connect(envGain);
+  envGain.connect(panner);
+  panner.connect(ambientGain!);
+
+  carrier.start(t);
+  modulator.start(t);
+  carrier.stop(t + totalDur + 0.05);
+  modulator.stop(t + totalDur + 0.05);
+
+  carrier.onended = () => {
+    try { carrier.disconnect(); }   catch { /* */ }
+    try { modulator.disconnect(); } catch { /* */ }
+    try { modGain.disconnect(); }   catch { /* */ }
+    try { envGain.disconnect(); }   catch { /* */ }
+    try { panner.disconnect(); }    catch { /* */ }
+  };
+}
+
 // ─── Beat clock (pulse theme) ─────────────────────────────────
 
 /**
@@ -515,10 +642,47 @@ function deriveBeatDuration(pm: number): number {
 }
 
 /**
+ * 4-note 16th-note roll fill, landing 2 beats before the next section boundary.
+ * Uses current chord tones for harmonic consonance.
+ */
+function scheduleRollFill(startTime: number): void {
+  if (!ambientGain) return;
+  const ac = getCtx();
+  const sixteenth = beatDuration / 4;
+  const fillFreqs = [
+    currentChord.tones[2] ?? 783.99,
+    currentChord.tones[3] ?? 880.00,
+    currentChord.tones[Math.min(4, currentChord.tones.length - 1)] ?? 1046.50,
+    currentChord.tones[2] ?? 783.99,
+  ];
+  fillFreqs.forEach((freq, i) => {
+    const t = startTime + i * sixteenth;
+    const osc = ac.createOscillator();
+    const gain = ac.createGain();
+    osc.type = 'sine';
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(0, t);
+    gain.gain.linearRampToValueAtTime(0.018 + i * 0.006, t + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t + sixteenth * 0.9);
+    osc.connect(gain);
+    gain.connect(ambientGain!);
+    osc.start(t);
+    osc.stop(t + sixteenth);
+    osc.onended = () => { osc.disconnect(); gain.disconnect(); };
+  });
+}
+
+/**
  * Schedule all pulse voices that fall on this eighth-note grid position.
  * Uses AudioContext startTime (not setTimeout) so notes lock to the grid exactly.
+ * Every 32 beats (64 eighth notes), a 16th-note fill roll is triggered.
  */
 function scheduleBeatEvents(beatTime: number): void {
+  // Fill: 4 sixteenth-note roll, 2 beats before section boundary (every 32 beats)
+  if (halfBeatCount > 0 && halfBeatCount % 64 === 60) {
+    scheduleRollFill(beatTime);
+  }
+
   for (const gv of PULSE_GRID_VOICES) {
     // Convert beat interval to eighth-note grid count (0.5 beats = 1 grid tick)
     const intervalInEighths = Math.round(gv.beatInterval * 2);
@@ -569,17 +733,40 @@ function stopBeatClock(): void {
 // ─── Chord system helpers ─────────────────────────────────────
 
 /**
+ * Transform the arp motif pattern every 4 chord changes to prevent staleness.
+ * Choices: retrograde, octave-shift (index +1), trim or extend.
+ */
+function developMotif(): void {
+  const choice = Math.floor(Math.random() * 3);
+  if (choice === 0) {
+    motifPattern = [...motifPattern].reverse();
+  } else if (choice === 1) {
+    motifPattern = motifPattern.map(n => n + 1);
+  } else if (motifPattern.length > 3) {
+    motifPattern = motifPattern.slice(0, motifPattern.length - 1);
+  } else {
+    motifPattern = [...motifPattern, motifPattern[Math.floor(Math.random() * motifPattern.length)]];
+  }
+}
+
+/**
  * Advance the chord progression if CHORD_DURATION_SEC has elapsed.
- * Switches to tense progression when tension > 0.6.
+ * Three tiers: calm (≤0.6) → tense (>0.6) → extreme minor (>0.8).
+ * Every 4 chord changes, the arp motif pattern is developed.
  */
 function updateChord(): void {
   const nowSec = Date.now() / 1000;
   if (nowSec - chordStartSec < CHORD_DURATION_SEC) return;
 
-  const progression = tension > 0.6 ? PROGRESSION_TENSE : PROGRESSION_CALM;
+  const progression = tension > 0.8 ? PROGRESSION_EXTREME
+    : tension > 0.6 ? PROGRESSION_TENSE
+    : PROGRESSION_CALM;
   chordIndex = (chordIndex + 1) % progression.length;
   currentChord = progression[chordIndex];
   chordStartSec = nowSec;
+
+  chordChangeCount++;
+  if (chordChangeCount % 4 === 0) developMotif();
 }
 
 /**
@@ -629,23 +816,25 @@ function getVoices(): VoiceConfig[] {
   switch (currentTheme) {
     case 'pulse': return VOICES_PULSE;
     case 'lofi':  return VOICES_LOFI;
+    case 'drift': return VOICES_DRIFT;
     default:      return VOICES_AMBIENT;
   }
 }
 
 /**
- * Get the next arp note, cycling through the chord-filtered pool sequentially.
- * The arp traverses the scale rather than voice-leading — it's intentionally
- * a "running" voice. It still respects the current chord.
+ * Get the next arp note using the evolving motif pattern.
+ * The motif is a sequence of pool-index offsets that cycles and transforms
+ * every 4 chord changes via developMotif() — prevents mechanical repetition.
  */
 function getArpNote(cfg: VoiceConfig): number {
   updateChord();
   const pool = tension > 0.5 ? cfg.tensePool : cfg.calmPool;
   const chordPool = pool.filter(f => currentChord.tones.some(ct => sameHarmonic(f, ct)));
   const activePool = chordPool.length > 0 ? chordPool : pool;
-  const note = activePool[arpIndex % activePool.length];
+  const idx = motifPattern[motifPos % motifPattern.length] % activePool.length;
+  motifPos++;
   arpIndex++;
-  return note;
+  return activePool[idx];
 }
 
 /**
@@ -730,11 +919,35 @@ function playNote(freq: number, cfg: VoiceConfig, volMult: number, startTime?: n
     flutterLfo.start(t);
   }
 
-  // Route: ambient arp → ping-pong input; everything else → ambientGain directly
+  // AM breath for drift breathPad — 3 Hz tremolo on output amplitude
+  let breathMod: GainNode | null = null;
+  let breathLfo: OscillatorNode | null = null;
+  let breathDepth: GainNode | null = null;
+  if (cfg.amBreath) {
+    breathMod   = ac.createGain();
+    breathLfo   = ac.createOscillator();
+    breathDepth = ac.createGain();
+    breathMod.gain.value   = 1.0;
+    breathLfo.type         = 'sine';
+    breathLfo.frequency.value = 3 + Math.random() * 0.4;
+    breathDepth.gain.value = 0.4; // depth: amplitude swings 0.6–1.4
+    breathLfo.connect(breathDepth);
+    breathDepth.connect(breathMod.gain);
+    breathLfo.start(t);
+    breathLfo.stop(t + totalDur + 0.05);
+  }
+
+  // Route: ambient arp → ping-pong; breathPad → breathMod → dest; else → dest
   const dest = (cfg.name === 'arp' && currentTheme === 'ambient' && pingPongInput)
     ? pingPongInput
     : ambientGain!;
-  panner.connect(dest);
+
+  if (breathMod) {
+    panner.connect(breathMod);
+    breathMod.connect(dest);
+  } else {
+    panner.connect(dest);
+  }
 
   osc.connect(gain);
   osc.start(t);
@@ -745,9 +958,12 @@ function playNote(freq: number, cfg: VoiceConfig, volMult: number, startTime?: n
     gain.disconnect();
     padFilter?.disconnect();
     panner.disconnect();
-    if (wowLfo)     { try { wowLfo.stop(); }     catch { /* */ } wowLfo.disconnect(); }
-    if (wowGain)    { wowGain.disconnect(); }
-    if (flutterLfo) { try { flutterLfo.stop(); } catch { /* */ } flutterLfo.disconnect(); }
+    if (breathMod)   { breathMod.disconnect(); }
+    if (breathLfo)   { try { breathLfo.stop(); }   catch { /* */ } breathLfo.disconnect(); }
+    if (breathDepth) { breathDepth.disconnect(); }
+    if (wowLfo)      { try { wowLfo.stop(); }      catch { /* */ } wowLfo.disconnect(); }
+    if (wowGain)     { wowGain.disconnect(); }
+    if (flutterLfo)  { try { flutterLfo.stop(); }  catch { /* */ } flutterLfo.disconnect(); }
     if (flutterGain) { flutterGain.disconnect(); }
   };
 }
@@ -764,7 +980,17 @@ function getVoiceVolMult(name: string, t: number): number {
     case 'lowChord': return 0.6 + t * 0.5;
     case 'piano':    return 1.0 - t * 0.1;
     case 'hiNote':   return 0.9 - t * 0.3;
-    case 'shimmer':  return 1.0 - t * 0.5;
+    case 'shimmer':   return 1.0 - t * 0.5;
+    // Drift theme voices
+    case 'oceanPad':  return 0.6 + t * 0.5;  // swells under tension
+    case 'bellTone':  return 1.0 - t * 0.3;  // fewer bells when tense
+    case 'breathPad': return 0.7 + t * 0.4;  // breathes harder under pressure
+    case 'waterDrop': {
+      if (t > 0.9) return 0;               // silence in extreme tension
+      if (streak <= 0) return 0.3;
+      return 1.0;
+    }
+    case 'deepSub':   return 0.8 + t * 0.3;  // sub grows under pressure
     case 'arp': {
       if (t > 0.85) return 0;
       if (streak <= 0) return 0.3;
@@ -814,6 +1040,8 @@ function scheduleVoice(idx: number): void {
 
     if (cfg.karplus) {
       karplusPluck(freq, cfg.baseVol * volMult, cfg.pan ?? 0);
+    } else if (cfg.fmBell) {
+      fmBell(freq, cfg, volMult);
     } else {
       playNote(freq, cfg, volMult);
       if (isArp && streak >= 8) {
@@ -849,13 +1077,16 @@ export function startAmbient(): void {
   const ac = getCtx();
   const master = getMaster();
 
-  // Initialise chord state
+  // Initialise chord + motif state
   chordIndex = 0;
   currentChord = PROGRESSION_CALM[0];
   chordStartSec = Date.now() / 1000;
   lastNotePerVoice.clear();
   lofiArpFireCount = 0;
   arpIndex = 0;
+  motifPattern = [0, 2, 1, 3, 0, 1, 2, 0];
+  motifPos = 0;
+  chordChangeCount = 0;
 
   // Build PeriodicWave for lo-fi timbre
   electricPianoWave = buildElectricPianoWave(ac);
@@ -1023,6 +1254,7 @@ export function setMusicTheme(theme: MusicTheme): void {
   currentTheme = theme;
   arpIndex = 0;
   lofiArpFireCount = 0;
+  motifPos = 0;
   lastNotePerVoice.clear();
 
   if (!running || paused) return;
@@ -1099,7 +1331,81 @@ export function getCurrentChordRoot(): number {
   return currentChord.root;
 }
 
+/** All tone frequencies of the current chord — used by chord-aware SFX. */
+export function getCurrentChordTones(): number[] {
+  return currentChord.tones;
+}
+
+/** Current tension value (0–1) — used by SFX to adapt timbre. */
+export function getAmbientTension(): number {
+  return tension;
+}
+
 /** Whether ambient music is actively playing (not stopped or paused). */
 export function isAmbientRunning(): boolean {
   return running && !paused;
+}
+
+// ─── Event-driven musical stingers (#21) ──────────────────────
+
+/**
+ * Schedule brief oscillator notes starting at startTime.
+ * Notes are staggered by stagger seconds (0 = simultaneous chord bloom).
+ */
+function scheduleStinger(
+  freqs: number[],
+  startTime: number,
+  vol: number,
+  noteDur: number,
+  stagger: number = 0,
+): void {
+  if (!ambientGain) return;
+  const ac = getCtx();
+  freqs.forEach((freq, i) => {
+    const t = startTime + i * stagger;
+    const osc = ac.createOscillator();
+    const gain = ac.createGain();
+    osc.type = 'sine';
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(0, t);
+    gain.gain.linearRampToValueAtTime(vol, t + 0.012);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t + noteDur);
+    osc.connect(gain);
+    gain.connect(ambientGain!);
+    osc.start(t);
+    osc.stop(t + noteDur + 0.05);
+    osc.onended = () => { osc.disconnect(); gain.disconnect(); };
+  });
+}
+
+export type MusicEvent = 'allClear' | 'revive' | 'gameOver';
+
+/**
+ * Trigger a harmonically-aligned music stinger on a game event.
+ * Snaps to the next 16th-note grid position for musical timing.
+ * Only fires when music is running and not paused.
+ */
+export function triggerMusicEvent(event: MusicEvent): void {
+  if (!ambientGain || !running || paused) return;
+  const ac = getCtx();
+  const now = ac.currentTime;
+  const sixteenth = beatDuration / 4;
+  // Snap to next grid position (with tiny offset to avoid exact-0 edge)
+  const nextGrid = Math.ceil((now + 0.01) / sixteenth) * sixteenth;
+  const root = currentChord.root;
+
+  switch (event) {
+    case 'allClear':
+      // Chord bloom: all tones of current chord, simultaneous, long sustain
+      scheduleStinger(currentChord.tones.slice(0, 4), nextGrid, 0.028, 0.7, 0);
+      break;
+    case 'revive':
+      // Rising 5th from chord root — "second chance" harmonic signal
+      scheduleStinger([root * 2, root * 3, root * 4], nextGrid, 0.030, 0.08, 0.055);
+      break;
+    case 'gameOver':
+      // Descend from chord root — musical echo of the SFX descent
+      scheduleStinger([root * 4, root * 3, root * 2, root], nextGrid, 0.025, 0.14, 0.12);
+      break;
+  }
 }
