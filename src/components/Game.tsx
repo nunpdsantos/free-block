@@ -648,6 +648,9 @@ export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit
           isNewHighScore={isNewHighScore}
           revivesRemaining={state.revivesRemaining}
           mode={mode}
+          piecesPlaced={state.gamePiecesPlaced}
+          linesCleared={state.gameLinesCleared}
+          bestStreak={state.gameBestStreak}
           onRevive={handleRevive}
           onPlayAgain={handlePlayAgain}
           onQuit={handleQuit}

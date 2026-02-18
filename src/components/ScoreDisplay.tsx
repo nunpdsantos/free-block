@@ -62,6 +62,7 @@ export function ScoreDisplay({ score, topScore, streak }: ScoreDisplayProps) {
   const fillPct = Math.min(streak / 5, 1) * 100;
 
   // Progress toward personal best
+  const isBeatingBest = topScore > 0 && score > topScore;
   const progressPct = topScore > 0
     ? Math.min((score / topScore) * 100, 100)
     : 0;
@@ -72,19 +73,30 @@ export function ScoreDisplay({ score, topScore, streak }: ScoreDisplayProps) {
       <div className="score-row">
         <div className="score-section">
           <div className="score-label">Score</div>
-          <div className="score-value" ref={scoreElRef}>{animatedScore.toLocaleString()}</div>
+          <div className={`score-value${isBeatingBest ? ' score-value--beating-best' : ''}`} ref={scoreElRef}>{animatedScore.toLocaleString()}</div>
         </div>
         {streak > 0 && (
           <div className="streak-badge">{streak}x</div>
         )}
         <div className="score-section">
-          <div className="score-label score-label--best">
-            <span className="crown-icon">&#9813;</span>
-            Best
-          </div>
-          <div className="score-value score-value--best">
-            {topScore.toLocaleString()}
-          </div>
+          {isBeatingBest ? (
+            <>
+              <div className="score-label score-label--best score-label--new-best">NEW BEST!</div>
+              <div className="score-value score-value--best score-value--new-best">
+                {animatedScore.toLocaleString()}
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="score-label score-label--best">
+                <span className="crown-icon">&#9813;</span>
+                Best
+              </div>
+              <div className="score-value score-value--best">
+                {topScore.toLocaleString()}
+              </div>
+            </>
+          )}
         </div>
       </div>
       {showProgress && (

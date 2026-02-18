@@ -9,6 +9,9 @@ type GameOverProps = {
   isNewHighScore: boolean;
   revivesRemaining: number;
   mode: GameMode;
+  piecesPlaced: number;
+  linesCleared: number;
+  bestStreak: number;
   onRevive: () => void;
   onPlayAgain: () => void;
   onQuit: () => void;
@@ -21,6 +24,9 @@ export function GameOver({
   isNewHighScore,
   revivesRemaining,
   mode,
+  piecesPlaced,
+  linesCleared,
+  bestStreak,
   onRevive,
   onPlayAgain,
   onQuit,
@@ -39,6 +45,25 @@ export function GameOver({
 
   const isDaily = mode === 'daily';
 
+  const breakdown = (
+    <div className="game-over-breakdown">
+      <div className="game-over-breakdown-row">
+        <span className="game-over-breakdown-label">Lines cleared</span>
+        <span className="game-over-breakdown-value">{linesCleared}</span>
+      </div>
+      <div className="game-over-breakdown-row">
+        <span className="game-over-breakdown-label">Pieces placed</span>
+        <span className="game-over-breakdown-value">{piecesPlaced}</span>
+      </div>
+      {bestStreak > 0 && (
+        <div className="game-over-breakdown-row">
+          <span className="game-over-breakdown-label">Best streak</span>
+          <span className="game-over-breakdown-value">{bestStreak}x</span>
+        </div>
+      )}
+    </div>
+  );
+
   return (
     <div className="game-over-overlay">
       <div className="game-over-card">
@@ -49,14 +74,18 @@ export function GameOver({
               <div className="game-over-score-label">Score</div>
               <div className="game-over-score-value">{score.toLocaleString()}</div>
             </div>
+            {breakdown}
           </>
         ) : isNewHighScore ? (
-          <div className="new-best-celebration">
-            <div className="new-best-burst" />
-            <div className="new-best-crown">&#9813;</div>
-            <div className="new-best-banner">NEW BEST</div>
-            <div className="new-best-score">{score.toLocaleString()}</div>
-          </div>
+          <>
+            <div className="new-best-celebration">
+              <div className="new-best-burst" />
+              <div className="new-best-crown">&#9813;</div>
+              <div className="new-best-banner">NEW BEST</div>
+              <div className="new-best-score">{score.toLocaleString()}</div>
+            </div>
+            {breakdown}
+          </>
         ) : (
           <>
             <h2 className="game-over-title">Game Over</h2>
@@ -68,6 +97,7 @@ export function GameOver({
               <span className="game-over-best-label">Best: </span>
               <span>{highScore.toLocaleString()}</span>
             </div>
+            {breakdown}
           </>
         )}
         <div className="game-over-buttons">

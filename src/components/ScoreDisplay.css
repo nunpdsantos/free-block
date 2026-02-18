@@ -52,6 +52,36 @@
   text-align: right;
 }
 
+.score-value--beating-best {
+  color: #FFD740;
+  text-shadow: 0 0 12px rgba(255, 215, 64, 0.55), 0 0 28px rgba(255, 215, 64, 0.25);
+  animation: new-best-pulse 1.4s ease-in-out infinite alternate;
+}
+
+@keyframes new-best-pulse {
+  from {
+    text-shadow: 0 0 8px rgba(255, 215, 64, 0.4), 0 0 20px rgba(255, 215, 64, 0.15);
+  }
+  to {
+    text-shadow: 0 0 18px rgba(255, 215, 64, 0.75), 0 0 36px rgba(255, 215, 64, 0.35);
+  }
+}
+
+.score-label--new-best {
+  color: #FFD740;
+  animation: new-best-label-pulse 1.4s ease-in-out infinite alternate;
+}
+
+.score-value--new-best {
+  color: #FFD740;
+  animation: new-best-pulse 1.4s ease-in-out infinite alternate;
+}
+
+@keyframes new-best-label-pulse {
+  from { opacity: 0.75; }
+  to { opacity: 1; }
+}
+
 /* Streak badge — floating between score sections */
 .streak-badge {
   align-self: center;

@@ -123,6 +123,37 @@
   animation: score-entrance 0.5s ease-out 0.35s both;
 }
 
+/* --- Score Breakdown --- */
+
+.game-over-breakdown {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 20px;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.game-over-breakdown-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.game-over-breakdown-label {
+  font-size: 13px;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.game-over-breakdown-value {
+  font-size: 14px;
+  color: var(--text-primary);
+  font-weight: 800;
+}
+
 /* --- Buttons --- */
 
 .game-over-buttons {

@@ -68,6 +68,10 @@ export type GameState = {
   mode: GameMode;
   dailySeed?: number;
   lastClearTimestamp: number | null;
+  // Per-game stats for game-over breakdown
+  gamePiecesPlaced: number;
+  gameLinesCleared: number;
+  gameBestStreak: number;
 };
 
 export type GameAction =

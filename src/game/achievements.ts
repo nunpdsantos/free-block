@@ -142,9 +142,9 @@ export const ACHIEVEMENTS: Achievement[] = [
   {
     id: 'mythic',
     title: 'Mythic',
-    description: 'Score 50,000+ in a single game',
+    description: 'Score 35,000+ in a single game',
     tier: 'gold',
-    check: (ctx) => ctx.currentGameScore !== null && ctx.currentGameScore >= 50000,
+    check: (ctx) => ctx.currentGameScore !== null && ctx.currentGameScore >= 35000,
   },
   {
     id: 'line_legend',

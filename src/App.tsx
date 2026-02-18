@@ -16,6 +16,7 @@ import { Tutorial } from './components/Tutorial';
 import { DailyCalendar } from './components/DailyCalendar';
 import { ProfileScreen } from './components/ProfileScreen';
 import { AchievementToast } from './components/AchievementToast';
+import { StreakMilestoneModal } from './components/StreakMilestoneModal';
 import { UpdateBanner } from './components/UpdateBanner';
 import { useInstallPrompt } from './hooks/useInstallPrompt';
 import { useSync } from './hooks/useSync';
@@ -175,6 +176,9 @@ export default function App() {
     setToastQueue(prev => prev.slice(1));
   }, []);
 
+  // Daily streak milestone modal (day 7, day 30)
+  const [streakMilestone, setStreakMilestone] = useState<number | null>(null);
+
   // Game context ref — Game.tsx updates this so achievement checks can access in-game state
   const gameContextRef = useRef<{
     currentGameScore: number | null;
@@ -301,28 +305,27 @@ export default function App() {
         return pruned;
       });
 
-      // Update daily streak — reuse date strings captured above so a
-      // midnight rollover between setState calls can't corrupt the streak.
+      // Update daily streak — compute new streak synchronously from current state,
+      // then set both streak and milestone in the same event.
       const yesterday = getYesterdayDateStr();
-      setDailyStreak(prev => {
-        let newStreak: number;
-        if (prev.lastPlayedDate === date) {
-          return prev;
-        } else if (prev.lastPlayedDate === yesterday) {
-          newStreak = prev.currentStreak + 1;
-        } else {
-          newStreak = 1;
-        }
-        return {
+      if (dailyStreak.lastPlayedDate !== date) {
+        const newStreak = dailyStreak.lastPlayedDate === yesterday
+          ? dailyStreak.currentStreak + 1
+          : 1;
+        setDailyStreak({
           currentStreak: newStreak,
-          bestStreak: Math.max(newStreak, prev.bestStreak),
+          bestStreak: Math.max(newStreak, dailyStreak.bestStreak),
           lastPlayedDate: date,
-        };
-      });
+        });
+        // Show milestone modal the first time the player hits day 7 or 30
+        if ((newStreak === 7 || newStreak === 30) && newStreak > dailyStreak.bestStreak) {
+          setStreakMilestone(newStreak);
+        }
+      }
 
       scheduleSync();
     },
-    [setDailyResults, setDailyStreak, scheduleSync]
+    [setDailyResults, setDailyStreak, dailyStreak, scheduleSync, setStreakMilestone]
   );
 
   // Ref to hold auth state for use in handleGameOver without re-creating the callback
@@ -445,6 +448,13 @@ export default function App() {
           key={currentToast.id}
           achievement={currentToast}
           onDismiss={dismissToast}
+        />
+      )}
+
+      {streakMilestone !== null && (
+        <StreakMilestoneModal
+          streak={streakMilestone}
+          onDismiss={() => setStreakMilestone(null)}
         />
       )}
 

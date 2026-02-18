@@ -36,6 +36,9 @@ export function createInitialState(): GameState {
     postReviveGrace: false,
     mode: 'classic',
     lastClearTimestamp: null,
+    gamePiecesPlaced: 0,
+    gameLinesCleared: 0,
+    gameBestStreak: 0,
   };
 }
 
@@ -61,6 +64,9 @@ export function createDailyState(seed: number): GameState {
     mode: 'daily',
     dailySeed: seed,
     lastClearTimestamp: null,
+    gamePiecesPlaced: 0,
+    gameLinesCleared: 0,
+    gameBestStreak: 0,
   };
 }
 
@@ -192,6 +198,9 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         lastMilestone: newLastMilestone,
         undoSnapshot,
         lastClearTimestamp: linesCleared > 0 ? timestamp : state.lastClearTimestamp,
+        gamePiecesPlaced: state.gamePiecesPlaced + 1,
+        gameLinesCleared: state.gameLinesCleared + linesCleared,
+        gameBestStreak: Math.max(state.gameBestStreak, newStreak),
       };
     }
 
