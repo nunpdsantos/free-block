@@ -104,8 +104,9 @@ let arpIndex = 0;
 
 const AMBIENT_BASE_VOL = 0.06;
 const LFO_DEPTH = 0.025;
-const DEFAULT_LFO_FREQ = 0.1;
-const REFERENCE_PACE_MS = 5000;  // "normal" tempo — cycles unchanged at this rate
+const DEFAULT_LFO_FREQ = 0.25;
+const REFERENCE_PACE_MS = 5000;
+const PACE_MULT = 2.5;  // ambient runs 2.5x faster than player placement rate
 
 // ─── Internal helpers ────────────────────────────────────────
 
@@ -172,17 +173,17 @@ function getVoiceVolMult(name: string, t: number): number {
 /** Compute pace-adapted cycle for a voice. */
 function getEffectiveCycleSec(cfg: VoiceConfig): number {
   if (cfg.name === 'arp') {
-    // Arp locks directly to player placement tempo
-    const base = Math.max(1.5, Math.min(8, paceMs / 1000));
-    // Streak subdivides: consecutive clears speed up the arp
+    // Arp runs at PACE_MULT × player tempo
+    const base = Math.max(0.6, Math.min(4, paceMs / 1000 / PACE_MULT));
+    // Streak subdivides further
     if (streak >= 5) return base * 0.5;
     if (streak >= 3) return base * 0.7;
     return base;
   }
 
-  // Pad/shimmer: partially scale cycle with pace via paceInfluence
+  // Pad/shimmer: partially scale cycle with pace (also multiplied)
   const clampedPace = Math.max(1500, Math.min(15000, paceMs));
-  const paceFactor = REFERENCE_PACE_MS / clampedPace;
+  const paceFactor = (REFERENCE_PACE_MS / clampedPace) * PACE_MULT;
   // influence=0 → unchanged. influence=1 → fully scaled.
   return cfg.cycleSec / (1 + (paceFactor - 1) * cfg.paceInfluence);
 }
@@ -344,9 +345,9 @@ export function setAmbientPace(intervalMs: number): void {
   paceMs = Math.max(1500, Math.min(15000, intervalMs));
 
   if (!lfo) return;
-  // LFO pulse also tracks pace
-  const freq = 1000 / paceMs;
-  const clamped = Math.max(0.06, Math.min(0.5, freq));
+  // LFO pulse also tracks pace at multiplied rate
+  const freq = (1000 / paceMs) * PACE_MULT;
+  const clamped = Math.max(0.1, Math.min(1.2, freq));
   const ac = getCtx();
   const now = ac.currentTime;
   lfo.frequency.cancelScheduledValues(now);
