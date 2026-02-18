@@ -1,4 +1,4 @@
-import { useRef, useCallback, useState, useEffect } from 'react';
+import { useRef, useCallback, useState, useEffect, startTransition } from 'react';
 import type { PieceShape, DragState, GhostCells, Board } from '../game/types';
 import { canPlacePiece } from '../game/logic';
 import { GRID_SIZE } from '../game/constants';
@@ -132,19 +132,23 @@ export function useDrag(
 
     const newState: DragState = { ...latest, boardRow: row, boardCol: col, isValid };
     dragRef.current = newState;
-    setDragState(newState);
 
-    const ghost: GhostCells = new Map();
-    if (row !== null && col !== null) {
-      for (const coord of latest.piece.coords) {
-        const r = row + coord.row;
-        const c = col + coord.col;
-        if (r >= 0 && r < GRID_SIZE && c >= 0 && c < GRID_SIZE) {
-          ghost.set(`${r},${c}`, isValid);
+    // Low-priority update — React yields to pointer events between render chunks
+    startTransition(() => {
+      setDragState(newState);
+
+      const ghost: GhostCells = new Map();
+      if (row !== null && col !== null) {
+        for (const coord of latest.piece.coords) {
+          const r = row + coord.row;
+          const c = col + coord.col;
+          if (r >= 0 && r < GRID_SIZE && c >= 0 && c < GRID_SIZE) {
+            ghost.set(`${r},${c}`, isValid);
+          }
         }
       }
-    }
-    setGhostCells(ghost);
+      setGhostCells(ghost);
+    });
   }
 
   // --- Pointer handlers ---
