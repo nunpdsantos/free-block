@@ -17,12 +17,24 @@
 
 let ctx: AudioContext | null = null;
 let masterGain: GainNode | null = null;
+let compressor: DynamicsCompressorNode | null = null;
 
 export function getCtx(): AudioContext {
   if (!ctx) {
     ctx = new AudioContext();
     masterGain = ctx.createGain();
-    masterGain.connect(ctx.destination);
+
+    // Master bus compressor: prevents SFX from clipping over music when events stack.
+    // Soft-knee 4:1 ratio — transparent at normal levels, catches transient peaks.
+    compressor = ctx.createDynamicsCompressor();
+    compressor.threshold.value = -18;
+    compressor.knee.value = 6;
+    compressor.ratio.value = 4;
+    compressor.attack.value = 0.005;
+    compressor.release.value = 0.15;
+
+    masterGain.connect(compressor);
+    compressor.connect(ctx.destination);
   }
   if (ctx.state === 'suspended') ctx.resume().catch(() => {});
   return ctx;

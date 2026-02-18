@@ -1,4 +1,5 @@
 import { synthPlace, synthClear, synthAllClear, synthGameOver, synthRevive, synthAchievement, setMasterVolume } from './synth';
+import { duckMusic } from './ambient';
 
 let volume = 80; // 0-100
 let sfxEnabled = true;
@@ -86,6 +87,7 @@ export function playAllClear() {
   if (!sfxEnabled) return;
   vibrate([20, 40, 20, 40, 20]);
   if (volume === 0) return;
+  duckMusic(0.45, 0.8); // duck 55% for 800ms — all-clear chord is loud
   synthAllClear();
 }
 
@@ -110,5 +112,6 @@ export function playAchievement() {
   if (!sfxEnabled) return;
   vibrate([15, 30, 15, 30, 15]);
   if (volume === 0) return;
+  duckMusic(0.5, 0.6); // duck 50% for 600ms — fanfare needs headroom
   synthAchievement();
 }

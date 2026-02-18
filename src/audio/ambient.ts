@@ -9,8 +9,15 @@
  * All voice timing adapts to player pace. The arp voice is pace-locked
  * as a rhythmic heartbeat. Theme switching is seamless (no silence gap).
  *
- * Routing: voices → playNote → ambientGain ← LFO pulse
- *                               ambientGain → masterGain → destination
+ * Signal chain:
+ *   voices → StereoPannerNode → ambientGain ← LFO pulse
+ *   ambientGain → WaveShaperNode (sat) → dry GainNode → masterGain
+ *                                      → ConvolverNode → wet GainNode → masterGain
+ *   masterGain → DynamicsCompressor → destination  (compressor lives in synth.ts)
+ *
+ * Lo-fi piano voice uses Karplus-Strong string synthesis (noise burst → delay
+ * feedback loop) instead of the standard oscillator path, plus tape wow/flutter
+ * LFOs for cassette-recorder pitch drift.
  */
 
 import { getCtx, getMaster } from './synth';
@@ -40,6 +47,9 @@ type VoiceConfig = {
   release: number;
   paceMult?: number;          // arp pace multiplier (default: PACE_MULT)
   streakSubdivide?: boolean;  // arp subdivides at high streak (default: true)
+  pan?: number;               // stereo position: -1 (left) … 0 (center) … +1 (right)
+  tapeWobble?: boolean;       // tape wow + flutter LFOs (lo-fi piano only)
+  karplus?: boolean;          // Karplus-Strong synthesis instead of oscillator
 };
 
 // ─── Theme: Ambient (Brian Eno-style drifting pads) ───────────
@@ -51,6 +61,7 @@ const VOICES_AMBIENT: VoiceConfig[] = [
     calmPool: [NOTE.C4, NOTE.G4], tensePool: [NOTE.C4, NOTE.E4],
     oscType: 'triangle', baseVol: 0.035,
     attack: 3, sustain: 6, release: 4,
+    pan: 0.0,
   },
   {
     name: 'padMid',
@@ -58,6 +69,7 @@ const VOICES_AMBIENT: VoiceConfig[] = [
     calmPool: [NOTE.E4, NOTE.C5, NOTE.G5], tensePool: [NOTE.C4, NOTE.A4, NOTE.D5],
     oscType: 'triangle', baseVol: 0.025,
     attack: 2.5, sustain: 8, release: 5,
+    pan: -0.25,
   },
   {
     name: 'padHigh',
@@ -65,6 +77,7 @@ const VOICES_AMBIENT: VoiceConfig[] = [
     calmPool: [NOTE.G4, NOTE.C5, NOTE.E5], tensePool: [NOTE.E4, NOTE.G4, NOTE.A4],
     oscType: 'sine', baseVol: 0.018,
     attack: 2, sustain: 5, release: 3,
+    pan: 0.25,
   },
   {
     name: 'shimmer',
@@ -72,6 +85,7 @@ const VOICES_AMBIENT: VoiceConfig[] = [
     calmPool: [NOTE.C5, NOTE.G5, NOTE.C6], tensePool: [NOTE.E5, NOTE.A5],
     oscType: 'sine', baseVol: 0.010,
     attack: 3.5, sustain: 10, release: 4,
+    pan: 0.0,
   },
   {
     name: 'arp',
@@ -81,100 +95,97 @@ const VOICES_AMBIENT: VoiceConfig[] = [
     oscType: 'sine', baseVol: 0.015,
     attack: 0.15, sustain: 0.5, release: 0.4,
     paceMult: 2.5, streakSubdivide: true,
+    pan: 0.0,
   },
 ];
 
 // ─── Theme: Pulse (upbeat driving electronic) ─────────────────
-//
-// Short staccato notes, fast cycles, punchy bass hits and chord stabs.
-// Arp runs at 4× player pace with snappy attack for a driving feel.
 
 const VOICES_PULSE: VoiceConfig[] = [
   {
-    // Punchy bass root — thumps on the beat
     name: 'bass',
     cycleSec: 2.0, paceInfluence: 0.15,
     calmPool: [NOTE.C4, NOTE.G4], tensePool: [NOTE.G4, NOTE.A4],
     oscType: 'triangle', baseVol: 0.048,
     attack: 0.005, sustain: 0.15, release: 0.10,
+    pan: 0.0,
   },
   {
-    // Bright chord stab — upbeat synth hit every few seconds
     name: 'stab',
     cycleSec: 4.0, paceInfluence: 0.20,
     calmPool: [NOTE.E5, NOTE.G5, NOTE.A5], tensePool: [NOTE.G5, NOTE.A5, NOTE.C6],
     oscType: 'triangle', baseVol: 0.032,
     attack: 0.008, sustain: 0.22, release: 0.15,
+    pan: -0.3,
   },
   {
-    // Synth lead — melodic hook over the rhythm
     name: 'lead',
     cycleSec: 5.5, paceInfluence: 0.40,
     calmPool: [NOTE.C5, NOTE.G5, NOTE.C6], tensePool: [NOTE.E5, NOTE.A5, NOTE.C6],
     oscType: 'sine', baseVol: 0.022,
     attack: 0.025, sustain: 0.45, release: 0.35,
+    pan: 0.15,
   },
   {
-    // Bright accent — sparse high shimmer
     name: 'accent',
     cycleSec: 4.2, paceInfluence: 0.25,
     calmPool: [NOTE.G5, NOTE.A5, NOTE.C6], tensePool: [NOTE.A5, NOTE.C6],
     oscType: 'sine', baseVol: 0.014,
     attack: 0.012, sustain: 0.28, release: 0.32,
+    pan: 0.4,
   },
   {
-    // Fast driving arp — the rhythmic heartbeat at 4× pace
     name: 'arp',
     cycleSec: 3, paceInfluence: 1.0,
     calmPool: [NOTE.C5, NOTE.E5, NOTE.G5, NOTE.A5, NOTE.C6],
     tensePool: [NOTE.C5, NOTE.D5, NOTE.E5, NOTE.G5],
     oscType: 'triangle', baseVol: 0.022,
     attack: 0.010, sustain: 0.18, release: 0.12,
-    paceMult: 4.0, streakSubdivide: false,  // already fast, no further subdivision
+    paceMult: 4.0, streakSubdivide: false,
+    pan: 0.0,
   },
 ];
 
 // ─── Theme: Lo-fi (fast piano + warm chords) ──────────────────
 //
-// Same warm triangle character as classic lo-fi but at ~2× the pace.
-// Shorter cycles and punchy sustains keep the jazzy note flavour while
-// matching the quick feel of active play.
+// Piano voice uses Karplus-Strong synthesis for a plucked-string feel.
+// Tape wobble (wow + flutter) adds subliminal cassette-recorder pitch drift.
+// tensePool excludes A4 (2.27ms delay — borderline for Karplus on some browsers).
 
 const VOICES_LOFI: VoiceConfig[] = [
   {
-    // Warm low chord — anchors the harmony, fires every ~3.5s
     name: 'lowChord',
     cycleSec: 3.5, paceInfluence: 0.25,
     calmPool: [NOTE.C4, NOTE.E4, NOTE.G4], tensePool: [NOTE.C4, NOTE.G4],
     oscType: 'triangle', baseVol: 0.030,
     attack: 0.3, sustain: 1.0, release: 1.2,
+    pan: 0.0,
   },
   {
-    // Piano pluck — quick attack, short punchy tail
     name: 'piano',
     cycleSec: 2.5, paceInfluence: 0.40,
-    calmPool: [NOTE.C5, NOTE.D5, NOTE.E5, NOTE.G5], tensePool: [NOTE.A4, NOTE.C5, NOTE.E5],
+    calmPool: [NOTE.C5, NOTE.D5, NOTE.E5, NOTE.G5], tensePool: [NOTE.C5, NOTE.E5],
     oscType: 'triangle', baseVol: 0.030,
     attack: 0.012, sustain: 0.45, release: 0.55,
+    pan: -0.1, tapeWobble: true, karplus: true,
   },
   {
-    // Hi melody — bright tone every ~4.5s
     name: 'hiNote',
     cycleSec: 4.5, paceInfluence: 0.50,
     calmPool: [NOTE.G5, NOTE.A5, NOTE.C6], tensePool: [NOTE.E5, NOTE.G5, NOTE.A5],
     oscType: 'sine', baseVol: 0.016,
     attack: 0.08, sustain: 0.6, release: 0.7,
+    pan: 0.3,
   },
   {
-    // Shimmer — sparse sparkle, now every ~6s
     name: 'shimmer',
     cycleSec: 6, paceInfluence: 0.15,
     calmPool: [NOTE.C5, NOTE.G5, NOTE.C6], tensePool: [NOTE.E5, NOTE.A5],
     oscType: 'sine', baseVol: 0.009,
     attack: 0.6, sustain: 1.5, release: 1.8,
+    pan: 0.0,
   },
   {
-    // Arp — 3.5× pace, snappier notes
     name: 'arp',
     cycleSec: 5, paceInfluence: 1.0,
     calmPool: [NOTE.C5, NOTE.E5, NOTE.G5, NOTE.A5],
@@ -182,6 +193,7 @@ const VOICES_LOFI: VoiceConfig[] = [
     oscType: 'sine', baseVol: 0.014,
     attack: 0.04, sustain: 0.28, release: 0.25,
     paceMult: 3.5, streakSubdivide: true,
+    pan: 0.0,
   },
 ];
 
@@ -199,11 +211,179 @@ let paceMs = 5000;
 let arpIndex = 0;
 let currentTheme: MusicTheme = 'ambient';
 
+// Effect chain (rebuilt per theme: ambientGain → sat → reverb → master)
+let satNode: WaveShaperNode | null = null;
+let convolver: ConvolverNode | null = null;
+let reverbDryGain: GainNode | null = null;
+let reverbWetGain: GainNode | null = null;
+
 const AMBIENT_BASE_VOL = 0.06;
 const LFO_DEPTH = 0.025;
 const DEFAULT_LFO_FREQ = 0.25;
 const REFERENCE_PACE_MS = 5000;
 const PACE_MULT = 2.5;
+
+// ─── Effect chain: saturation + reverb ────────────────────────
+
+/**
+ * Tanh soft-saturation lookup curve.
+ * Drive 1.5 = barely perceptible warmth.
+ * Drive 3.0 = clear cassette-tape character.
+ * Uses tanh normalised so output stays in [-1, 1].
+ */
+function buildSatCurve(drive: number): Float32Array<ArrayBuffer> {
+  const n = 256;
+  const curve = new Float32Array(new ArrayBuffer(n * 4));
+  const denom = Math.tanh(drive);
+  for (let i = 0; i < n; i++) {
+    const x = (i * 2) / (n - 1) - 1;
+    curve[i] = Math.tanh(drive * x) / denom;
+  }
+  return curve;
+}
+
+/**
+ * Algorithmic impulse response for ConvolverNode reverb.
+ * Exponential noise decay — no audio files required.
+ * durationSec controls room size; decayRate controls damping (higher = deader).
+ */
+function buildIR(ac: AudioContext, durationSec: number, decayRate: number): AudioBuffer {
+  const length = Math.ceil(ac.sampleRate * durationSec);
+  const ir = ac.createBuffer(2, length, ac.sampleRate);
+  for (let c = 0; c < 2; c++) {
+    const data = ir.getChannelData(c);
+    for (let i = 0; i < length; i++) {
+      data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / length, decayRate);
+    }
+  }
+  return ir;
+}
+
+type ReverbCfg = { duration: number; decay: number; wet: number; satDrive: number };
+
+function getThemeReverbCfg(): ReverbCfg {
+  switch (currentTheme) {
+    // Tight room reverb — keeps the punch in the rhythm
+    case 'pulse': return { duration: 0.3, decay: 8.0, wet: 0.12, satDrive: 1.5 };
+    // Small bedroom reverb — cozy, intimate; heavy saturation for cassette warmth
+    case 'lofi':  return { duration: 0.6, decay: 6.0, wet: 0.20, satDrive: 3.0 };
+    // Large hall reverb — Eno-style spatial diffusion
+    default:      return { duration: 2.5, decay: 3.0, wet: 0.38, satDrive: 2.0 };
+  }
+}
+
+/**
+ * Wire ambientGain → saturation → [dry + reverb wet] → master.
+ * Called once at startAmbient() and again on each theme switch.
+ */
+function buildEffectChain(ac: AudioContext, master: GainNode): void {
+  const cfg = getThemeReverbCfg();
+
+  satNode = ac.createWaveShaper();
+  satNode.curve = buildSatCurve(cfg.satDrive);
+  satNode.oversample = '2x';
+
+  convolver = ac.createConvolver();
+  convolver.buffer = buildIR(ac, cfg.duration, cfg.decay);
+
+  reverbDryGain = ac.createGain();
+  reverbDryGain.gain.value = 1 - cfg.wet;
+
+  reverbWetGain = ac.createGain();
+  reverbWetGain.gain.value = cfg.wet;
+
+  ambientGain!.connect(satNode);
+  satNode.connect(reverbDryGain);
+  satNode.connect(convolver);
+  convolver.connect(reverbWetGain);
+  reverbDryGain.connect(master);
+  reverbWetGain.connect(master);
+}
+
+/** Disconnect and null all effect chain nodes. */
+function tearDownEffectChain(): void {
+  if (satNode && ambientGain) {
+    try { ambientGain.disconnect(satNode); } catch { /* */ }
+  }
+  try { satNode?.disconnect(); }       catch { /* */ }
+  try { convolver?.disconnect(); }     catch { /* */ }
+  try { reverbDryGain?.disconnect(); } catch { /* */ }
+  try { reverbWetGain?.disconnect(); } catch { /* */ }
+  satNode = null;
+  convolver = null;
+  reverbDryGain = null;
+  reverbWetGain = null;
+}
+
+// ─── Karplus-Strong string synthesis ──────────────────────────
+
+/**
+ * Plucked string simulation for lo-fi piano voice.
+ * Algorithm: noise burst → DelayNode (tuned to 1/freq) → lowpass filter →
+ *            feedback gain (< 1.0) → back into delay → tap output.
+ *
+ * The lowpass in the feedback loop models energy loss per string reflection.
+ * feedback.gain controls sustain length (0.982 ≈ natural piano damping).
+ *
+ * Minimum safe frequency: ~350 Hz (3 ms delay — DelayNode floor on most browsers).
+ */
+function karplusPluck(freq: number, vol: number, pan: number): void {
+  if (!ambientGain) return;
+  const ac = getCtx();
+  const t = ac.currentTime;
+
+  const delayTime = Math.max(0.003, 1 / freq);
+  const duration = 2.0;
+  const burstDur = Math.max(delayTime * 3, 0.02);
+
+  // White noise excitation burst
+  const bufSize = Math.ceil(ac.sampleRate * burstDur);
+  const buf = ac.createBuffer(1, bufSize, ac.sampleRate);
+  const data = buf.getChannelData(0);
+  for (let i = 0; i < bufSize; i++) data[i] = Math.random() * 2 - 1;
+
+  const burst = ac.createBufferSource();
+  burst.buffer = buf;
+
+  // Delay tuned to fundamental period
+  const delay = ac.createDelay(0.1);
+  delay.delayTime.value = delayTime;
+
+  // Lowpass in feedback loop — models string damping (loses highs each bounce)
+  const filter = ac.createBiquadFilter();
+  filter.type = 'lowpass';
+  filter.frequency.value = Math.min(freq * 5, 4000);
+  filter.Q.value = 0.5;
+
+  // Feedback gain: 0.982 → each loop loses ~2% energy → decays over ~100 loops
+  const feedback = ac.createGain();
+  feedback.gain.value = 0.982;
+
+  const outGain = ac.createGain();
+  outGain.gain.setValueAtTime(vol, t);
+  outGain.gain.exponentialRampToValueAtTime(0.0001, t + duration);
+
+  const panner = ac.createStereoPanner();
+  panner.pan.value = Math.max(-1, Math.min(1, pan + (Math.random() - 0.5) * 0.08));
+
+  // String loop: burst → delay → filter → feedback → delay (loop)
+  //                                filter → outGain → panner → ambientGain (output tap)
+  burst.connect(delay);
+  delay.connect(filter);
+  filter.connect(feedback);
+  feedback.connect(delay);
+  filter.connect(outGain);
+  outGain.connect(panner);
+  panner.connect(ambientGain!);
+
+  burst.start(t);
+  burst.stop(t + burstDur + 0.01);
+
+  setTimeout(() => {
+    try { burst.disconnect(); delay.disconnect(); filter.disconnect(); } catch { /* */ }
+    try { feedback.disconnect(); outGain.disconnect(); panner.disconnect(); } catch { /* */ }
+  }, (duration + 0.3) * 1000);
+}
 
 // ─── Internal helpers ─────────────────────────────────────────
 
@@ -231,12 +411,18 @@ function getArpNote(cfg: VoiceConfig): number {
   return note;
 }
 
+/**
+ * Play one note via oscillator → gain → StereoPanner → ambientGain.
+ * Optionally applies tape wow/flutter LFOs to the oscillator's detune
+ * for cassette-recorder pitch drift (lo-fi piano only).
+ */
 function playNote(freq: number, cfg: VoiceConfig, volMult: number): void {
   const ac = getCtx();
   const t = ac.currentTime;
 
   const osc = ac.createOscillator();
   const gain = ac.createGain();
+  const panner = ac.createStereoPanner();
 
   osc.type = cfg.oscType;
   osc.frequency.value = freq;
@@ -250,12 +436,55 @@ function playNote(freq: number, cfg: VoiceConfig, volMult: number): void {
   gain.gain.setValueAtTime(peakVol, t + cfg.attack + cfg.sustain);
   gain.gain.exponentialRampToValueAtTime(0.0001, t + totalDur);
 
+  // Stereo placement: per-voice base pan ± slight per-note spatial jitter
+  const basePan = cfg.pan ?? 0;
+  panner.pan.value = Math.max(-1, Math.min(1, basePan + (Math.random() - 0.5) * 0.1));
+
+  // Tape wow + flutter for lo-fi cassette character
+  // Wow: slow (≈0.5 Hz) ±4 cents pitch drift
+  // Flutter: fast (≈8 Hz) ±1.5 cents micro-variation
+  let wowLfo: OscillatorNode | null = null;
+  let wowGain: GainNode | null = null;
+  let flutterLfo: OscillatorNode | null = null;
+  let flutterGain: GainNode | null = null;
+
+  if (cfg.tapeWobble) {
+    wowLfo = ac.createOscillator();
+    wowGain = ac.createGain();
+    wowLfo.type = 'sine';
+    wowLfo.frequency.value = 0.45 + Math.random() * 0.25;
+    wowGain.gain.value = 4; // ±4 cents
+    wowLfo.connect(wowGain);
+    wowGain.connect(osc.detune);
+
+    flutterLfo = ac.createOscillator();
+    flutterGain = ac.createGain();
+    flutterLfo.type = 'sine';
+    flutterLfo.frequency.value = 7 + Math.random() * 2.5;
+    flutterGain.gain.value = 1.5; // ±1.5 cents
+    flutterLfo.connect(flutterGain);
+    flutterGain.connect(osc.detune);
+
+    wowLfo.start(t);
+    flutterLfo.start(t);
+  }
+
   osc.connect(gain);
-  gain.connect(ambientGain!);
+  gain.connect(panner);
+  panner.connect(ambientGain!);
 
   osc.start(t);
   osc.stop(t + totalDur + 0.05);
-  osc.onended = () => { osc.disconnect(); gain.disconnect(); };
+
+  osc.onended = () => {
+    osc.disconnect();
+    gain.disconnect();
+    panner.disconnect();
+    if (wowLfo)    { try { wowLfo.stop(); }    catch { /* */ } wowLfo.disconnect(); }
+    if (wowGain)   { wowGain.disconnect(); }
+    if (flutterLfo) { try { flutterLfo.stop(); } catch { /* */ } flutterLfo.disconnect(); }
+    if (flutterGain) { flutterGain.disconnect(); }
+  };
 }
 
 function getVoiceVolMult(name: string, t: number): number {
@@ -319,11 +548,16 @@ function scheduleVoice(idx: number): void {
   const volMult = getVoiceVolMult(cfg.name, tension);
   if (volMult > 0.01) {
     const freq = isArp ? getArpNote(cfg) : lerpPool(cfg.calmPool, cfg.tensePool, tension);
-    playNote(freq, cfg, volMult);
 
-    // Octave doubling at high streak for brightness (arp only)
-    if (isArp && streak >= 8) {
-      playNote(freq * 2, cfg, volMult * 0.5);
+    if (cfg.karplus) {
+      // Karplus-Strong string pluck (lo-fi piano)
+      karplusPluck(freq, cfg.baseVol * volMult, cfg.pan ?? 0);
+    } else {
+      playNote(freq, cfg, volMult);
+      // Octave doubling at high streak for brightness (arp only)
+      if (isArp && streak >= 8) {
+        playNote(freq * 2, cfg, volMult * 0.5);
+      }
     }
   }
 
@@ -353,7 +587,6 @@ export function startAmbient(): void {
   ambientGain = ac.createGain();
   ambientGain.gain.setValueAtTime(0.0001, ac.currentTime);
   ambientGain.gain.linearRampToValueAtTime(AMBIENT_BASE_VOL, ac.currentTime + 3);
-  ambientGain.connect(master);
 
   lfo = ac.createOscillator();
   lfo.type = 'sine';
@@ -366,6 +599,9 @@ export function startAmbient(): void {
   lfo.connect(lfoGainNode);
   lfoGainNode.connect(ambientGain.gain);
   lfo.start();
+
+  // Effect chain: ambientGain → sat → reverb (dry+wet) → master
+  buildEffectChain(ac, master);
 
   running = true;
   paused = false;
@@ -392,11 +628,20 @@ export function stopAmbient(): void {
     const refGain = ambientGain;
     const refLfo = lfo;
     const refLfoGain = lfoGainNode;
+    const refSat = satNode;
+    const refConv = convolver;
+    const refDry = reverbDryGain;
+    const refWet = reverbWetGain;
+
     setTimeout(() => {
-      try { refLfo?.stop(); } catch { /* */ }
-      try { refLfo?.disconnect(); } catch { /* */ }
+      try { refLfo?.stop(); }           catch { /* */ }
+      try { refLfo?.disconnect(); }     catch { /* */ }
       try { refLfoGain?.disconnect(); } catch { /* */ }
-      try { refGain.disconnect(); } catch { /* */ }
+      try { refGain.disconnect(); }     catch { /* */ }
+      try { refSat?.disconnect(); }     catch { /* */ }
+      try { refConv?.disconnect(); }    catch { /* */ }
+      try { refDry?.disconnect(); }     catch { /* */ }
+      try { refWet?.disconnect(); }     catch { /* */ }
     }, 1200);
   }
 
@@ -408,6 +653,10 @@ export function stopAmbient(): void {
   ambientGain = null;
   lfo = null;
   lfoGainNode = null;
+  satNode = null;
+  convolver = null;
+  reverbDryGain = null;
+  reverbWetGain = null;
 }
 
 export function pauseAmbient(): void {
@@ -457,8 +706,8 @@ export function resumeAmbient(): void {
 }
 
 /**
- * Switch music style on the fly. No silence gap — old notes fade naturally,
- * new voices start immediately with a short stagger.
+ * Switch music style on the fly. Old notes fade naturally (no silence gap).
+ * Rebuilds the effect chain with the new theme's reverb + saturation settings.
  */
 export function setMusicTheme(theme: MusicTheme): void {
   if (theme === currentTheme) return;
@@ -467,9 +716,15 @@ export function setMusicTheme(theme: MusicTheme): void {
 
   if (!running || paused) return;
 
-  // Seamless switch: clear old timers, start new voices immediately
   for (const t of voiceTimers) clearTimeout(t);
   voiceTimers = [];
+
+  // Rebuild effect chain with new theme reverb / saturation settings
+  if (ambientGain) {
+    tearDownEffectChain();
+    buildEffectChain(getCtx(), getMaster());
+  }
+
   startVoiceTimers(300);
 }
 
@@ -493,4 +748,23 @@ export function setAmbientTension(t: number): void {
 
 export function setAmbientStreak(s: number): void {
   streak = Math.max(0, s);
+}
+
+/**
+ * Briefly duck the music volume when a prominent SFX fires.
+ * Prevents SFX from muddying against the ambient mix.
+ *
+ * @param amount     - target level as fraction of AMBIENT_BASE_VOL (0.5 = 50% duck)
+ * @param durationSec - total duration including recovery ramp
+ */
+export function duckMusic(amount: number = 0.5, durationSec: number = 0.3): void {
+  if (!ambientGain || !running || paused) return;
+  const ac = getCtx();
+  const now = ac.currentTime;
+  // LFO_DEPTH is 0.025; keep duck target above LFO swing floor to avoid inversion
+  const target = Math.max(AMBIENT_BASE_VOL * Math.max(amount, 0.45), LFO_DEPTH + 0.005);
+  ambientGain.gain.cancelScheduledValues(now);
+  ambientGain.gain.setValueAtTime(ambientGain.gain.value, now);
+  ambientGain.gain.linearRampToValueAtTime(target, now + 0.025);
+  ambientGain.gain.linearRampToValueAtTime(AMBIENT_BASE_VOL, now + durationSec);
 }
