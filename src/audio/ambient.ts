@@ -134,53 +134,54 @@ const VOICES_PULSE: VoiceConfig[] = [
   },
 ];
 
-// ─── Theme: Lo-fi (mellow piano + warm chords) ────────────────
+// ─── Theme: Lo-fi (fast piano + warm chords) ──────────────────
 //
-// Piano-like short attacks with warm sustained tails. Laid-back arp at 2×.
-// Note selection includes D5 for a subtle jazzy flavour.
+// Same warm triangle character as classic lo-fi but at ~2× the pace.
+// Shorter cycles and punchy sustains keep the jazzy note flavour while
+// matching the quick feel of active play.
 
 const VOICES_LOFI: VoiceConfig[] = [
   {
-    // Warm low chord — slow pad foundation
+    // Warm low chord — anchors the harmony, fires every ~3.5s
     name: 'lowChord',
-    cycleSec: 8, paceInfluence: 0.20,
+    cycleSec: 3.5, paceInfluence: 0.25,
     calmPool: [NOTE.C4, NOTE.E4, NOTE.G4], tensePool: [NOTE.C4, NOTE.G4],
     oscType: 'triangle', baseVol: 0.030,
-    attack: 0.5, sustain: 3, release: 2.5,
+    attack: 0.3, sustain: 1.0, release: 1.2,
   },
   {
-    // Piano pluck — short attack, warm tail
+    // Piano pluck — quick attack, short punchy tail
     name: 'piano',
-    cycleSec: 5.5, paceInfluence: 0.35,
+    cycleSec: 2.5, paceInfluence: 0.40,
     calmPool: [NOTE.C5, NOTE.D5, NOTE.E5, NOTE.G5], tensePool: [NOTE.A4, NOTE.C5, NOTE.E5],
-    oscType: 'triangle', baseVol: 0.028,
-    attack: 0.015, sustain: 1.2, release: 1.5,
+    oscType: 'triangle', baseVol: 0.030,
+    attack: 0.012, sustain: 0.45, release: 0.55,
   },
   {
-    // Airy melody note — occasional high bright tone
+    // Hi melody — bright tone every ~4.5s
     name: 'hiNote',
-    cycleSec: 10, paceInfluence: 0.45,
+    cycleSec: 4.5, paceInfluence: 0.50,
     calmPool: [NOTE.G5, NOTE.A5, NOTE.C6], tensePool: [NOTE.E5, NOTE.G5, NOTE.A5],
-    oscType: 'sine', baseVol: 0.015,
-    attack: 0.20, sustain: 2, release: 2,
+    oscType: 'sine', baseVol: 0.016,
+    attack: 0.08, sustain: 0.6, release: 0.7,
   },
   {
-    // Soft shimmer — sparse background texture
+    // Shimmer — sparse sparkle, now every ~6s
     name: 'shimmer',
-    cycleSec: 14, paceInfluence: 0.10,
+    cycleSec: 6, paceInfluence: 0.15,
     calmPool: [NOTE.C5, NOTE.G5, NOTE.C6], tensePool: [NOTE.E5, NOTE.A5],
-    oscType: 'sine', baseVol: 0.008,
-    attack: 1.5, sustain: 5, release: 4,
+    oscType: 'sine', baseVol: 0.009,
+    attack: 0.6, sustain: 1.5, release: 1.8,
   },
   {
-    // Gentle arp — relaxed, laid-back at 2× pace
+    // Arp — 3.5× pace, snappier notes
     name: 'arp',
     cycleSec: 5, paceInfluence: 1.0,
     calmPool: [NOTE.C5, NOTE.E5, NOTE.G5, NOTE.A5],
     tensePool: [NOTE.C5, NOTE.D5, NOTE.E5],
-    oscType: 'sine', baseVol: 0.012,
-    attack: 0.08, sustain: 0.6, release: 0.5,
-    paceMult: 2.0, streakSubdivide: true,
+    oscType: 'sine', baseVol: 0.014,
+    attack: 0.04, sustain: 0.28, release: 0.25,
+    paceMult: 3.5, streakSubdivide: true,
   },
 ];
 
