@@ -28,6 +28,8 @@ export function useDrag(
   const pieceRowsRef = useRef(0);
   const pieceColsRef = useRef(0);
   const lastGridRef = useRef<{ row: number | null; col: number | null }>({ row: null, col: null });
+  const rafIdRef = useRef(0);
+  const pendingPosRef = useRef<{ x: number; y: number } | null>(null);
 
   // Imperative overlay — no React involvement
   const overlayElRef = useRef<HTMLDivElement | null>(null);
@@ -40,6 +42,7 @@ export function useDrag(
   // Clean up on unmount
   useEffect(() => {
     return () => {
+      if (rafIdRef.current) cancelAnimationFrame(rafIdRef.current);
       const el = overlayElRef.current;
       if (el?.parentNode) el.parentNode.removeChild(el);
     };
@@ -267,9 +270,17 @@ export function useDrag(
       moveOverlay(clientX, clientY);
 
       if (LIVE_DRAG_PREVIEW_ENABLED) {
-        // Optional live board preview path (kept off in performance mode).
-        const { row, col, isValid } = computeGridPos(clientX, clientY, SNAP_RADIUS_DRAG);
-        updateGridState(row, col, isValid);
+        // Stash latest position; schedule ONE React update per animation frame
+        pendingPosRef.current = { x: clientX, y: clientY };
+        if (!rafIdRef.current) {
+          rafIdRef.current = requestAnimationFrame(() => {
+            rafIdRef.current = 0;
+            const pos = pendingPosRef.current;
+            if (!pos || !dragRef.current) return;
+            const { row, col, isValid } = computeGridPos(pos.x, pos.y, SNAP_RADIUS_DRAG);
+            updateGridState(row, col, isValid);
+          });
+        }
       }
     },
     [computeGridPos]
@@ -294,6 +305,10 @@ export function useDrag(
       onDrop(current.pieceIndex, finalRow, finalCol);
     }
 
+    // Cancel any pending ghost rAF before clearing state
+    if (rafIdRef.current) { cancelAnimationFrame(rafIdRef.current); rafIdRef.current = 0; }
+    pendingPosRef.current = null;
+
     removeOverlay();
     dragRef.current = null;
     rectRef.current = null;
@@ -306,6 +321,9 @@ export function useDrag(
   }, [onDrop, computeGridPos]);
 
   const cancelDrag = useCallback(() => {
+    if (rafIdRef.current) { cancelAnimationFrame(rafIdRef.current); rafIdRef.current = 0; }
+    pendingPosRef.current = null;
+
     removeOverlay();
     dragRef.current = null;
     rectRef.current = null;
