@@ -5,14 +5,14 @@ export const CLEAR_STAGGER_MS = 20; // delay per cell in cascade
 export const CLEAR_ANTICIPATION_MS = 80; // hit-stop + anticipation pulse before cascade
 
 export const PIECE_COLORS = {
-  blue: '#5B8DEF',
-  cyan: '#42C6EA',
-  red: '#EF5350',
-  orange: '#FFA726',
-  yellow: '#FFCA28',
-  green: '#66BB6A',
-  purple: '#AB47BC',
-  pink: '#EC407A',
+  blue: '#4B7BF5',
+  cyan: '#1DC4F4',
+  red: '#F43838',
+  orange: '#FF8C00',
+  yellow: '#FFD600',
+  green: '#3DD856',
+  purple: '#B83DEB',
+  pink: '#FF2D78',
 } as const;
 
 export const PIECE_COLOR_KEYS = Object.keys(PIECE_COLORS) as (keyof typeof PIECE_COLORS)[];

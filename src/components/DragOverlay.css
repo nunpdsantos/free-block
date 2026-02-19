@@ -22,9 +22,9 @@
 }
 
 .drag-cell {
-  border-radius: 4px;
+  border-radius: 3px;
   box-shadow:
-    inset 3px 3px 6px rgba(255, 255, 255, 0.35),
-    inset -3px -3px 6px rgba(0, 0, 0, 0.45),
-    0 4px 12px rgba(0, 0, 0, 0.3);
+    inset 2px 2px 0 rgba(255, 255, 255, 0.45),
+    inset -2px -2px 0 rgba(0, 0, 0, 0.55),
+    0 4px 12px rgba(0, 0, 0, 0.35);
 }
