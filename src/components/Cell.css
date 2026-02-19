@@ -2,34 +2,34 @@
   position: relative;
   width: var(--cell-size);
   height: var(--cell-size);
-  border-radius: 4px;
+  border-radius: 2px;
   background-color: var(--cell-empty);
   overflow: visible;
   contain: layout style;
 }
 
-/* Raised-tile 3D bevel — wide per-side bevels like Block Blast */
+/* Raised-tile 3D bevel — thick hard bevels, flat face */
 .cell--filled {
-  border-radius: 4px;
+  border-radius: 2px;
   box-shadow:
-    inset 0 3px 0 0 rgba(255, 255, 255, 0.4),
-    inset 0 -3px 0 0 rgba(0, 0, 0, 0.5),
-    inset 3px 0 0 0 rgba(255, 255, 255, 0.2),
-    inset -3px 0 0 0 rgba(0, 0, 0, 0.3);
+    inset 0 4px 0 0 rgba(255, 255, 255, 0.65),
+    inset 0 -4px 0 0 rgba(0, 0, 0, 0.75),
+    inset 3.5px 0 0 0 rgba(255, 255, 255, 0.35),
+    inset -3.5px 0 0 0 rgba(0, 0, 0, 0.5),
+    0 1px 3px rgba(0, 0, 0, 0.45);
   animation: cell-place 0.12s ease-out;
 }
 
-/* Face gradient — diagonal light-to-dark for depth */
+/* Flat face — no dome gradient, just a subtle top sheen for cohesion */
 .cell--filled::before {
   content: '';
   position: absolute;
   inset: 0;
-  border-radius: 4px;
+  border-radius: 2px;
   background: linear-gradient(
-    145deg,
-    rgba(255, 255, 255, 0.22) 0%,
-    transparent 45%,
-    rgba(0, 0, 0, 0.12) 100%
+    180deg,
+    rgba(255, 255, 255, 0.1) 0%,
+    transparent 30%
   );
   pointer-events: none;
 }
@@ -37,10 +37,10 @@
 /* Ghost — colored with pulse + glow */
 .cell--ghost-valid {
   background-color: var(--ghost-color, var(--ghost-valid)) !important;
-  border-radius: 4px;
+  border-radius: 2px;
   box-shadow:
     inset 0 0 0 1.5px rgba(255, 255, 255, 0.7),
-    0 0 10px 3px rgba(255, 255, 255, 0.2);
+    0 0 8px 2px rgba(255, 255, 255, 0.2);
   animation: ghost-pulse 0.8s ease-in-out infinite alternate;
 }
 .cell--ghost-valid::before {
@@ -123,7 +123,7 @@
   content: '';
   position: absolute;
   inset: -6px;
-  border-radius: 8px;
+  border-radius: 4px;
   background: radial-gradient(
     circle,
     rgba(255, 255, 255, 0.9) 0%,
