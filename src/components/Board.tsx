@@ -110,7 +110,8 @@ export const Board = memo(function Board({
 
   let boardClass = 'board';
   if (isDragging) boardClass += ' board--dragging';
-  if (dangerLevel >= 2) boardClass += ' board--danger';
+  if (dangerLevel >= 3) boardClass += ' board--critical';
+  else if (dangerLevel >= 2) boardClass += ' board--danger';
   else if (dangerLevel >= 1) boardClass += ' board--warning';
 
   return (

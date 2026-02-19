@@ -60,8 +60,10 @@
   pointer-events: none;
   z-index: 48;
   opacity: var(--pressure, 0);
-  box-shadow: inset 0 0 30px 12px rgba(0, 0, 0, 0.5);
-  transition: opacity 0.8s ease;
+  box-shadow:
+    inset 0 0 35px 14px rgba(0, 0, 0, 0.55),
+    inset 0 0 60px 25px rgba(180, 40, 40, calc(var(--pressure, 0) * 0.2));
+  transition: opacity 0.6s ease;
 }
 
 /* Streak glow — level 1 (streak 1-2) */
@@ -75,32 +77,32 @@
 .board-container--streak-hot {
   outline: 2.5px solid #FF9800;
   outline-offset: 2px;
-  box-shadow: 0 0 20px rgba(255, 152, 0, 0.3);
-  animation: streak-glow-hot 0.9s ease-in-out infinite alternate;
+  box-shadow: 0 0 24px rgba(255, 152, 0, 0.35);
+  animation: streak-glow-hot 0.7s ease-in-out infinite alternate;
 }
 
 /* Streak glow — level 3 (streak 5-7) */
 .board-container--streak-fire {
   outline: 3px solid #EF5350;
   outline-offset: 2px;
-  box-shadow: 0 0 28px rgba(239, 83, 80, 0.38);
-  animation: streak-glow-fire 0.6s ease-in-out infinite alternate;
+  box-shadow: 0 0 32px rgba(239, 83, 80, 0.45);
+  animation: streak-glow-fire 0.5s ease-in-out infinite alternate;
 }
 
 /* Streak glow — level 4 (streak 8-10) */
 .board-container--streak-whitehot {
   outline: 3.5px solid #FFB74D;
   outline-offset: 2px;
-  box-shadow: 0 0 32px rgba(255, 183, 77, 0.45);
-  animation: streak-glow-whitehot 0.45s ease-in-out infinite alternate;
+  box-shadow: 0 0 38px rgba(255, 183, 77, 0.5);
+  animation: streak-glow-whitehot 0.35s ease-in-out infinite alternate;
 }
 
 /* Streak glow — level 5 (streak 11+) */
 .board-container--streak-supernova {
   outline: 4px solid #FFFFFF;
   outline-offset: 2px;
-  box-shadow: 0 0 40px rgba(255, 255, 255, 0.5);
-  animation: streak-glow-supernova 0.35s ease-in-out infinite alternate;
+  box-shadow: 0 0 48px rgba(255, 255, 255, 0.6);
+  animation: streak-glow-supernova 0.25s ease-in-out infinite alternate;
 }
 
 /* Board dims when game is over */
@@ -119,17 +121,19 @@
   top: 40%;
   left: 50%;
   transform: translate(-50%, -50%);
-  font-size: 28px;
+  font-size: 38px;
   font-weight: 900;
   color: #fff;
   text-shadow:
-    0 0 12px rgba(255, 215, 64, 0.6),
-    0 2px 8px rgba(0, 0, 0, 0.5);
-  animation: score-pop-anim 0.8s ease-out forwards;
+    0 0 20px rgba(255, 215, 64, 0.8),
+    0 0 40px rgba(255, 215, 64, 0.3),
+    0 2px 8px rgba(0, 0, 0, 0.6);
+  animation: score-pop-anim 0.9s ease-out forwards;
   pointer-events: none;
   z-index: 55;
   text-align: center;
   line-height: 1.2;
+  letter-spacing: 1px;
 }
 
 @keyframes streak-glow {
@@ -196,12 +200,12 @@
   background: white;
   pointer-events: none;
   z-index: 100;
-  animation: screen-flash-anim 150ms ease-out forwards;
+  animation: screen-flash-anim 180ms ease-out forwards;
 }
 
 @keyframes screen-flash-anim {
   0% {
-    opacity: 0.1;
+    opacity: 0.18;
   }
   100% {
     opacity: 0;
@@ -254,14 +258,20 @@
 @keyframes score-pop-anim {
   0% {
     opacity: 0;
-    transform: translate(-50%, -40%) scale(0.5);
+    transform: translate(-50%, -35%) scale(0.3);
   }
-  25% {
+  15% {
     opacity: 1;
-    transform: translate(-50%, -50%) scale(1.15);
+    transform: translate(-50%, -50%) scale(1.25);
+  }
+  30% {
+    transform: translate(-50%, -52%) scale(0.95);
+  }
+  40% {
+    transform: translate(-50%, -54%) scale(1.05);
   }
   100% {
     opacity: 0;
-    transform: translate(-50%, -90%) scale(0.8);
+    transform: translate(-50%, -100%) scale(0.75);
   }
 }

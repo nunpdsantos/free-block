@@ -12,9 +12,11 @@
   font-weight: 900;
   color: var(--streak-glow);
   text-shadow:
-    0 0 16px rgba(255, 215, 64, 0.7),
-    0 2px 8px rgba(0, 0, 0, 0.5);
+    0 0 20px rgba(255, 215, 64, 0.8),
+    0 0 40px rgba(255, 215, 64, 0.3),
+    0 2px 8px rgba(0, 0, 0, 0.6);
   animation: celebration-anim 1.5s ease-out forwards;
+  letter-spacing: 1px;
 }
 
 /* Rainbow shimmer for multi-clears and special events */
@@ -35,45 +37,48 @@
 
 /* Level-based size escalation */
 .celebration-text--level-1 {
-  font-size: 28px;
+  font-size: 32px;
 }
 
 .celebration-text--level-2 {
-  font-size: 34px;
-}
-
-.celebration-text--level-3 {
   font-size: 40px;
 }
 
+.celebration-text--level-3 {
+  font-size: 48px;
+}
+
 .celebration-text--level-4 {
-  font-size: 46px;
-  filter: drop-shadow(0 0 16px rgba(255, 215, 64, 0.5))
-          drop-shadow(0 2px 8px rgba(0, 0, 0, 0.5));
+  font-size: 56px;
+  filter: drop-shadow(0 0 20px rgba(255, 215, 64, 0.6))
+          drop-shadow(0 2px 10px rgba(0, 0, 0, 0.6));
 }
 
 /* ALL CLEAR — biggest, bolder */
 .celebration-text--allclear {
-  font-size: 50px;
-  letter-spacing: 3px;
+  font-size: 62px;
+  letter-spacing: 4px;
 }
 
 @keyframes celebration-anim {
   0% {
     opacity: 0;
-    transform: scale(0.2) rotate(-8deg);
+    transform: scale(0.15) rotate(-10deg);
   }
-  12% {
+  10% {
     opacity: 1;
-    transform: scale(1.35) rotate(3deg);
+    transform: scale(1.45) rotate(3deg);
   }
-  22% {
-    transform: scale(0.9) rotate(-2deg);
+  18% {
+    transform: scale(0.85) rotate(-3deg);
   }
-  32% {
-    transform: scale(1.1) rotate(1deg);
+  26% {
+    transform: scale(1.15) rotate(1.5deg);
   }
-  40% {
+  34% {
+    transform: scale(0.95) rotate(-0.5deg);
+  }
+  42% {
     transform: scale(1) rotate(0deg);
   }
   75% {
@@ -82,7 +87,7 @@
   }
   100% {
     opacity: 0;
-    transform: scale(0.7) translateY(-30px) rotate(-5deg);
+    transform: scale(0.6) translateY(-35px) rotate(-5deg);
   }
 }
 

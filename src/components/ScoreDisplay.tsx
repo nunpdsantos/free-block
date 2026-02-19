@@ -44,16 +44,17 @@ export function ScoreDisplay({ score, topScore, streak }: ScoreDisplayProps) {
   const scoreElRef = useRef<HTMLDivElement>(null);
   const prevScoreBump = useRef(score);
 
-  // Scale bump on score increase via WAAPI
+  // Scale bump on score increase via WAAPI — punchier overshoot
   useEffect(() => {
     if (score > prevScoreBump.current && scoreElRef.current) {
       scoreElRef.current.animate(
         [
-          { transform: 'scale(1)' },
-          { transform: 'scale(1.08)' },
-          { transform: 'scale(1)' },
+          { transform: 'scale(1)', filter: 'brightness(1)' },
+          { transform: 'scale(1.18)', filter: 'brightness(1.3)' },
+          { transform: 'scale(0.97)', filter: 'brightness(1)' },
+          { transform: 'scale(1)', filter: 'brightness(1)' },
         ],
-        { duration: 200, easing: 'ease-out' },
+        { duration: 250, easing: 'ease-out' },
       );
     }
     prevScoreBump.current = score;
@@ -76,7 +77,7 @@ export function ScoreDisplay({ score, topScore, streak }: ScoreDisplayProps) {
           <div className={`score-value${isBeatingBest ? ' score-value--beating-best' : ''}`} ref={scoreElRef}>{animatedScore.toLocaleString()}</div>
         </div>
         {streak > 0 && (
-          <div className="streak-badge">{streak}x</div>
+          <div className={`streak-badge${streak >= 5 ? ' streak-badge--fire' : streak >= 3 ? ' streak-badge--hot' : ''}`}>{streak}x</div>
         )}
         <div className="score-section">
           {isBeatingBest ? (

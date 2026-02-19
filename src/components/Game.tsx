@@ -295,7 +295,7 @@ export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit
 
       // Danger level for audio thinning — compute from current board
       const fr = getBoardFillRatio(state.board);
-      const dl = fr >= 0.85 ? 2 : fr >= 0.75 ? 1 : 0;
+      const dl = fr >= 0.82 ? 2 : fr >= 0.72 ? 1 : 0;
       playPlace(dl);
 
       // Sparkle particles at placed cell positions
@@ -392,11 +392,11 @@ export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit
           const el = boardElRef.current;
           if (el) {
             let px: number, py: number, dur: number;
-            if (allClear)                      { px = 6;   py = 3;   dur = 450; }
-            else if (linesCleared >= 4)         { px = 5;   py = 2;   dur = 380; }
-            else if (linesCleared >= 3)         { px = 3.5; py = 1;   dur = 320; }
-            else if (linesCleared >= 2)         { px = 2.5; py = 0.5; dur = 280; }
-            else                                { px = 1;   py = 0;   dur = 200; }
+            if (allClear)                      { px = 8;   py = 4;   dur = 450; }
+            else if (linesCleared >= 4)         { px = 6;   py = 2.5; dur = 380; }
+            else if (linesCleared >= 3)         { px = 4.5; py = 1.5; dur = 320; }
+            else if (linesCleared >= 2)         { px = 3;   py = 1;   dur = 280; }
+            else                                { px = 1.5; py = 0.3; dur = 200; }
             el.animate([
               { transform: 'translate(0, 0)' },
               { transform: `translate(${px}px, ${-py}px)` },
@@ -577,7 +577,7 @@ export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit
 
   // Board danger level based on fill ratio
   const fillRatio = useMemo(() => getBoardFillRatio(displayBoard), [displayBoard]);
-  const dangerLevel = fillRatio >= 0.85 ? 2 : fillRatio >= 0.75 ? 1 : 0;
+  const dangerLevel = fillRatio >= 0.90 ? 3 : fillRatio >= 0.82 ? 2 : fillRatio >= 0.72 ? 1 : 0;
 
   // Deferred drag state — ghost cells update instantly, line preview catches up
   // without blocking pointer frames

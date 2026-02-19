@@ -82,14 +82,28 @@
   to { opacity: 1; }
 }
 
-/* Streak badge — floating between score sections */
+/* Streak badge — floating between score sections, size scales with streak */
 .streak-badge {
   align-self: center;
-  font-size: 18px;
+  font-size: 22px;
   font-weight: 900;
   color: var(--streak-glow);
-  text-shadow: 0 0 10px var(--streak-glow), 0 0 20px rgba(255, 215, 64, 0.3);
-  animation: streak-pulse 0.8s ease-in-out infinite alternate;
+  text-shadow: 0 0 12px var(--streak-glow), 0 0 24px rgba(255, 215, 64, 0.4);
+  animation: streak-pulse 0.7s ease-in-out infinite alternate;
+}
+
+.streak-badge--hot {
+  font-size: 26px;
+  color: #FF9800;
+  text-shadow: 0 0 14px rgba(255, 152, 0, 0.7), 0 0 28px rgba(255, 152, 0, 0.3);
+  animation: streak-pulse 0.5s ease-in-out infinite alternate;
+}
+
+.streak-badge--fire {
+  font-size: 30px;
+  color: #EF5350;
+  text-shadow: 0 0 16px rgba(239, 83, 80, 0.7), 0 0 32px rgba(239, 83, 80, 0.3);
+  animation: streak-pulse 0.4s ease-in-out infinite alternate;
 }
 
 @keyframes streak-pulse {
@@ -97,7 +111,7 @@
     transform: scale(1);
   }
   to {
-    transform: scale(1.12);
+    transform: scale(1.15);
   }
 }
 
