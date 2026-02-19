@@ -25,7 +25,7 @@ export const COMBO_INCREMENT = 10;         // +10 per additional simultaneous li
 export const STREAK_MULTIPLIER_INCREMENT = 0.5;
 
 // Revive
-export const REVIVES_PER_GAME = 3;
+export const REVIVES_PER_GAME = 2;
 export const REVIVE_CELLS_CLEARED = 20;
 
 // Undo

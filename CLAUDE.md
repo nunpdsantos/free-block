@@ -2,28 +2,29 @@
 
 ## Project
 
-**Name:** Gridlock
+**Name:** Free Block
 **Stack:** React 19, TypeScript, Vite 7, CSS (no UI library), Firebase (Auth + Firestore)
-**Repo:** github.com/nunpdsantos/gridlock
+**Repo:** github.com/nunpdsantos/free-block
 **Live:** gridlock-gilt.vercel.app
 **PWA:** Installable on mobile via manifest.json + vite-plugin-pwa
 
 ## Commands
 
 - `npm run build` — TypeScript check + Vite production build (also generates service worker)
+- CI: GitHub Actions runs `npm ci && npm run build` on push to main and PRs (`.github/workflows/ci.yml`)
 
 ## Architecture
 
 ### Game engine (`src/game/`)
-- `constants.ts` — All tunable values: grid size, scoring, DDA thresholds, piece colors, revive limit. `CELL_SIZE`/`CELL_GAP`/`FINGER_OFFSET` remain as static max/fallback values — runtime sizing comes from CSS vars
+- `constants.ts` — All tunable values: grid size, scoring (POINTS_PER_CELL_PLACED=1, POINTS_PER_CELL=10, COMBO_BASE_BONUS=20, COMBO_INCREMENT=10, STREAK_MULTIPLIER_INCREMENT=0.5), DDA thresholds, piece colors (8 high-saturation colors), revive limit. Runtime sizing comes from CSS vars.
 - `responsive.ts` — `getCSSPx(name)` reads resolved CSS custom property values from `:root`
-- `types.ts` — Board, PieceShape, GameState, GameAction, UndoSnapshot, GameMode, DailyResult, LeaderboardEntry, GlobalLeaderboardEntry, PlayerStats, AchievementProgress, DailyStreak
-- `logic.ts` — Pure functions: placement, line clearing, scoring, revive cell removal
+- `types.ts` — Board, PieceShape, GameState (includes `turnHadClear` for per-tray streak tolerance), GameAction, UndoSnapshot, GameMode, DailyResult, LeaderboardEntry, GlobalLeaderboardEntry, PlayerStats, AchievementProgress, DailyStreak
+- `logic.ts` — Pure functions: placement, line clearing, scoring (`calculateScore`: base + additive combo bonus × streak multiplier), revive cell removal
 - `pieces.ts` — 15 piece families (37 orientations), weighted random selection with DDA, piece-fit validation (20 retries + 1×1 fallback), `generateDailyPieces` for seeded daily mode, `generateRevivePieces` for pity-weighted selection without fit-check (revive carves its own space)
-- `reducer.ts` — useReducer state machine: PLACE_PIECE, NEW_GAME, NEW_DAILY_GAME, REVIVE, DISMISS_CELEBRATION (UNDO action exists but disabled via UNDOS_PER_GAME=0)
+- `reducer.ts` — useReducer state machine: PLACE_PIECE (awards placement points + clear points, per-tray streak tolerance via `turnHadClear`), NEW_GAME, NEW_DAILY_GAME, REVIVE, DISMISS_CELEBRATION (UNDO action exists but disabled via UNDOS_PER_GAME=0)
 - `themes.ts` — 5 color themes (Classic, Midnight, Ocean, Sunset, Neon) with per-theme CSS variables, background palettes, and optional `requiredAchievement` for unlock gating
-- `random.ts` — Mulberry32 seeded PRNG, date-to-seed conversion, day number utilities, `getYesterdayDateStr()`
-- `achievements.ts` — 20 achievement definitions (bronze/silver/gold tiers) with optional `progress()` for trackable indicators, `checkAchievements()` returns newly unlocked IDs, `getAchievementById()` lookup. Endgame tier: Mythic (50k), Line Legend (1k lines), Veteran (100 games), Daily Legend (30-day streak), Unstoppable (15-streak)
+- `random.ts` — Mulberry32 seeded PRNG, date-to-seed conversion, day number utilities (uses `Date.UTC` for timezone safety), `getYesterdayDateStr()`
+- `achievements.ts` — 20 achievement definitions (bronze/silver/gold tiers) with optional `progress()` for trackable indicators, `checkAchievements()` returns newly unlocked IDs, `getAchievementById()` lookup. Endgame tier: Mythic (35k), Line Legend (1k lines), Veteran (100 games), Daily Legend (30-day streak), Unstoppable (15-streak)
 
 ### Firebase (`src/firebase/`)
 - `config.ts` — Firebase init (`initializeApp`, `getAuth`, `initializeFirestore` with `persistentLocalCache` for offline PWA support). Exports `auth` + `db`. Emulator support via `VITE_USE_EMULATORS=true` env var.
@@ -41,15 +42,18 @@
 ### Key patterns
 - Game state is a `useReducer` — all mutations go through `reducer.ts`
 - Responsive scaling: CSS custom properties in `:root` (`--cell-size`, `--cell-gap`, `--board-padding`, `--preview-cell`, `--finger-offset`) drive all board/piece/drag sizing. `--cell-size: min(48px, calc((100vw - 58px) / 8), calc((100dvh - 170px) / 10))` caps at 48px on large viewports, scales down on narrow screens AND short viewports (the `/10` accounts for board + tray height together). JS reads resolved values via `getCSSPx()` from `responsive.ts` — uses a persistent hidden element to resolve CSS expressions (`calc`, `min`, `clamp`) that `parseFloat` can't parse. Board, Cell, PiecePreview, PieceTray CSS all use `var()` references — no hardcoded pixel sizes for layout.
-- Drag system (`hooks/useDrag.ts`) caches `getBoundingClientRect` + computed padding + responsive CSS values (`totalCellRef`, `fingerOffsetRef`) once per drag start, batches updates via `requestAnimationFrame`, skips redundant ghost re-renders
-- Line-clear animations use a two-phase approach: visual animation plays first (via `clearingCells` Map with per-cell stagger delays + CSS), then `dispatch` fires after animation completes
+- Drag system (`hooks/useDrag.ts`) — imperative DOM overlay (zero React rendering on pointer move), caches `getBoundingClientRect` + computed padding + responsive CSS values once per drag start. Magnetic snap: `findNearestValidPlacement` searches expanding rings around raw grid position (SNAP_RADIUS_DRAG=1 during move, SNAP_RADIUS_DROP=2 on release). Haptic click (4ms vibrate) fires when ghost snaps to valid position. Uses `pointerrawupdate` when available + coalesced events for lowest-latency tracking. `useDeferredValue` on dragState/ghostCells keeps line-completion preview non-blocking
+- Block design: raised-tile 3D bevel matching Block Blast — wide per-side inset `box-shadow` (3px top/bottom, 3px left/right) + diagonal face gradient (`linear-gradient(145deg, ...)`), border-radius 4px. DragOverlay matches with outer drop shadow. PiecePreview uses scaled-down 2px bevels
+- Line-clear animations use a three-phase approach: (1) anticipation pulse (all clearing cells flash simultaneously, 80ms), (2) staggered cascade (per-cell delays via `clearingCells` Map + CSS animation-delay), (3) dispatch fires after total animation completes. Post-clear settle bounce on adjacent surviving cells
 - Piece generation uses 5 multiplicative DDA systems: score ramp, pity timer, solution boost, streak pushback, board-state awareness
-- Revive (3 per game) uses piece-aware surgical clearing: generates 3 pity-weighted pieces first (`generateRevivePieces`), then `clearCellsForRevive` finds the minimum cells to remove so each piece can fit (greedy sequential — clears for piece 1, then piece 2 may already fit from piece 1's clearing, etc.). Typical removal: 5-12 cells vs old approach of 16-24. Resets streak to 0 and sets movesSinceLastClear to PITY_THRESHOLD. `postReviveGrace` penalty: if player can't place all 3 post-revive pieces, loses 1 extra revive (not all). GameOver button shows remaining count: "Revive (2 left)"
+- Revive (2 per game) uses piece-aware surgical clearing: generates 3 pity-weighted pieces first (`generateRevivePieces`), then `clearCellsForRevive` finds the minimum cells to remove so each piece can fit (greedy sequential — clears for piece 1, then piece 2 may already fit from piece 1's clearing, etc.). Typical removal: 5-12 cells vs old approach of 16-24. Resets streak to 0 and sets movesSinceLastClear to PITY_THRESHOLD. `postReviveGrace` penalty: if player can't place all 3 post-revive pieces, loses 1 extra revive (not all). GameOver button shows remaining count: "Revive (2 left)"
 - Theme system: `App.tsx` stores `themeId` in localStorage, applies CSS vars via `applyTheme()`, passes to Game → PauseMenu. 3 themes locked behind achievements: Ocean (Clean Slate), Sunset (Inferno), Neon (No Safety Net). Classic + Midnight always free. Falls back to Classic if selected theme is locked. PauseMenu swatches show lock icon + tooltip on locked themes.
 - Background palette cycles through 6 theme-specific colors as score increases, using CSS variable transitions. Each palette has tense variants (`bgTense`/`bgDarkTense`); tension signal interpolates toward them via `color-mix(in oklch, ...)`
-- Tension-reactive visuals: `tension` (0-1) derived from `movesSinceLastClear` (60%) + `fillRatio` (40%) drives background desaturation, ambient particle speed/opacity/hue shift, and clear burst particles. `pressure` (0-1, with dead zone) drives board-edge vignette via `--pressure` CSS var
-- Streak glow has 5 tiers: streak (1-2), hot (3-4), fire (5-7), whitehot (8-10), supernova (11+). All use static `box-shadow` + animated `outline-color` only (no animated box-shadow)
-- Score counter animates smoothly via `useAnimatedNumber` hook (ease-out cubic over 300ms)
+- Board danger states: 3-tier system based on fill ratio — warning (72%+: orange glow, 2s breathing pulse), danger (82%+: red overlay, 1.2s breathing, 0.8s pulse), critical (90%+: intense red overlay, 0.7s breathing, 0.5s pulse). CSS classes `board--warning`/`board--danger`/`board--critical` with breathing scale animations
+- Tension-reactive visuals: `tension` (0-1) derived from `movesSinceLastClear` (60%) + `fillRatio` (40%) drives background desaturation, ambient particle speed/opacity/hue shift, and clear burst particles. `pressure` (0-1, with dead zone at 0.25) drives board-edge vignette via `--pressure` CSS var with red tint layer
+- Streak glow has 5 tiers: streak (1-2), hot (3-4), fire (5-7), whitehot (8-10), supernova (11+). All use static `box-shadow` + animated `outline-color` only (no animated box-shadow). Streak badge in ScoreDisplay scales with tier (22px base / 26px hot / 30px fire) with color-coded pulse
+- Score counter animates smoothly via `useAnimatedNumber` hook (ease-out cubic over 300ms). Score bump uses WAAPI (scale 1.18 + brightness 1.3 overshoot). Score pop overlay: 38px bold with double-layer gold glow and bouncy slam animation
+- Scoring: placement points (piece.coords.length × POINTS_PER_CELL_PLACED) on every placement + clear points (base + additive combo + streak multiplier) when lines clear. Per-tray streak tolerance: non-clearing placements don't break streak; streak only resets when a full tray of 3 pieces produces zero clears
 - `pieceGeneration` counter in game state drives piece tray entrance animations (React key change → remount → CSS animation)
 - Undo system: disabled (UNDOS_PER_GAME=0). Infrastructure remains — PLACE_PIECE snapshots only when undosRemaining > 0, UNDO restores snapshot. Re-enable by setting constant > 0.
 - Daily challenge: seeded PRNG (mulberry32) ensures identical piece sequence per date, no DDA/revive/undo. Resets at local midnight.
@@ -92,7 +96,8 @@ AchievementToast (global, renders across all screens)
 - `DragOverlay.tsx` and `PiecePreview.tsx` call `getCSSPx()` on every render (not cached) since they re-render on pointer move / piece change — values resolve from live CSS so orientation changes work automatically. `getCSSPx` uses a persistent hidden `<div>` to resolve CSS expressions (calc/min/clamp) that `parseFloat` alone cannot parse
 - Background palette effect sets `--bg`/`--bg-dark` on `document.documentElement` during gameplay (may use `color-mix(in oklch, ...)` when tension > 0); resets to theme default on game exit
 - `clearingCells` is a `Map<string, number>` (key → delay in ms), not a Set — the delay drives staggered cascade animation via `animation-delay` on each cell
-- `CLEAR_ANIMATION_MS` (600ms) is the per-cell animation duration; total clear time = `CLEAR_ANIMATION_MS + (GRID_SIZE - 1) * CLEAR_STAGGER_MS`
+- `CLEAR_ANIMATION_MS` (450ms) is the per-cell animation duration; total clear time = `CLEAR_ANTICIPATION_MS + CLEAR_ANIMATION_MS + (GRID_SIZE - 1) * CLEAR_STAGGER_MS`
+- Cell CSS uses `contain: layout style` for paint isolation — no `will-change` on base cells (only added during clearing/shatter animations)
 - PWA service worker is auto-generated by vite-plugin-pwa on build — no manual sw.js file
 - Daily mode uses `mulberry32(seed + pieceGeneration)` for each tray refresh — deterministic regardless of move order. Both `getTodayDateStr()` and `getDayNumber()` use local time, not UTC.
 - Volume slider persists to `gridlock-volume` (0-100); synth master GainNode applies it in real time
