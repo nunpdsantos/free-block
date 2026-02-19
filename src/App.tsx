@@ -349,13 +349,15 @@ export default function App() {
         return next;
       });
 
-      // Save to local leaderboard
-      handleSaveScore(score);
+      // Save to local leaderboard (classic only)
+      if (mode === 'classic') {
+        handleSaveScore(score);
+      }
 
-      // Submit to global Firestore leaderboard
+      // Submit to global Firestore leaderboard (classic only)
       const uid = user?.uid ?? null;
-      if (uid && displayName && score > 0) {
-        submitScore(uid, displayName, score, mode).catch((err) => {
+      if (uid && displayName && score > 0 && mode === 'classic') {
+        submitScore(uid, displayName, score, 'classic').catch((err) => {
           console.error('[Gridlock] Score submit failed:', err);
         });
       }

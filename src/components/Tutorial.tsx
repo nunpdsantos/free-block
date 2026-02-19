@@ -24,20 +24,20 @@ const STEPS = [
     color: PIECE_COLORS.green,
   },
   {
-    title: 'Be Fast',
-    description: 'Speed is everything. Clear lines within 3 seconds for 3x points. Slow down past 10 seconds and your score drops. Past 20 seconds you earn almost nothing.',
-    blocks: 'speed',
+    title: 'Use All 3 Pieces',
+    description: 'A new tray appears only after you place all three pieces. You can choose the order, but you cannot skip any piece.',
+    blocks: 'tray',
     color: PIECE_COLORS.orange,
   },
   {
     title: 'Build Streaks',
-    description: 'Every consecutive placement that clears a line builds your streak multiplier \u2014 up to 8x. Miss a clear and the streak resets. Streaks stack with speed bonuses.',
+    description: 'Every consecutive placement that clears a line builds your streak multiplier. Miss a clear and the streak resets.',
     blocks: 'combo',
     color: PIECE_COLORS.yellow,
   },
   {
     title: 'Revive & Game Over',
-    description: 'No pieces fit? Use a revive to clear space and keep going \u2014 you get 2 per game. When revives run out, the game ends. Plan ahead!',
+    description: 'No pieces fit? Use a revive to clear random cells and get a fresh tray — you get 3 per game. When revives run out, the game ends.',
     blocks: 'gameover',
     color: PIECE_COLORS.red,
   },
@@ -57,21 +57,21 @@ function StepIllustration({ step }: { step: typeof STEPS[number] }) {
     );
   }
 
-  if (step.blocks === 'speed') {
+  if (step.blocks === 'tray') {
     return (
       <div className="tutorial-illustration">
         <div className="tutorial-speed">
           <div className="tutorial-speed-row">
-            <span className="tutorial-speed-label tutorial-speed-label--fast">&#9889; &lt; 3s</span>
-            <span className="tutorial-speed-value tutorial-speed-value--fast">3.0x</span>
+            <span className="tutorial-speed-label">Piece 1</span>
+            <span className="tutorial-speed-value">Place</span>
           </div>
           <div className="tutorial-speed-row">
-            <span className="tutorial-speed-label">~10s</span>
-            <span className="tutorial-speed-value">1.0x</span>
+            <span className="tutorial-speed-label">Piece 2</span>
+            <span className="tutorial-speed-value">Place</span>
           </div>
           <div className="tutorial-speed-row">
-            <span className="tutorial-speed-label tutorial-speed-label--slow">&gt; 20s</span>
-            <span className="tutorial-speed-value tutorial-speed-value--slow">0.3x</span>
+            <span className="tutorial-speed-label">Piece 3</span>
+            <span className="tutorial-speed-value">New Tray</span>
           </div>
         </div>
       </div>
@@ -111,7 +111,7 @@ function StepIllustration({ step }: { step: typeof STEPS[number] }) {
               />
             ))}
           </div>
-          <div className="tutorial-revive-badge">Revive (2)</div>
+          <div className="tutorial-revive-badge">Revive (3)</div>
         </div>
       </div>
     );

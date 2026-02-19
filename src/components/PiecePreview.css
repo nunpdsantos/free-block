@@ -6,7 +6,7 @@
   min-height: calc(var(--preview-cell) * 3 + var(--cell-gap) * 2 + 4px);
   cursor: grab;
   user-select: none;
-  transition: transform 0.15s ease, opacity 0.15s ease;
+  transition: none;
   animation: piece-enter 0.3s ease-out backwards;
 }
 
@@ -20,8 +20,9 @@
 }
 
 .piece-preview--dragging {
-  opacity: 0.3;
-  transform: scale(0.9);
+  opacity: 0.15;
+  transform: scale(0.92);
+  transition: none;
 }
 
 .preview-cell {

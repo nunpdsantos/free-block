@@ -11,7 +11,10 @@ type PiecePreviewProps = {
     piece: PieceShape,
     pieceIndex: number,
     clientX: number,
-    clientY: number
+    clientY: number,
+    grabFracX: number,
+    grabFracY: number,
+    pointerType: string
   ) => void;
   isDragging: boolean;
 };
@@ -26,7 +29,12 @@ export const PiecePreview = memo(function PiecePreview({
     (e: React.PointerEvent) => {
       if (!piece) return;
       e.preventDefault();
-      onPointerDown(piece, pieceIndex, e.clientX, e.clientY);
+      const gridEl = e.currentTarget.querySelector('.preview-grid');
+      const rect = (gridEl as HTMLDivElement | null)?.getBoundingClientRect()
+        ?? e.currentTarget.getBoundingClientRect();
+      const grabFracX = rect.width > 0 ? (e.clientX - rect.left) / rect.width : 0.5;
+      const grabFracY = rect.height > 0 ? (e.clientY - rect.top) / rect.height : 0.5;
+      onPointerDown(piece, pieceIndex, e.clientX, e.clientY, grabFracX, grabFracY, e.pointerType);
     },
     [piece, pieceIndex, onPointerDown]
   );

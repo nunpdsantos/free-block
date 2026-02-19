@@ -5,13 +5,29 @@
   z-index: 1000;
   pointer-events: none;
   will-change: transform;
-  opacity: 0.85;
+  opacity: 1;
+  filter: drop-shadow(0 6px 16px rgba(0, 0, 0, 0.35));
+  contain: layout paint style;
+}
+
+.drag-grid {
+  animation: drag-lift 0.15s ease-out;
+}
+
+@keyframes drag-lift {
+  from {
+    transform: scale(0.55);
+    opacity: 0.6;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 .drag-cell {
-  border-radius: 5px;
+  border-radius: 4px;
   box-shadow:
-    inset 3px 3px 6px rgba(255, 255, 255, 0.3),
-    inset -3px -3px 6px rgba(0, 0, 0, 0.4),
-    0 6px 16px rgba(0, 0, 0, 0.5);
+    inset 3px 3px 6px rgba(255, 255, 255, 0.35),
+    inset -3px -3px 6px rgba(0, 0, 0, 0.45);
 }

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { STREAK_MULTIPLIER_INCREMENT, STREAK_MULTIPLIER_CAP } from '../game/constants';
+import { STREAK_MULTIPLIER_INCREMENT } from '../game/constants';
 import './ScoreDisplay.css';
 
 type ScoreDisplayProps = {
@@ -58,7 +58,7 @@ export function ScoreDisplay({ score, topScore, streak }: ScoreDisplayProps) {
     }
     prevScoreBump.current = score;
   }, [score]);
-  const multiplier = Math.min(1 + streak * STREAK_MULTIPLIER_INCREMENT, STREAK_MULTIPLIER_CAP);
+  const multiplier = 1 + streak * STREAK_MULTIPLIER_INCREMENT;
   const fillPct = Math.min(streak / 5, 1) * 100;
 
   // Progress toward personal best

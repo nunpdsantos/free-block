@@ -6,3 +6,7 @@
   padding: 16px;
   min-height: calc(var(--preview-cell) * 3 + var(--cell-gap) * 2 + 32px);
 }
+
+.piece-tray--dragging .preview-grid {
+  animation: none !important;
+}

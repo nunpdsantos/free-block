@@ -16,8 +16,7 @@
   --cell-size: min(48px, calc((100vw - 58px) / 8), calc((100dvh - 170px) / 10));
   --cell-gap: 2px;
   --board-padding: 6px;
-  --preview-cell: calc(var(--cell-size) * 0.583);
-  --finger-offset: clamp(18px, calc(var(--cell-size) * 0.62), 30px);
+  --preview-cell: calc(var(--cell-size) * 0.45);
 
   --bg: #4A5899;
   --bg-dark: #3D4A80;

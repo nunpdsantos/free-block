@@ -2,7 +2,7 @@ export const GRID_SIZE = 8;
 export const CELL_SIZE = 48; // px
 export const CELL_GAP = 2; // px
 export const FINGER_OFFSET = 40; // px upward on mobile
-export const CLEAR_ANIMATION_MS = 400;
+export const CLEAR_ANIMATION_MS = 450;
 export const CLEAR_STAGGER_MS = 20; // delay per cell in cascade
 export const CLEAR_ANTICIPATION_MS = 80; // hit-stop + anticipation pulse before cascade
 
@@ -24,23 +24,23 @@ export const POINTS_PER_CELL = 10;
 export const COMBO_BASE_BONUS = 20;
 export const COMBO_INCREMENT = 10;
 export const STREAK_MULTIPLIER_INCREMENT = 0.5;
-export const STREAK_MULTIPLIER_CAP = 8.0;
 
 // Revive
-export const REVIVES_PER_GAME = 2;
+export const REVIVES_PER_GAME = 3;
+export const REVIVE_CELLS_CLEARED = 20;
 
 // Undo
 export const UNDOS_PER_GAME = 0;
 
 // Adaptive piece generation — mercy (when struggling)
-export const PITY_THRESHOLD = 8;
-export const SOLUTION_THRESHOLD = 18;
+export const PITY_THRESHOLD = 7;
+export const SOLUTION_THRESHOLD = 15;
 export const PITY_WEIGHT_BOOST = 3.0;
 export const SOLUTION_WEIGHT_BOOST = 5.0;
 
 // Adaptive piece generation — difficulty scaling (when doing well)
 export const DIFFICULTY_SCORE_THRESHOLD = 3000; // score where difficulty ramp begins
-export const DIFFICULTY_SCORE_CEILING = 20000;  // score where difficulty maxes out
+export const DIFFICULTY_SCORE_CEILING = 15000;  // score where difficulty maxes out
 export const DIFFICULTY_HARD_BOOST_MAX = 3.0;   // max multiplier for hard pieces at ceiling
 export const DIFFICULTY_EASY_PENALTY_MAX = 0.3; // min multiplier for easy pieces at ceiling
 export const STREAK_HARDENING_THRESHOLD = 2;    // streak count where pushback starts
@@ -59,19 +59,10 @@ export const BG_PALETTES = [
 ] as const;
 
 // All-clear bonus
-export const ALL_CLEAR_BONUS = 500;
+export const ALL_CLEAR_BONUS = 300;
 
 // Score milestones
 export const SCORE_MILESTONES = [1000, 2500, 5000, 10000, 25000, 50000] as const;
-
-// Speed bonus scoring — aggressive curve to reward fast play
-export const SPEED_FAST_THRESHOLD = 3;         // seconds — at or below = max bonus
-export const SPEED_NEUTRAL_THRESHOLD = 10;     // seconds — decay to 1.0x
-export const SPEED_SLOW_THRESHOLD = 20;        // seconds — decay to penalty floor
-export const SPEED_FAST_MULTIPLIER = 3.0;      // triple points for blazing fast clears
-export const SPEED_NEUTRAL_MULTIPLIER = 1.0;   // baseline
-export const SPEED_SLOW_MULTIPLIER = 0.5;      // slow penalty — half points
-export const SPEED_FLOOR_MULTIPLIER = 0.3;     // minimum multiplier (>20s) — severe
 
 // Celebration text thresholds
 export const CELEBRATION_TEXTS = [

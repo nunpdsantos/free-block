@@ -97,21 +97,6 @@ const PIECE_DEFS: PieceDef[] = [
     c(1,0), c(1,1), c(1,2),
     c(2,0), c(2,1), c(2,2),
   ], weight: 1, tier: 'hard' },
-
-  // Diagonal domino (2 cells, 2 orientations) — hard (non-adjacent, creates guaranteed gap)
-  { id: 'diag-dom-1', coords: [c(0,0), c(1,1)], weight: 1, tier: 'hard' },
-  { id: 'diag-dom-2', coords: [c(0,1), c(1,0)], weight: 1, tier: 'hard' },
-
-  // Diagonal (3 cells, 2 orientations) — hard (non-adjacent, fragments board)
-  { id: 'diag-1', coords: [c(0,0), c(1,1), c(2,2)], weight: 1, tier: 'hard' }, // top-left to bottom-right
-  { id: 'diag-2', coords: [c(0,2), c(1,1), c(2,0)], weight: 1, tier: 'hard' }, // top-right to bottom-left
-
-  // Big T (5 cells, 4 orientations) — hard (3x3 bounding box T)
-  { id: 'big-t-1', coords: [c(0,0), c(0,1), c(0,2), c(1,1), c(2,1)], weight: 2, tier: 'hard' }, // T down
-  { id: 'big-t-2', coords: [c(0,0), c(1,0), c(1,1), c(1,2), c(2,0)], weight: 2, tier: 'hard' }, // T right (stem left)
-  { id: 'big-t-3', coords: [c(0,1), c(1,1), c(2,0), c(2,1), c(2,2)], weight: 2, tier: 'hard' }, // T up
-  { id: 'big-t-4', coords: [c(0,2), c(1,0), c(1,1), c(1,2), c(2,2)], weight: 2, tier: 'hard' }, // T left (stem right)
-
 ];
 
 function pickRandomColor(rng: () => number = Math.random): string {
@@ -258,19 +243,6 @@ function pickWeightedPiece(
   return available[available.length - 1];
 }
 
-function pieceFitsOnBoard(board: Board, coords: Coord[]): boolean {
-  const piece = { coords, color: '', id: '' } as PieceShape;
-  for (let r = 0; r < GRID_SIZE; r++) {
-    for (let c = 0; c < GRID_SIZE; c++) {
-      if (canPlacePiece(board, piece, r, c)) return true;
-    }
-  }
-  return false;
-}
-
-// Fallback 1×1 monomino — always fits if any cell is empty
-const FALLBACK_MONO: PieceDef = PIECE_DEFS[0]; // 'mono' — the 1×1 piece
-
 export function generateThreePieces(
   board?: Board | null,
   movesSinceLastClear: number = 0,
@@ -289,25 +261,7 @@ export function generateThreePieces(
   const used = new Set<string>();
   const pieces: PieceShape[] = [];
   for (let i = 0; i < 3; i++) {
-    let def: PieceDef | null = null;
-
-    if (board) {
-      // Try up to 20 picks to find a piece that fits on the board
-      for (let attempt = 0; attempt < 20; attempt++) {
-        const candidate = pickWeightedPiece(used, weights);
-        if (pieceFitsOnBoard(board, candidate.coords)) {
-          def = candidate;
-          break;
-        }
-      }
-      // Fallback: 1×1 mono (fits if any empty cell exists)
-      if (!def) {
-        def = FALLBACK_MONO;
-      }
-    } else {
-      // No board context (initial game) — pick freely
-      def = pickWeightedPiece(used, weights);
-    }
+    const def = pickWeightedPiece(used, weights);
 
     used.add(def.id);
     pieces.push({
@@ -323,7 +277,7 @@ export function generateThreePieces(
  * Generate 3 pieces for daily challenge mode.
  * Flat weights (no DDA), seeded RNG for determinism.
  */
-export function generateDailyPieces(board: Board, rng: () => number): PieceShape[] {
+export function generateDailyPieces(_board: Board, rng: () => number): PieceShape[] {
   // Flat weights — every piece at its base weight, no DDA
   const weights = new Map<string, number>();
   for (const def of PIECE_DEFS) {
@@ -333,58 +287,13 @@ export function generateDailyPieces(board: Board, rng: () => number): PieceShape
   const used = new Set<string>();
   const pieces: PieceShape[] = [];
   for (let i = 0; i < 3; i++) {
-    let def: PieceDef | null = null;
-
-    // Try up to 20 picks to find a piece that fits
-    for (let attempt = 0; attempt < 20; attempt++) {
-      const candidate = pickWeightedPiece(used, weights, rng);
-      if (pieceFitsOnBoard(board, candidate.coords)) {
-        def = candidate;
-        break;
-      }
-    }
-    if (!def) def = FALLBACK_MONO;
+    const def = pickWeightedPiece(used, weights, rng);
 
     used.add(def.id);
     pieces.push({
       id: def.id + '-daily-' + i,
       coords: def.coords,
       color: pickRandomColor(rng),
-    });
-  }
-  return pieces;
-}
-
-/**
- * Generate 3 pieces for revive — pity-weighted (easy/medium favored),
- * no fit-check since we'll carve space for them on the board.
- */
-export function generateRevivePieces(score: number): PieceShape[] {
-  const ctx: DDAContext = {
-    board: null,
-    score,
-    streak: 0,
-    movesSinceLastClear: PITY_THRESHOLD,
-  };
-
-  // Compute weights with pity active but no board context
-  // Then additionally boost easy/medium and penalize hard to keep revive fair
-  const weights = computeAdaptiveWeights(ctx);
-  for (const def of PIECE_DEFS) {
-    const w = weights.get(def.id) ?? def.weight;
-    if (def.tier === 'easy') weights.set(def.id, w * 2);
-    else if (def.tier === 'hard') weights.set(def.id, w * 0.3);
-  }
-
-  const used = new Set<string>();
-  const pieces: PieceShape[] = [];
-  for (let i = 0; i < 3; i++) {
-    const def = pickWeightedPiece(used, weights);
-    used.add(def.id);
-    pieces.push({
-      id: def.id + '-' + Date.now() + '-' + i,
-      coords: def.coords,
-      color: pickRandomColor(),
     });
   }
   return pieces;

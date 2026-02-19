@@ -3,13 +3,13 @@ import { gameReducer, createInitialState, createDailyState } from '../game/reduc
 import type { Board as BoardType, GameMode, PlayerStats, AchievementProgress } from '../game/types';
 import { getThemeById } from '../game/themes';
 import type { BgPalette } from '../game/themes';
+import { shouldCommitOnGameOver, shouldCommitOnExitFromGameOver } from '../game/persistence';
 import {
   canPlacePiece,
   placePiece,
   findCompletedLines,
   getClearingCells,
   calculateScore,
-  computeSpeedMultiplier,
   clearLines,
   isBoardEmpty,
   getBoardFillRatio,
@@ -54,6 +54,7 @@ type GameProps = {
 };
 
 type InterpolatedBg = { bg: string; bgDark: string; bgTense: string; bgDarkTense: string };
+const DRAG_LINE_PREVIEW_ENABLED = true;
 
 /** Continuously interpolate between adjacent palette stops based on exact score */
 function getInterpolatedBg(score: number, palettes: BgPalette[]): InterpolatedBg {
@@ -99,7 +100,6 @@ export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit
   const [volume, setVolumeState] = useState(getVolume);
   const [scorePop, setScorePop] = useState<number | null>(null);
   const [scorePopKey, setScorePopKey] = useState(0);
-  const [scorePopMult, setScorePopMult] = useState<number | null>(null);
   const [reviveFlash, setReviveFlash] = useState(false);
   const [clearedLines, setClearedLines] = useState<{ rows: number[]; cols: number[] } | null>(null);
   const [cellParticleTrigger, setCellParticleTrigger] = useState(0);
@@ -116,6 +116,7 @@ export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit
   const prevGameOverRef = useRef(false);
   const boardElRef = useRef<HTMLDivElement>(null);
   const prevMilestoneRef = useRef(0);
+  const scoreCommittedRef = useRef(false);
   const activeTimerIdsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
   const animationRunRef = useRef(0);
 
@@ -146,10 +147,16 @@ export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit
     setSettleCells(new Set());
     setScreenFlash(false);
     setScorePop(null);
-    setScorePopMult(null);
     setReviveFlash(false);
     setIsAnimating(false);
   }, [clearActiveTimers]);
+
+  const commitGameOverIfNeeded = useCallback(() => {
+    if (scoreCommittedRef.current) return;
+    if (!onGameOver) return;
+    onGameOver(state.score, state.revivesRemaining, mode);
+    scoreCommittedRef.current = true;
+  }, [onGameOver, state.score, state.revivesRemaining, mode]);
 
   // --- Offline detection ---
   useEffect(() => {
@@ -218,8 +225,8 @@ export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit
       if (mode === 'daily' && onDailyComplete) {
         onDailyComplete(state.score);
       }
-      if (onGameOver) {
-        onGameOver(state.score, state.revivesRemaining, mode);
+      if (shouldCommitOnGameOver(mode, state.revivesRemaining)) {
+        commitGameOverIfNeeded();
       }
       shatterTimer = setTimeout(() => setIsShattered(true), 0);
       showUiTimer = setTimeout(() => setShowGameOverUI(true), 800);
@@ -235,7 +242,7 @@ export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit
       if (shatterTimer) clearTimeout(shatterTimer);
       if (showUiTimer) clearTimeout(showUiTimer);
     };
-  }, [state.isGameOver, mode, onDailyComplete, onGameOver, state.score, state.revivesRemaining]);
+  }, [state.isGameOver, mode, onDailyComplete, state.score, state.revivesRemaining, commitGameOverIfNeeded]);
 
   // Milestone audio — fires whenever a score milestone is crossed
   useEffect(() => {
@@ -276,8 +283,6 @@ export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit
       const piece = state.currentPieces[pieceIndex];
       if (!piece) return;
       if (!canPlacePiece(state.board, piece, row, col)) return;
-
-      const dropTimestamp = Date.now();
 
       // Danger level for audio thinning — compute from current board
       const fr = getBoardFillRatio(state.board);
@@ -328,10 +333,9 @@ export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit
         const boardAfterClear = clearLines(boardAfterPlace, rows, cols);
         const allClear = isBoardEmpty(boardAfterClear);
 
-        // Compute points for score pop display (with speed multiplier)
-        const speedMult = computeSpeedMultiplier(state.lastClearTimestamp, dropTimestamp);
+        // Compute points for score pop display
         const clearCells = getClearingCells(rows, cols);
-        const points = calculateScore(clearCells.length, linesCleared, state.streak, speedMult ?? 1.0);
+        const points = calculateScore(clearCells.length, linesCleared, state.streak);
         const totalPoints = points + (allClear ? ALL_CLEAR_BONUS : 0);
 
         // Build staggered delay map (used in phase 2)
@@ -364,7 +368,6 @@ export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit
         setAnimPieces(newPieces);
         setIsAnimating(true);
         setScorePop(totalPoints);
-        setScorePopMult(speedMult);
         setScorePopKey(k => k + 1);
 
         // --- Phase 2: After anticipation, fire cascade + effects ---
@@ -457,14 +460,13 @@ export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit
           setAnimPieces(null);
           setIsAnimating(false);
           setScorePop(null);
-          setScorePopMult(null);
-          dispatch({ type: 'PLACE_PIECE', pieceIndex, row, col, timestamp: dropTimestamp });
+          dispatch({ type: 'PLACE_PIECE', pieceIndex, row, col });
         }, totalMs);
       } else {
-        dispatch({ type: 'PLACE_PIECE', pieceIndex, row, col, timestamp: dropTimestamp });
+        dispatch({ type: 'PLACE_PIECE', pieceIndex, row, col });
       }
     },
-    [state.board, state.currentPieces, state.streak, state.score, state.lastClearTimestamp, state.revivesRemaining, onStatsUpdate, onGameContextUpdate, clearActiveTimers, scheduleTimer]
+    [state.board, state.currentPieces, state.streak, state.score, state.revivesRemaining, onStatsUpdate, onGameContextUpdate, clearActiveTimers, scheduleTimer]
   );
 
   const displayBoard = animBoard ?? state.board;
@@ -481,8 +483,16 @@ export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit
   } = useDrag(displayBoard, handleDrop, isAnimating);
 
   useEffect(() => {
-    const handleMove = (e: PointerEvent) => {
-      onPointerMove(e.clientX, e.clientY);
+    const moveEvent = ('onpointerrawupdate' in window ? 'pointerrawupdate' : 'pointermove') as 'pointerrawupdate' | 'pointermove';
+
+    const handleMove = (e: Event | PointerEvent) => {
+      if (!(e instanceof PointerEvent)) return;
+      // Use the freshest coalesced sample to reduce input lag under heavy event bursts.
+      const coalesced = typeof e.getCoalescedEvents === 'function'
+        ? e.getCoalescedEvents()
+        : [];
+      const latest = coalesced.length > 0 ? coalesced[coalesced.length - 1] : e;
+      onPointerMove(latest.clientX, latest.clientY);
     };
     const handleUp = (e: PointerEvent) => {
       onPointerUp(e.clientX, e.clientY);
@@ -491,21 +501,25 @@ export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit
       cancelDrag();
     };
 
-    document.addEventListener('pointermove', handleMove);
+    document.addEventListener(moveEvent, handleMove, { passive: true });
     document.addEventListener('pointerup', handleUp);
     document.addEventListener('pointercancel', handleCancel);
 
     return () => {
-      document.removeEventListener('pointermove', handleMove);
+      document.removeEventListener(moveEvent, handleMove);
       document.removeEventListener('pointerup', handleUp);
       document.removeEventListener('pointercancel', handleCancel);
     };
   }, [onPointerMove, onPointerUp, cancelDrag]);
 
   const handlePlayAgain = useCallback(() => {
+    if (state.isGameOver && shouldCommitOnExitFromGameOver(mode, state.revivesRemaining)) {
+      commitGameOverIfNeeded();
+    }
     resetTransientAnimation();
+    scoreCommittedRef.current = false;
     dispatch({ type: 'NEW_GAME' });
-  }, [resetTransientAnimation]);
+  }, [resetTransientAnimation, state.isGameOver, state.revivesRemaining, commitGameOverIfNeeded, mode]);
 
   const handleRevive = useCallback(() => {
     resetTransientAnimation();
@@ -516,9 +530,13 @@ export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit
   }, [resetTransientAnimation]);
 
   const handleQuit = useCallback(() => {
+    if (state.isGameOver && shouldCommitOnExitFromGameOver(mode, state.revivesRemaining)) {
+      commitGameOverIfNeeded();
+    }
     resetTransientAnimation();
+    scoreCommittedRef.current = false;
     onQuit();
-  }, [onQuit, resetTransientAnimation]);
+  }, [onQuit, resetTransientAnimation, state.isGameOver, state.revivesRemaining, commitGameOverIfNeeded, mode]);
 
   const handleDismissCelebration = useCallback(() => {
     dispatch({ type: 'DISMISS_CELEBRATION' });
@@ -527,6 +545,7 @@ export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit
   const handleRestart = useCallback(() => {
     resetTransientAnimation();
     setIsPaused(false);
+    scoreCommittedRef.current = false;
     if (mode === 'daily' && dailySeed !== undefined) {
       dispatch({ type: 'NEW_DAILY_GAME', seed: dailySeed });
     } else {
@@ -544,6 +563,10 @@ export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit
   // Ghost cells that would complete a line — glow brighter as anticipation cue
   // + preview all cells in completing rows/cols
   const { ghostCompletingCells, previewClearCells } = useMemo(() => {
+    if (!DRAG_LINE_PREVIEW_ENABLED) {
+      return { ghostCompletingCells: undefined, previewClearCells: undefined };
+    }
+
     if (!dragState || !dragState.isValid || dragState.boardRow === null || dragState.boardCol === null) {
       return { ghostCompletingCells: undefined, previewClearCells: undefined };
     }
@@ -660,15 +683,10 @@ export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit
         <PlaceSparkles cells={placedCells} trigger={placeTrigger} />
         {scorePop !== null && (
           <div
-            className={`score-pop${scorePopMult !== null && scorePopMult >= 1.2 ? ' score-pop--fast' : scorePopMult !== null && scorePopMult < 0.95 ? ' score-pop--slow' : ''}`}
+            className="score-pop"
             key={scorePopKey}
           >
             +{scorePop.toLocaleString()}
-            {scorePopMult !== null && Math.abs(scorePopMult - 1.0) >= 0.05 && (
-              <div className={`speed-mult ${scorePopMult > 1.0 ? 'speed-mult--fast' : 'speed-mult--slow'}`}>
-                {scorePopMult > 1.0 ? '\u26A1 ' : ''}{scorePopMult.toFixed(1)}x
-              </div>
-            )}
           </div>
         )}
       </div>

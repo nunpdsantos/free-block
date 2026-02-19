@@ -1,13 +1,14 @@
 import { useRef, useCallback, useState, useEffect } from 'react';
 import type { PieceShape, DragState, GhostCells, Board } from '../game/types';
 import { canPlacePiece } from '../game/logic';
-import { GRID_SIZE } from '../game/constants';
+import { GRID_SIZE, FINGER_OFFSET } from '../game/constants';
 import { getCSSPx } from '../game/responsive';
 import { getPieceBounds } from '../game/pieces';
 import '../components/DragOverlay.css';
 
-const SNAP_RADIUS_DRAG = 1;
-const SNAP_RADIUS_DROP = 2;
+const SNAP_RADIUS_DRAG = 0;
+const SNAP_RADIUS_DROP = 1;
+const LIVE_DRAG_PREVIEW_ENABLED = true;
 
 export function useDrag(
   board: Board,
@@ -23,16 +24,18 @@ export function useDrag(
   const rectRef = useRef<DOMRect | null>(null);
   const boardPaddingRef = useRef(0);
   const totalCellRef = useRef(0);
-  const fingerOffsetRef = useRef(0);
+  const cellGapRef = useRef(0);
   const pieceRowsRef = useRef(0);
   const pieceColsRef = useRef(0);
   const lastGridRef = useRef<{ row: number | null; col: number | null }>({ row: null, col: null });
 
   // Imperative overlay — no React involvement
   const overlayElRef = useRef<HTMLDivElement | null>(null);
-  const overlayHalfW = useRef(0);
-  const overlayHalfH = useRef(0);
-  const overlayFingerOffset = useRef(0);
+  const overlayWRef = useRef(0);
+  const overlayHRef = useRef(0);
+  const grabFracXRef = useRef(0.5);
+  const grabFracYRef = useRef(0.5);
+  const pointerOffsetYRef = useRef(0);
 
   // Clean up on unmount
   useEffect(() => {
@@ -76,16 +79,19 @@ export function useDrag(
     }
 
     overlay.appendChild(grid);
-    overlayHalfW.current = w / 2;
-    overlayHalfH.current = h / 2;
+    overlayWRef.current = w;
+    overlayHRef.current = h;
     return overlay;
   }
 
   function moveOverlay(clientX: number, clientY: number) {
     const el = overlayElRef.current;
     if (!el) return;
-    const x = clientX - overlayHalfW.current;
-    const y = clientY - overlayFingerOffset.current - overlayHalfH.current;
+    const anchorX = overlayWRef.current * grabFracXRef.current;
+    const anchorY = overlayHRef.current * grabFracYRef.current;
+    const adjustedY = clientY - pointerOffsetYRef.current;
+    const x = clientX - anchorX;
+    const y = adjustedY - anchorY;
     el.style.transform = `translate3d(${x}px, ${y}px, 0)`;
   }
 
@@ -130,8 +136,13 @@ export function useDrag(
       if (!rect) return { row: null, col: null, isValid: false };
 
       const totalCell = totalCellRef.current;
-      const relX = clientX - rect.left - boardPaddingRef.current - (pieceColsRef.current * totalCell) / 2;
-      const relY = clientY - rect.top - boardPaddingRef.current - fingerOffsetRef.current - (pieceRowsRef.current * totalCell) / 2;
+      const pieceW = pieceColsRef.current * totalCell - cellGapRef.current;
+      const pieceH = pieceRowsRef.current * totalCell - cellGapRef.current;
+      const anchorX = pieceW * grabFracXRef.current;
+      const anchorY = pieceH * grabFracYRef.current;
+      const adjustedY = clientY - pointerOffsetYRef.current;
+      const relX = clientX - rect.left - boardPaddingRef.current - anchorX;
+      const relY = adjustedY - rect.top - boardPaddingRef.current - anchorY;
 
       const col = Math.round(relX / totalCell);
       const row = Math.round(relY / totalCell);
@@ -170,6 +181,8 @@ export function useDrag(
     const newState: DragState = { ...latest, boardRow: row, boardCol: col, isValid };
     dragRef.current = newState;
 
+    if (!LIVE_DRAG_PREVIEW_ENABLED) return;
+
     // Urgent update — ghost must track finger position every frame, no deferral
     setDragState(newState);
 
@@ -189,7 +202,15 @@ export function useDrag(
   // --- Pointer handlers ---
 
   const onPointerDown = useCallback(
-    (piece: PieceShape, pieceIndex: number, clientX: number, clientY: number) => {
+    (
+      piece: PieceShape,
+      pieceIndex: number,
+      clientX: number,
+      clientY: number,
+      grabFracX: number = 0.5,
+      grabFracY: number = 0.5,
+      pointerType: string = 'mouse'
+    ) => {
       if (isAnimating) return;
 
       // Clean up any leftover overlay
@@ -205,9 +226,10 @@ export function useDrag(
       const cellGap = getCSSPx('--cell-gap');
       const cellSize = getCSSPx('--cell-size');
       totalCellRef.current = cellSize + cellGap;
-      const fingerOffset = getCSSPx('--finger-offset');
-      fingerOffsetRef.current = fingerOffset;
-      overlayFingerOffset.current = fingerOffset;
+      cellGapRef.current = cellGap;
+      grabFracXRef.current = Math.min(1, Math.max(0, grabFracX));
+      grabFracYRef.current = Math.min(1, Math.max(0, grabFracY));
+      pointerOffsetYRef.current = pointerType === 'touch' ? FINGER_OFFSET : 0;
 
       // Cache piece bounds
       const { rows: pRows, cols: pCols } = getPieceBounds(piece.coords);
@@ -233,8 +255,10 @@ export function useDrag(
       lastGridRef.current = { row: null, col: null };
 
       // Initial ghost computation
-      const { row, col, isValid } = computeGridPos(clientX, clientY);
-      updateGridState(row, col, isValid);
+      if (LIVE_DRAG_PREVIEW_ENABLED) {
+        const { row, col, isValid } = computeGridPos(clientX, clientY, SNAP_RADIUS_DRAG);
+        updateGridState(row, col, isValid);
+      }
     },
     [isAnimating, computeGridPos]
   );
@@ -246,9 +270,11 @@ export function useDrag(
       // INSTANT — direct DOM, zero React overhead
       moveOverlay(clientX, clientY);
 
-      // Immediate ghost/preview update for maximum responsiveness
-      const { row, col, isValid } = computeGridPos(clientX, clientY, SNAP_RADIUS_DRAG);
-      updateGridState(row, col, isValid);
+      if (LIVE_DRAG_PREVIEW_ENABLED) {
+        // Optional live board preview path (kept off in performance mode).
+        const { row, col, isValid } = computeGridPos(clientX, clientY, SNAP_RADIUS_DRAG);
+        updateGridState(row, col, isValid);
+      }
     },
     [computeGridPos]
   );
@@ -276,6 +302,9 @@ export function useDrag(
     dragRef.current = null;
     rectRef.current = null;
     lastGridRef.current = { row: null, col: null };
+    grabFracXRef.current = 0.5;
+    grabFracYRef.current = 0.5;
+    pointerOffsetYRef.current = 0;
     setDragState(null);
     setGhostCells(new Map());
   }, [onDrop, computeGridPos]);
@@ -285,6 +314,9 @@ export function useDrag(
     dragRef.current = null;
     rectRef.current = null;
     lastGridRef.current = { row: null, col: null };
+    grabFracXRef.current = 0.5;
+    grabFracYRef.current = 0.5;
+    pointerOffsetYRef.current = 0;
     setDragState(null);
     setGhostCells(new Map());
   }, []);

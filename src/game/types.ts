@@ -38,7 +38,6 @@ export type UndoSnapshot = {
   movesSinceLastClear: number;
   pieceGeneration: number;
   lastMilestone: number;
-  lastClearTimestamp: number | null;
 };
 
 export type GameMode = 'classic' | 'daily';
@@ -64,10 +63,8 @@ export type GameState = {
   lastMilestone: number;
   undoSnapshot: UndoSnapshot | null;
   undosRemaining: number;
-  postReviveGrace: boolean;
   mode: GameMode;
   dailySeed?: number;
-  lastClearTimestamp: number | null;
   // Per-game stats for game-over breakdown
   gamePiecesPlaced: number;
   gameLinesCleared: number;
@@ -75,7 +72,7 @@ export type GameState = {
 };
 
 export type GameAction =
-  | { type: 'PLACE_PIECE'; pieceIndex: number; row: number; col: number; timestamp: number }
+  | { type: 'PLACE_PIECE'; pieceIndex: number; row: number; col: number }
   | { type: 'NEW_GAME' }
   | { type: 'NEW_DAILY_GAME'; seed: number }
   | { type: 'REVIVE' }

@@ -1,4 +1,4 @@
-import type { GameState, GameAction, UndoSnapshot, PieceShape } from './types';
+import type { GameState, GameAction, UndoSnapshot } from './types';
 import {
   createEmptyBoard,
   canPlacePiece,
@@ -7,14 +7,13 @@ import {
   clearLines,
   getClearingCells,
   calculateScore,
-  computeSpeedMultiplier,
   canAnyPieceFit,
   getCelebrationText,
   clearCellsForRevive,
   isBoardEmpty,
 } from './logic';
 import { generateThreePieces, generateDailyPieces } from './pieces';
-import { REVIVES_PER_GAME, ALL_CLEAR_BONUS, SCORE_MILESTONES, UNDOS_PER_GAME, PITY_THRESHOLD } from './constants';
+import { REVIVES_PER_GAME, REVIVE_CELLS_CLEARED, ALL_CLEAR_BONUS, SCORE_MILESTONES, UNDOS_PER_GAME } from './constants';
 import { mulberry32 } from './random';
 
 export function createInitialState(): GameState {
@@ -33,9 +32,7 @@ export function createInitialState(): GameState {
     lastMilestone: 0,
     undoSnapshot: null,
     undosRemaining: UNDOS_PER_GAME,
-    postReviveGrace: false,
     mode: 'classic',
-    lastClearTimestamp: null,
     gamePiecesPlaced: 0,
     gameLinesCleared: 0,
     gameBestStreak: 0,
@@ -60,10 +57,8 @@ export function createDailyState(seed: number): GameState {
     lastMilestone: 0,
     undoSnapshot: null,
     undosRemaining: 0,
-    postReviveGrace: false,
     mode: 'daily',
     dailySeed: seed,
-    lastClearTimestamp: null,
     gamePiecesPlaced: 0,
     gameLinesCleared: 0,
     gameBestStreak: 0,
@@ -79,14 +74,13 @@ function takeSnapshot(state: GameState): UndoSnapshot {
     movesSinceLastClear: state.movesSinceLastClear,
     pieceGeneration: state.pieceGeneration,
     lastMilestone: state.lastMilestone,
-    lastClearTimestamp: state.lastClearTimestamp,
   };
 }
 
 export function gameReducer(state: GameState, action: GameAction): GameState {
   switch (action.type) {
     case 'PLACE_PIECE': {
-      const { pieceIndex, row, col, timestamp } = action;
+      const { pieceIndex, row, col } = action;
       const piece = state.currentPieces[pieceIndex];
       if (!piece) return state;
       if (!canPlacePiece(state.board, piece, row, col)) return state;
@@ -115,17 +109,11 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       // Update movesSinceLastClear
       const newMovesSinceLastClear = linesCleared > 0 ? 0 : state.movesSinceLastClear + 1;
 
-      // Speed bonus (only applies when clearing lines and we have a reference timestamp)
-      const speedMult = linesCleared > 0
-        ? computeSpeedMultiplier(state.lastClearTimestamp, timestamp)
-        : null;
-
       // Calculate score
       const pointsEarned = calculateScore(
         clearingCells.length,
         linesCleared,
-        linesCleared > 0 ? newStreak - 1 : 0,
-        speedMult ?? 1.0
+        linesCleared > 0 ? newStreak - 1 : 0
       );
 
       // All-clear detection + bonus
@@ -165,12 +153,6 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       // Check game over
       const isGameOver = !canAnyPieceFit(newBoard, finalPieces);
 
-      // Post-revive grace: if player can't survive the first tray after revive, lose one extra revive
-      const postReviveGrace = allPlaced ? false : state.postReviveGrace;
-      const revivesRemaining = (isGameOver && state.postReviveGrace)
-        ? Math.max(0, state.revivesRemaining - 1)
-        : state.revivesRemaining;
-
       // Celebration text — priority: ALL CLEAR > line clear > milestone
       let celebrationText: string | null = null;
       if (boardEmpty) {
@@ -191,13 +173,11 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         isGameOver,
         lastClearCount: linesCleared,
         celebrationText,
-        revivesRemaining,
-        postReviveGrace,
+        revivesRemaining: state.revivesRemaining,
         movesSinceLastClear: newMovesSinceLastClear,
         pieceGeneration: newPieceGeneration,
         lastMilestone: newLastMilestone,
         undoSnapshot,
-        lastClearTimestamp: linesCleared > 0 ? timestamp : state.lastClearTimestamp,
         gamePiecesPlaced: state.gamePiecesPlaced + 1,
         gameLinesCleared: state.gameLinesCleared + linesCleared,
         gameBestStreak: Math.max(state.gameBestStreak, newStreak),
@@ -220,27 +200,20 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
 
     case 'REVIVE': {
       if (state.revivesRemaining <= 0 || !state.isGameOver) return state;
-
-      // Keep the current tray; carve space so the remaining pieces can be played.
-      const remainingPieces = state.currentPieces.filter(
-        (piece): piece is PieceShape => piece !== null
-      );
-      if (remainingPieces.length === 0) return state;
-
-      const newBoard = clearCellsForRevive(state.board, remainingPieces);
+      const newBoard = clearCellsForRevive(state.board, REVIVE_CELLS_CLEARED);
+      const newPieces = generateThreePieces(newBoard, 0, state.score, 0);
+      const stillGameOver = !canAnyPieceFit(newBoard, newPieces);
 
       return {
         ...state,
         board: newBoard,
-        currentPieces: state.currentPieces,
-        isGameOver: false,
-        movesSinceLastClear: PITY_THRESHOLD,
+        currentPieces: newPieces,
+        isGameOver: stillGameOver,
+        movesSinceLastClear: 0,
         streak: 0,
         revivesRemaining: state.revivesRemaining - 1,
-        postReviveGrace: true,
         celebrationText: null,
-        pieceGeneration: state.pieceGeneration,
-        lastClearTimestamp: null,
+        pieceGeneration: state.pieceGeneration + 1,
       };
     }
 
@@ -257,7 +230,6 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         movesSinceLastClear: snap.movesSinceLastClear,
         pieceGeneration: snap.pieceGeneration,
         lastMilestone: snap.lastMilestone,
-        lastClearTimestamp: snap.lastClearTimestamp,
         isGameOver: false,
         lastClearCount: 0,
         celebrationText: null,

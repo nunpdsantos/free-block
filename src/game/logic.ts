@@ -5,15 +5,7 @@ import {
   COMBO_BASE_BONUS,
   COMBO_INCREMENT,
   STREAK_MULTIPLIER_INCREMENT,
-  STREAK_MULTIPLIER_CAP,
   CELEBRATION_TEXTS,
-  SPEED_FAST_THRESHOLD,
-  SPEED_NEUTRAL_THRESHOLD,
-  SPEED_SLOW_THRESHOLD,
-  SPEED_FAST_MULTIPLIER,
-  SPEED_NEUTRAL_MULTIPLIER,
-  SPEED_SLOW_MULTIPLIER,
-  SPEED_FLOOR_MULTIPLIER,
 } from './constants';
 
 export function isFilledCell(cell: string | null | undefined): cell is string {
@@ -132,44 +124,10 @@ export function clearLines(board: Board, rows: number[], cols: number[]): Board 
   return newBoard;
 }
 
-/** Smooth interpolation between two values over a time range */
-function lerp(t: number, min: number, max: number): number {
-  return min + (max - min) * Math.min(1, Math.max(0, t));
-}
-
-/**
- * Compute speed multiplier based on time since last clear.
- * Returns null (no reference) for first clear or post-revive.
- */
-export function computeSpeedMultiplier(
-  lastClearTimestamp: number | null,
-  currentTimestamp: number
-): number | null {
-  if (lastClearTimestamp === null) return null;
-
-  const elapsed = (currentTimestamp - lastClearTimestamp) / 1000; // seconds
-
-  if (elapsed <= SPEED_FAST_THRESHOLD) {
-    return SPEED_FAST_MULTIPLIER;
-  } else if (elapsed <= SPEED_NEUTRAL_THRESHOLD) {
-    const t = (elapsed - SPEED_FAST_THRESHOLD) / (SPEED_NEUTRAL_THRESHOLD - SPEED_FAST_THRESHOLD);
-    return lerp(t, SPEED_FAST_MULTIPLIER, SPEED_NEUTRAL_MULTIPLIER);
-  } else if (elapsed <= SPEED_SLOW_THRESHOLD) {
-    const t = (elapsed - SPEED_NEUTRAL_THRESHOLD) / (SPEED_SLOW_THRESHOLD - SPEED_NEUTRAL_THRESHOLD);
-    return lerp(t, SPEED_NEUTRAL_MULTIPLIER, SPEED_SLOW_MULTIPLIER);
-  } else {
-    // Asymptotic decay toward floor — never quite reaches it
-    const overtime = elapsed - SPEED_SLOW_THRESHOLD;
-    const decay = (SPEED_SLOW_MULTIPLIER - SPEED_FLOOR_MULTIPLIER) * Math.exp(-overtime / 30);
-    return SPEED_FLOOR_MULTIPLIER + decay;
-  }
-}
-
 export function calculateScore(
   cellsCleared: number,
   linesCleared: number,
-  streak: number,
-  speedMultiplier: number = 1.0
+  streak: number
 ): number {
   if (linesCleared === 0) return 0;
 
@@ -179,11 +137,8 @@ export function calculateScore(
       ? COMBO_BASE_BONUS + (linesCleared - 1) * COMBO_INCREMENT
       : 0;
   const subtotal = basePoints + comboBonus;
-  const streakMultiplier = Math.min(
-    STREAK_MULTIPLIER_CAP,
-    1 + streak * STREAK_MULTIPLIER_INCREMENT
-  );
-  return Math.round(subtotal * streakMultiplier * speedMultiplier);
+  const streakMultiplier = 1 + streak * STREAK_MULTIPLIER_INCREMENT;
+  return Math.round(subtotal * streakMultiplier);
 }
 
 export function canPieceFitAnywhere(board: Board, piece: PieceShape): boolean {
@@ -205,45 +160,30 @@ export function canAnyPieceFit(
   return false;
 }
 
-export function clearCellsForRevive(board: Board, pieces: PieceShape[]): Board {
+export function clearCellsForRevive(
+  board: Board,
+  cellsToClear: number,
+  rng: () => number = Math.random
+): Board {
   const newBoard = board.map(row => [...row]);
-
-  for (const piece of pieces) {
-    // If piece already fits somewhere, no clearing needed
-    if (canPieceFitAnywhere(newBoard, piece)) continue;
-
-    // Find the position requiring the fewest cell removals
-    let bestRow = 0;
-    let bestCol = 0;
-    let bestCost = Infinity;
-
-    for (let r = 0; r < GRID_SIZE; r++) {
-      for (let c = 0; c < GRID_SIZE; c++) {
-        let cost = 0;
-        let inBounds = true;
-        for (const coord of piece.coords) {
-          const cr = r + coord.row;
-          const cc = c + coord.col;
-          if (cr < 0 || cr >= GRID_SIZE || cc < 0 || cc >= GRID_SIZE) {
-            inBounds = false;
-            break;
-          }
-          if (isFilledCell(newBoard[cr]?.[cc])) cost++;
-        }
-        if (inBounds && cost < bestCost) {
-          bestCost = cost;
-          bestRow = r;
-          bestCol = c;
-        }
+  const filledCells: Array<{ row: number; col: number }> = [];
+  for (let r = 0; r < GRID_SIZE; r++) {
+    for (let c = 0; c < GRID_SIZE; c++) {
+      if (isFilledCell(newBoard[r]?.[c])) {
+        filledCells.push({ row: r, col: c });
       }
     }
+  }
 
-    // Clear the cells at the best position
-    for (const coord of piece.coords) {
-      const cr = bestRow + coord.row;
-      const cc = bestCol + coord.col;
-      newBoard[cr][cc] = null;
-    }
+  for (let i = filledCells.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [filledCells[i], filledCells[j]] = [filledCells[j], filledCells[i]];
+  }
+
+  const removeCount = Math.min(cellsToClear, filledCells.length);
+  for (let i = 0; i < removeCount; i++) {
+    const cell = filledCells[i];
+    newBoard[cell.row][cell.col] = null;
   }
 
   return newBoard;
