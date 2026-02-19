@@ -2,8 +2,8 @@ import type { Board, PieceShape } from './types';
 import {
   GRID_SIZE,
   POINTS_PER_CELL,
-  LINE_BONUS,
-  COMBO_MULTIPLIERS,
+  COMBO_BASE_BONUS,
+  COMBO_INCREMENT,
   STREAK_MULTIPLIER_INCREMENT,
   CELEBRATION_TEXTS,
 } from './constants';
@@ -131,11 +131,11 @@ export function calculateScore(
 ): number {
   if (linesCleared === 0) return 0;
 
-  const basePoints = cellsCleared * POINTS_PER_CELL + linesCleared * LINE_BONUS;
-  const comboIdx = Math.min(linesCleared, COMBO_MULTIPLIERS.length) - 1;
-  const comboMultiplier = COMBO_MULTIPLIERS[comboIdx];
+  const basePoints = cellsCleared * POINTS_PER_CELL;
+  const comboBonus = COMBO_BASE_BONUS + (linesCleared - 1) * COMBO_INCREMENT;
+  const subtotal = basePoints + comboBonus;
   const streakMultiplier = 1 + streak * STREAK_MULTIPLIER_INCREMENT;
-  return Math.round(basePoints * comboMultiplier * streakMultiplier);
+  return Math.round(subtotal * streakMultiplier);
 }
 
 export function canPieceFitAnywhere(board: Board, piece: PieceShape): boolean {
