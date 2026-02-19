@@ -41,6 +41,6 @@ export function getYesterdayDateStr(): string {
 export function getDayNumber(dateStr: string): number {
   const [y, m, d] = dateStr.split('-').map(Number);
   if (!y || !m || !d) return 0;
-  const ms = new Date(y, m - 1, d).getTime();
+  const ms = Date.UTC(y, m - 1, d);
   return Math.floor(ms / 86400000);
 }

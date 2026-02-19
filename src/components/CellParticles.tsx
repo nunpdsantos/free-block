@@ -1,9 +1,8 @@
 import { useEffect, useState } from 'react';
 import type { Board } from '../game/types';
+import { getCSSPx } from '../game/responsive';
 import './CellParticles.css';
 
-const CELL_TOTAL = 50; // 48px cell + 2px gap
-const BOARD_PAD = 6;
 const PARTICLES_PER_CELL = 6;
 const MAX_PARTICLES = 120;
 
@@ -22,6 +21,11 @@ function createParticles(
   clearingCells: Map<string, number>,
   board: Board
 ): Particle[] {
+  const cellSize = getCSSPx('--cell-size');
+  const cellGap = getCSSPx('--cell-gap');
+  const cellTotal = cellSize + cellGap;
+  const boardPad = getCSSPx('--board-padding');
+  const halfCell = cellSize / 2;
   const particles: Particle[] = [];
   let id = 0;
 
@@ -29,8 +33,8 @@ function createParticles(
     if (particles.length >= MAX_PARTICLES) break;
     const [row, col] = key.split(',').map(Number);
     const color = board[row]?.[col] ?? '#C840E9';
-    const cx = BOARD_PAD + col * CELL_TOTAL + 24;
-    const cy = BOARD_PAD + row * CELL_TOTAL + 24;
+    const cx = boardPad + col * cellTotal + halfCell;
+    const cy = boardPad + row * cellTotal + halfCell;
 
     for (let i = 0; i < PARTICLES_PER_CELL; i++) {
       const angle = Math.random() * Math.PI * 2;

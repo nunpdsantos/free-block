@@ -84,8 +84,9 @@ export const Board = memo(function Board({
     const cellTotal = getCSSPx('--cell-size') + getCSSPx('--cell-gap');
     const pad = getCSSPx('--board-padding');
 
+    const halfCell = getCSSPx('--cell-size') / 2;
     for (const rowIdx of clearedLines.rows) {
-      const top = pad + rowIdx * cellTotal + 24; // center of row
+      const top = pad + rowIdx * cellTotal + halfCell;
       elements.push(
         <div
           key={`sw-r-${rowIdx}`}
@@ -95,7 +96,7 @@ export const Board = memo(function Board({
       );
     }
     for (const colIdx of clearedLines.cols) {
-      const left = pad + colIdx * cellTotal + 24; // center of col
+      const left = pad + colIdx * cellTotal + halfCell;
       elements.push(
         <div
           key={`sw-c-${colIdx}`}

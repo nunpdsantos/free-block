@@ -19,7 +19,7 @@ export type SyncedPlayerData = {
 // Merge functions — always pick the "higher" value so no data is lost
 // ---------------------------------------------------------------------------
 
-export function mergeStats(local: PlayerStats, remote: PlayerStats): PlayerStats {
+function mergeStats(local: PlayerStats, remote: PlayerStats): PlayerStats {
   return {
     gamesPlayed: Math.max(local.gamesPlayed, remote.gamesPlayed),
     totalScore: Math.max(local.totalScore, remote.totalScore),
@@ -32,7 +32,7 @@ export function mergeStats(local: PlayerStats, remote: PlayerStats): PlayerStats
   };
 }
 
-export function mergeAchievements(
+function mergeAchievements(
   local: AchievementProgress,
   remote: AchievementProgress,
 ): AchievementProgress {
@@ -46,7 +46,7 @@ export function mergeAchievements(
   return merged;
 }
 
-export function mergeDailyStreak(local: DailyStreak, remote: DailyStreak): DailyStreak {
+function mergeDailyStreak(local: DailyStreak, remote: DailyStreak): DailyStreak {
   // Pick the record with the more recent lastPlayedDate as the source of truth
   // for currentStreak, then take max of bestStreak
   let base: DailyStreak;
@@ -72,7 +72,7 @@ export function mergeDailyStreak(local: DailyStreak, remote: DailyStreak): Daily
   };
 }
 
-export function mergeDailyResults(
+function mergeDailyResults(
   local: Record<string, DailyResult>,
   remote: Record<string, DailyResult>,
 ): Record<string, DailyResult> {
@@ -121,7 +121,7 @@ function parseFirestoreValue(val: Record<string, unknown>): unknown {
   return null;
 }
 
-export type FetchResult =
+type FetchResult =
   | { status: 'found'; data: SyncedPlayerData }
   | { status: 'empty' }  // doc exists but no sync data, or doc doesn't exist
   | { status: 'error' }; // fetch failed — do NOT push over remote

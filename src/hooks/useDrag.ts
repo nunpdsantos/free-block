@@ -159,10 +159,6 @@ export function useDrag(
         return { row: snapped.row, col: snapped.col, isValid: true };
       }
 
-      if (row < 0 || row >= GRID_SIZE || col < 0 || col >= GRID_SIZE) {
-        return { row: null, col: null, isValid: false };
-      }
-
       return { row, col, isValid: false };
     },
     [findNearestValidPlacement]

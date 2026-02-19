@@ -21,7 +21,6 @@ type BurstParticle = {
 
 type AmbientParticlesProps = {
   tension?: number;    // 0-1
-  streak?: number;     // 0+
   clearBurst?: number; // increment triggers burst
 };
 
@@ -56,15 +55,12 @@ function generateBurstParticles(): BurstParticle[] {
   }));
 }
 
-export function AmbientParticles({ tension = 0, streak = 0, clearBurst = 0 }: AmbientParticlesProps) {
+export function AmbientParticles({ tension = 0, clearBurst = 0 }: AmbientParticlesProps) {
   const particles = useMemo(() => generateParticles(), []);
   const burstParticles = useMemo(
     () => (clearBurst > 0 ? generateBurstParticles() : []),
     [clearBurst]
   );
-
-  // Suppress unused var warning — streak reserved for future per-particle effects
-  void streak;
 
   return (
     <div

@@ -1,6 +1,4 @@
 export const GRID_SIZE = 8;
-export const CELL_SIZE = 48; // px
-export const CELL_GAP = 2; // px
 export const FINGER_OFFSET = 40; // px upward on mobile
 export const CLEAR_ANIMATION_MS = 450;
 export const CLEAR_STAGGER_MS = 20; // delay per cell in cascade
@@ -47,16 +45,6 @@ export const STREAK_HARDENING_THRESHOLD = 2;    // streak count where pushback s
 export const STREAK_HARD_BOOST = 1.5;           // weight multiplier for hard pieces per streak
 export const BOARD_OPEN_THRESHOLD = 0.6;        // if >60% cells empty, board is "open" → harder pieces
 export const BOARD_CRITICAL_THRESHOLD = 0.25;   // if <25% cells empty, board is "critical" → easier pieces
-
-// Background palette stages — cycle as score increases
-export const BG_PALETTES = [
-  { score: 0,    bg: '#4A5899', bgDark: '#3D4A80' },   // Blue (default)
-  { score: 500,  bg: '#2D7D6F', bgDark: '#1E5C4F' },   // Teal
-  { score: 1500, bg: '#6B3FA0', bgDark: '#4A2D72' },   // Purple
-  { score: 3000, bg: '#B85C38', bgDark: '#8B4329' },   // Warm Orange
-  { score: 5000, bg: '#A84171', bgDark: '#7B2F54' },   // Rose
-  { score: 8000, bg: '#2E4272', bgDark: '#1E2D4F' },   // Deep Navy
-] as const;
 
 // All-clear bonus
 export const ALL_CLEAR_BONUS = 300;

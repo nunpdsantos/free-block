@@ -18,8 +18,6 @@ export type DragState = {
 
 export type GhostCells = Map<string, boolean>; // "row,col" -> valid
 
-export type ClearingCell = { row: number; col: number };
-
 export type LeaderboardEntry = { score: number; date: string };
 
 export type GlobalLeaderboardEntry = {

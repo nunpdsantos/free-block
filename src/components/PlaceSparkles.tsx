@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react';
+import { getCSSPx } from '../game/responsive';
 import './PlaceSparkles.css';
 
-const CELL_TOTAL = 50; // 48px cell + 2px gap
-const BOARD_PAD = 6;
 const SPARKLES_PER_CELL = 2;
 
 type Sparkle = {
@@ -22,11 +21,16 @@ export type PlacedCell = {
 };
 
 function createSparkles(cells: PlacedCell[]): Sparkle[] {
+  const cellSize = getCSSPx('--cell-size');
+  const cellGap = getCSSPx('--cell-gap');
+  const cellTotal = cellSize + cellGap;
+  const boardPad = getCSSPx('--board-padding');
+  const halfCell = cellSize / 2;
   const sparkles: Sparkle[] = [];
   let id = 0;
   for (const cell of cells) {
-    const cx = BOARD_PAD + cell.col * CELL_TOTAL + 24;
-    const cy = BOARD_PAD + cell.row * CELL_TOTAL + 24;
+    const cx = boardPad + cell.col * cellTotal + halfCell;
+    const cy = boardPad + cell.row * cellTotal + halfCell;
     for (let i = 0; i < SPARKLES_PER_CELL; i++) {
       const angle = Math.random() * Math.PI * 2;
       const dist = 12 + Math.random() * 22;

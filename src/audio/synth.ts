@@ -20,7 +20,7 @@ let masterGain: GainNode | null = null;
 let compressor: DynamicsCompressorNode | null = null;
 let analyser: AnalyserNode | null = null;
 
-export function getCtx(): AudioContext {
+function getCtx(): AudioContext {
   if (!ctx) {
     ctx = new AudioContext();
     masterGain = ctx.createGain();
@@ -47,14 +47,9 @@ export function getCtx(): AudioContext {
   return ctx;
 }
 
-export function getMaster(): GainNode {
+function getMaster(): GainNode {
   getCtx();
   return masterGain!;
-}
-
-/** Returns the AnalyserNode tapping the master bus — used by visuals to read audio energy. */
-export function getAnalyserNode(): AnalyserNode | null {
-  return analyser;
 }
 
 /** Set master volume (0.0 to 1.0). Applies to all subsequent and currently playing sounds. */
@@ -79,7 +74,6 @@ const CLEAR_SCALE = [
 
 // Full pentatonic for chords (lower octave adds richness when layered)
 const CHORD_NOTES = {
-  C4: 261.63, E4: 329.63, G4: 392.00,
   C5: 523.25, E5: 659.25, G5: 783.99, C6: 1046.50,
 };
 

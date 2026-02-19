@@ -2,7 +2,7 @@ import type { PlayerStats, DailyStreak, AchievementProgress } from './types';
 
 export type AchievementTier = 'bronze' | 'silver' | 'gold';
 
-export type AchievementProgressInfo = { current: number; target: number };
+type AchievementProgressInfo = { current: number; target: number };
 
 export type Achievement = {
   id: string;

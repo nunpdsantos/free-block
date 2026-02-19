@@ -535,8 +535,8 @@ export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit
     playRevive();
     dispatch({ type: 'REVIVE' });
     setReviveFlash(true);
-    setTimeout(() => setReviveFlash(false), 600);
-  }, [resetTransientAnimation]);
+    scheduleTimer(() => setReviveFlash(false), 600);
+  }, [resetTransientAnimation, scheduleTimer]);
 
   const handleQuit = useCallback(() => {
     if (state.isGameOver && shouldCommitOnExitFromGameOver(mode, state.revivesRemaining)) {
@@ -637,7 +637,6 @@ export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit
       {isOffline && <div className="offline-badge">Offline</div>}
       <AmbientParticles
         tension={tension}
-        streak={state.streak}
         clearBurst={cellParticleTrigger}
       />
 
