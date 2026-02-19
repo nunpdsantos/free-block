@@ -13,8 +13,7 @@ const LIVE_DRAG_PREVIEW_ENABLED = true;
 export function useDrag(
   board: Board,
   onDrop: (pieceIndex: number, row: number, col: number) => void,
-  isAnimating: boolean,
-  hapticsEnabled: boolean = true
+  isAnimating: boolean
 ) {
   const [dragState, setDragState] = useState<DragState | null>(null);
   const [ghostCells, setGhostCells] = useState<GhostCells>(new Map());
@@ -29,7 +28,6 @@ export function useDrag(
   const pieceRowsRef = useRef(0);
   const pieceColsRef = useRef(0);
   const lastGridRef = useRef<{ row: number | null; col: number | null }>({ row: null, col: null });
-  const hapticsRef = useRef(hapticsEnabled);
 
   // Imperative overlay — no React involvement
   const overlayElRef = useRef<HTMLDivElement | null>(null);
@@ -38,9 +36,6 @@ export function useDrag(
   const grabFracXRef = useRef(0.5);
   const grabFracYRef = useRef(0.5);
   const pointerOffsetYRef = useRef(0);
-
-  // Keep haptics ref in sync
-  hapticsRef.current = hapticsEnabled;
 
   // Clean up on unmount
   useEffect(() => {
@@ -214,8 +209,10 @@ export function useDrag(
     ) => {
       if (isAnimating) return;
 
-      // Clean up any leftover overlay
+      // Clean up any leftover overlay (including animated drop overlays)
       removeOverlay();
+      const stale = document.querySelector('.drag-overlay');
+      if (stale) stale.remove();
 
       // Cache board geometry once
       const boardEl = boardRef.current;
@@ -268,22 +265,13 @@ export function useDrag(
     (clientX: number, clientY: number) => {
       if (!dragRef.current) return;
 
-      // Overlay always follows finger — zero lag, full fluidity
+      // INSTANT — direct DOM, zero React overhead
       moveOverlay(clientX, clientY);
 
       if (LIVE_DRAG_PREVIEW_ENABLED) {
+        // With SNAP_RADIUS_DRAG=0, computeGridPos is trivially cheap (single check).
+        // updateGridState dedupes by grid position, so React only re-renders on cell change.
         const { row, col, isValid } = computeGridPos(clientX, clientY, SNAP_RADIUS_DRAG);
-
-        // Synchronous haptic on every valid grid cell change
-        if (isValid && row !== null && col !== null) {
-          const last = lastGridRef.current;
-          if (row !== last.row || col !== last.col) {
-            if (hapticsRef.current) {
-              try { navigator.vibrate?.(4); } catch { /* unsupported */ }
-            }
-          }
-        }
-
         updateGridState(row, col, isValid);
       }
     },
@@ -307,9 +295,26 @@ export function useDrag(
 
     if (finalRow !== null && finalCol !== null && finalValid) {
       onDrop(current.pieceIndex, finalRow, finalCol);
+
+      // Snap overlay to exact grid position before removal
+      const overlayEl = overlayElRef.current;
+      const rect = rectRef.current;
+      if (overlayEl && rect) {
+        const targetX = rect.left + boardPaddingRef.current + finalCol * totalCellRef.current;
+        const targetY = rect.top + boardPaddingRef.current + finalRow * totalCellRef.current;
+        overlayEl.style.transition = 'transform 50ms ease-out';
+        overlayEl.style.transform = `translate3d(${targetX}px, ${targetY}px, 0)`;
+        overlayElRef.current = null;
+        setTimeout(() => {
+          if (overlayEl.parentNode) overlayEl.parentNode.removeChild(overlayEl);
+        }, 55);
+      } else {
+        removeOverlay();
+      }
+    } else {
+      removeOverlay();
     }
 
-    removeOverlay();
     dragRef.current = null;
     rectRef.current = null;
     lastGridRef.current = { row: null, col: null };

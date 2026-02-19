@@ -490,7 +490,17 @@ export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit
     onPointerMove,
     onPointerUp,
     cancelDrag,
-  } = useDrag(displayBoard, handleDrop, isAnimating, hapticsOn);
+  } = useDrag(displayBoard, handleDrop, isAnimating);
+
+  // Haptic "click" when ghost snaps to a valid position
+  const prevDragValidRef = useRef(false);
+  useEffect(() => {
+    const valid = dragState?.isValid ?? false;
+    if (valid && !prevDragValidRef.current && hapticsOn) {
+      try { navigator.vibrate?.(4); } catch { /* unsupported */ }
+    }
+    prevDragValidRef.current = valid;
+  }, [dragState?.isValid, hapticsOn]);
 
   useEffect(() => {
     const moveEvent = ('onpointerrawupdate' in window ? 'pointerrawupdate' : 'pointermove') as 'pointerrawupdate' | 'pointermove';
