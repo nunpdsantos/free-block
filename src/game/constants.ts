@@ -1,8 +1,8 @@
 export const GRID_SIZE = 8;
 export const FINGER_OFFSET = 40; // px upward on mobile
-export const CLEAR_ANIMATION_MS = 450;
-export const CLEAR_STAGGER_MS = 20; // delay per cell in cascade
-export const CLEAR_ANTICIPATION_MS = 80; // hit-stop + anticipation pulse before cascade
+export const CLEAR_ANIMATION_MS = 280;
+export const CLEAR_STAGGER_MS = 12; // delay per cell in cascade
+export const CLEAR_ANTICIPATION_MS = 50; // hit-stop + anticipation pulse before cascade
 
 export const PIECE_COLORS = {
   blue: '#4B7BF5',

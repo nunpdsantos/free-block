@@ -128,7 +128,7 @@
     0 0 20px rgba(255, 215, 64, 0.8),
     0 0 40px rgba(255, 215, 64, 0.3),
     0 2px 8px rgba(0, 0, 0, 0.6);
-  animation: score-pop-anim 0.9s ease-out forwards;
+  animation: score-pop-anim 0.55s ease-out forwards;
   pointer-events: none;
   z-index: 55;
   text-align: center;
@@ -200,12 +200,12 @@
   background: white;
   pointer-events: none;
   z-index: 100;
-  animation: screen-flash-anim 180ms ease-out forwards;
+  animation: screen-flash-anim 120ms ease-out forwards;
 }
 
 @keyframes screen-flash-anim {
   0% {
-    opacity: 0.18;
+    opacity: 0.22;
   }
   100% {
     opacity: 0;
@@ -258,20 +258,17 @@
 @keyframes score-pop-anim {
   0% {
     opacity: 0;
-    transform: translate(-50%, -35%) scale(0.3);
+    transform: translate(-50%, -40%) scale(0.4);
   }
-  15% {
+  20% {
     opacity: 1;
-    transform: translate(-50%, -50%) scale(1.25);
+    transform: translate(-50%, -52%) scale(1.2);
   }
-  30% {
-    transform: translate(-50%, -52%) scale(0.95);
-  }
-  40% {
-    transform: translate(-50%, -54%) scale(1.05);
+  35% {
+    transform: translate(-50%, -55%) scale(0.97);
   }
   100% {
     opacity: 0;
-    transform: translate(-50%, -100%) scale(0.75);
+    transform: translate(-50%, -90%) scale(0.8);
   }
 }

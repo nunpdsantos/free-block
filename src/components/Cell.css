@@ -16,7 +16,7 @@
     inset 0 -3px 0 0 rgba(0, 0, 0, 0.5),
     inset 3px 0 0 0 rgba(255, 255, 255, 0.2),
     inset -3px 0 0 0 rgba(0, 0, 0, 0.3);
-  animation: cell-place 0.2s ease-out;
+  animation: cell-place 0.12s ease-out;
 }
 
 /* Face gradient — diagonal light-to-dark for depth */
@@ -85,17 +85,18 @@
   to { opacity: 1; }
 }
 
-/* During active drag: ghost cells snap in instantly — no fade-in lag */
+/* During active drag: ghost cells snap in instantly — crisp and defined */
 .board--dragging .cell--ghost-valid {
   animation: none;
-  opacity: 0.78;
-  box-shadow: none;
+  opacity: 0.88;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.35);
   filter: none;
 }
 .board--dragging .cell--ghost-completing {
   animation: none;
-  opacity: 0.88;
-  outline: 1.5px solid rgba(255, 255, 255, 0.5);
+  opacity: 0.95;
+  outline: 1.5px solid rgba(255, 255, 255, 0.6);
   outline-offset: -1.5px;
 }
 .board--dragging .cell--preview-clear {
@@ -107,14 +108,14 @@
 
 /* Anticipation pulse — all clearing cells flash simultaneously before cascade */
 .cell--pre-clear {
-  animation: cell-anticipate 80ms ease-out forwards;
+  animation: cell-anticipate 50ms ease-out forwards;
   z-index: 10;
   will-change: transform, filter;
 }
 
-/* Line clear — flash + staggered cascade with glow dissolve */
+/* Line clear — fast flash + staggered cascade */
 .cell--clearing {
-  animation: cell-clear 0.38s ease-out forwards;
+  animation: cell-clear 0.24s ease-out forwards;
   will-change: transform, opacity, filter;
 }
 
@@ -129,23 +130,20 @@
     rgba(255, 255, 255, 0.3) 45%,
     transparent 75%
   );
-  animation: cell-sparkle 0.38s ease-out forwards;
+  animation: cell-sparkle 0.24s ease-out forwards;
   animation-delay: inherit;
   pointer-events: none;
 }
 
-/* Placement — snappy pop with overshoot */
+/* Placement — hard snap with minimal overshoot */
 @keyframes cell-place {
   0% {
-    transform: scale(0.6);
-    opacity: 0.4;
+    transform: scale(0.65);
+    opacity: 0.5;
   }
-  40% {
-    transform: scale(1.1);
+  50% {
+    transform: scale(1.08);
     opacity: 1;
-  }
-  70% {
-    transform: scale(0.97);
   }
   100% {
     transform: scale(1);
@@ -153,27 +151,22 @@
   }
 }
 
-/* Clear — flash surge then scale up, glow, dissolve */
+/* Clear — hard white flash then rapid vanish */
 @keyframes cell-clear {
   0% {
     transform: scale(1);
     opacity: 1;
     filter: brightness(1);
   }
-  15% {
-    transform: scale(1.08);
+  20% {
+    transform: scale(1.12);
     opacity: 1;
-    filter: brightness(2.8);
-  }
-  30% {
-    transform: scale(1.15);
-    opacity: 1;
-    filter: brightness(1.6);
+    filter: brightness(3);
   }
   100% {
-    transform: scale(0.3);
+    transform: scale(0.2);
     opacity: 0;
-    filter: brightness(2.2);
+    filter: brightness(2);
   }
 }
 
@@ -225,7 +218,7 @@
 
 /* Post-clear settle bounce — cells adjacent to cleared cells jiggle */
 .cell--settling {
-  animation: cell-settle 0.3s ease-out;
+  animation: cell-settle 0.2s ease-out;
   will-change: transform;
 }
 
@@ -244,18 +237,18 @@
   }
 }
 
-/* Anticipation — bright pulse before clear (all cells simultaneously) */
+/* Anticipation — hard brightness spike before clear */
 @keyframes cell-anticipate {
   0% {
     transform: scale(1);
     filter: brightness(1);
   }
-  40% {
+  50% {
     transform: scale(1.06);
-    filter: brightness(1.8);
+    filter: brightness(2.2);
   }
   100% {
-    transform: scale(1.04);
-    filter: brightness(1.5);
+    transform: scale(1.03);
+    filter: brightness(1.6);
   }
 }

@@ -9,7 +9,7 @@ type ScoreDisplayProps = {
 };
 
 /** Smoothly animate a number counting up/down */
-function useAnimatedNumber(target: number, duration = 300): number {
+function useAnimatedNumber(target: number, duration = 200): number {
   const [display, setDisplay] = useState(target);
   const prevRef = useRef(target);
   const rafRef = useRef(0);

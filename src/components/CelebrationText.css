@@ -15,7 +15,7 @@
     0 0 20px rgba(255, 215, 64, 0.8),
     0 0 40px rgba(255, 215, 64, 0.3),
     0 2px 8px rgba(0, 0, 0, 0.6);
-  animation: celebration-anim 1.5s ease-out forwards;
+  animation: celebration-anim 0.9s ease-out forwards;
   letter-spacing: 1px;
 }
 
@@ -30,7 +30,7 @@
   background-clip: text;
   color: transparent;
   text-shadow: none;
-  animation: celebration-anim 1.5s ease-out forwards,
+  animation: celebration-anim 0.9s ease-out forwards,
              rainbow-shimmer 1s linear infinite;
   filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.5));
 }
@@ -63,31 +63,25 @@
 @keyframes celebration-anim {
   0% {
     opacity: 0;
-    transform: scale(0.15) rotate(-10deg);
+    transform: scale(0.2) rotate(-8deg);
   }
-  10% {
+  15% {
     opacity: 1;
-    transform: scale(1.45) rotate(3deg);
+    transform: scale(1.35) rotate(2deg);
   }
-  18% {
-    transform: scale(0.85) rotate(-3deg);
+  28% {
+    transform: scale(0.92) rotate(-1deg);
   }
-  26% {
-    transform: scale(1.15) rotate(1.5deg);
+  38% {
+    transform: scale(1.04) rotate(0deg);
   }
-  34% {
-    transform: scale(0.95) rotate(-0.5deg);
-  }
-  42% {
-    transform: scale(1) rotate(0deg);
-  }
-  75% {
+  65% {
     opacity: 1;
     transform: scale(1) rotate(0deg);
   }
   100% {
     opacity: 0;
-    transform: scale(0.6) translateY(-35px) rotate(-5deg);
+    transform: scale(0.7) translateY(-30px);
   }
 }
 

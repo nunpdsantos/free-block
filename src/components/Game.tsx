@@ -415,7 +415,7 @@ export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit
             scheduleTimer(() => {
               if (animationRunRef.current !== animationRunId) return;
               setScreenFlash(false);
-            }, 200);
+            }, 140);
           }
 
           // Confetti — bigger for all-clear
@@ -462,7 +462,7 @@ export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit
           scheduleTimer(() => {
             if (animationRunRef.current !== animationRunId) return;
             setSettleCells(new Set());
-          }, 350);
+          }, 220);
 
           setClearingCells(new Map());
           setClearedLines(null);

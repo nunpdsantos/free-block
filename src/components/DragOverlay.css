@@ -10,14 +10,14 @@
 }
 
 .drag-grid {
-  animation: drag-lift 80ms ease-out;
+  animation: drag-lift 60ms ease-out;
   will-change: transform;
 }
 
 @keyframes drag-lift {
   from {
-    transform: scale(0.7);
-    opacity: 0.7;
+    transform: scale(0.85);
+    opacity: 0.8;
   }
 }
 

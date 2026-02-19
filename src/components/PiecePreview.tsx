@@ -82,7 +82,7 @@ export const PiecePreview = memo(function PiecePreview({
       onPointerDown={handlePointerDown}
       style={{
         touchAction: 'none',
-        animationDelay: `${pieceIndex * 100}ms`,
+        animationDelay: `${pieceIndex * 50}ms`,
       }}
     >
       <div
