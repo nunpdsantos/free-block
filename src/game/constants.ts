@@ -17,10 +17,11 @@ export const PIECE_COLORS = {
 
 export const PIECE_COLOR_KEYS = Object.keys(PIECE_COLORS) as (keyof typeof PIECE_COLORS)[];
 
-// Scoring — matches Block Blast: 10 per block + additive combo bonus
-export const POINTS_PER_CELL = 10;
-export const COMBO_BASE_BONUS = 20;  // +20 for any line clear
-export const COMBO_INCREMENT = 10;   // +10 per additional simultaneous line
+// Scoring — matches Block Blast: placement points + 10 per block cleared + additive combo bonus
+export const POINTS_PER_CELL_PLACED = 1;  // points per cell just for placing a piece
+export const POINTS_PER_CELL = 10;         // points per cell in cleared lines
+export const COMBO_BASE_BONUS = 20;        // +20 for any line clear
+export const COMBO_INCREMENT = 10;         // +10 per additional simultaneous line
 export const STREAK_MULTIPLIER_INCREMENT = 0.5;
 
 // Revive

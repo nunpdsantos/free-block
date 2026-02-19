@@ -13,7 +13,7 @@ import {
   isBoardEmpty,
 } from './logic';
 import { generateThreePieces, generateDailyPieces } from './pieces';
-import { REVIVES_PER_GAME, REVIVE_CELLS_CLEARED, ALL_CLEAR_BONUS, SCORE_MILESTONES, UNDOS_PER_GAME } from './constants';
+import { REVIVES_PER_GAME, REVIVE_CELLS_CLEARED, ALL_CLEAR_BONUS, SCORE_MILESTONES, UNDOS_PER_GAME, POINTS_PER_CELL_PLACED } from './constants';
 import { mulberry32 } from './random';
 
 export function createInitialState(): GameState {
@@ -114,8 +114,9 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       // Update movesSinceLastClear
       const newMovesSinceLastClear = linesCleared > 0 ? 0 : state.movesSinceLastClear + 1;
 
-      // Calculate score
-      const pointsEarned = calculateScore(
+      // Calculate score — placement points always, clear points when applicable
+      const placementPoints = piece.coords.length * POINTS_PER_CELL_PLACED;
+      const clearPoints = calculateScore(
         clearingCells.length,
         linesCleared,
         linesCleared > 0 ? newStreak - 1 : 0
@@ -125,7 +126,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       const boardEmpty = linesCleared > 0 && isBoardEmpty(newBoard);
       const allClearBonus = boardEmpty ? ALL_CLEAR_BONUS : 0;
 
-      const newScore = state.score + pointsEarned + allClearBonus;
+      const newScore = state.score + placementPoints + clearPoints + allClearBonus;
       const newHighScore = Math.max(newScore, state.highScore);
 
       // Milestone detection

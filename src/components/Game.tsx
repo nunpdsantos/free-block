@@ -325,7 +325,8 @@ export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit
       // Update game context for achievement checking
       if (onGameContextUpdate) {
         const clearCellsForCtx = getClearingCells(rows, cols);
-        const pointsForCtx = linesCleared > 0 ? calculateScore(clearCellsForCtx.length, linesCleared, state.streak) + (isBoardEmpty(clearLines(boardAfterPlace, rows, cols)) ? ALL_CLEAR_BONUS : 0) : 0;
+        const placePts = piece.coords.length; // POINTS_PER_CELL_PLACED = 1
+        const pointsForCtx = placePts + (linesCleared > 0 ? calculateScore(clearCellsForCtx.length, linesCleared, state.streak) + (isBoardEmpty(clearLines(boardAfterPlace, rows, cols)) ? ALL_CLEAR_BONUS : 0) : 0);
         onGameContextUpdate({
           currentGameScore: state.score + pointsForCtx,
           currentGameRevivesRemaining: state.revivesRemaining,
