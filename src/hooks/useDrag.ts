@@ -6,8 +6,8 @@ import { getCSSPx } from '../game/responsive';
 import { getPieceBounds } from '../game/pieces';
 import '../components/DragOverlay.css';
 
-const SNAP_RADIUS_DRAG = 0;
-const SNAP_RADIUS_DROP = 1;
+const SNAP_RADIUS_DRAG = 1;
+const SNAP_RADIUS_DROP = 2;
 const LIVE_DRAG_PREVIEW_ENABLED = true;
 
 export function useDrag(

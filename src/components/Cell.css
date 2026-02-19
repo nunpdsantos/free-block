@@ -147,15 +147,18 @@
   pointer-events: none;
 }
 
-/* Placement — quick punchy settle */
+/* Placement — snappy pop with overshoot */
 @keyframes cell-place {
   0% {
-    transform: scale(0.7);
-    opacity: 0.5;
+    transform: scale(0.6);
+    opacity: 0.4;
   }
-  50% {
-    transform: scale(1.05);
+  40% {
+    transform: scale(1.1);
     opacity: 1;
+  }
+  70% {
+    transform: scale(0.97);
   }
   100% {
     transform: scale(1);

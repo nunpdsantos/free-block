@@ -84,7 +84,7 @@ export function setHapticsEnabled(on: boolean) {
 /** Soft woody thock on piece placement — suppressed briefly after clears */
 export function playPlace(dangerLevel: number = 0) {
   if (!sfxEnabled) return;
-  vibrate(8);
+  vibrate(12);
   if (volume === 0) return;
   if (performance.now() - lastClearTime < PLACE_SILENCE_GAP) return;
   synthPlace(dangerLevel);
