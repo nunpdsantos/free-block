@@ -26,14 +26,22 @@
 }
 
 .preview-cell {
-  border-radius: 2px;
+  border-radius: 3px;
 }
 
-/* Hard-edge bevel matching board cells (scaled down) */
+/* Raised-tile bevel matching board cells (scaled down) */
 .preview-cell--filled {
+  background-image: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.2) 0%,
+    transparent 45%,
+    rgba(0, 0, 0, 0.1) 100%
+  );
   box-shadow:
-    inset 1.5px 1.5px 0 rgba(255, 255, 255, 0.4),
-    inset -1.5px -1.5px 0 rgba(0, 0, 0, 0.5);
+    inset 0 2px 0 0 rgba(255, 255, 255, 0.35),
+    inset 0 -2px 0 0 rgba(0, 0, 0, 0.45),
+    inset 2px 0 0 0 rgba(255, 255, 255, 0.18),
+    inset -2px 0 0 0 rgba(0, 0, 0, 0.25);
 }
 
 .preview-cell--empty {

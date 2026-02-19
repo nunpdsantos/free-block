@@ -2,31 +2,34 @@
   position: relative;
   width: var(--cell-size);
   height: var(--cell-size);
-  border-radius: 3px;
+  border-radius: 4px;
   background-color: var(--cell-empty);
   overflow: visible;
   contain: layout style;
 }
 
-/* Hard-edge 3D bevel — sharp highlight/shadow like Block Blast */
+/* Raised-tile 3D bevel — wide per-side bevels like Block Blast */
 .cell--filled {
-  border-radius: 3px;
+  border-radius: 4px;
   box-shadow:
-    inset 2px 2px 0 rgba(255, 255, 255, 0.45),
-    inset -2px -2px 0 rgba(0, 0, 0, 0.55);
+    inset 0 3px 0 0 rgba(255, 255, 255, 0.4),
+    inset 0 -3px 0 0 rgba(0, 0, 0, 0.5),
+    inset 3px 0 0 0 rgba(255, 255, 255, 0.2),
+    inset -3px 0 0 0 rgba(0, 0, 0, 0.3);
   animation: cell-place 0.2s ease-out;
 }
 
-/* Static corner highlight — no animation */
+/* Face gradient — diagonal light-to-dark for depth */
 .cell--filled::before {
   content: '';
   position: absolute;
   inset: 0;
-  border-radius: 3px;
+  border-radius: 4px;
   background: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.2) 0%,
-    transparent 30%
+    145deg,
+    rgba(255, 255, 255, 0.22) 0%,
+    transparent 45%,
+    rgba(0, 0, 0, 0.12) 100%
   );
   pointer-events: none;
 }
@@ -34,7 +37,7 @@
 /* Ghost — colored with pulse + glow */
 .cell--ghost-valid {
   background-color: var(--ghost-color, var(--ghost-valid)) !important;
-  border-radius: 3px;
+  border-radius: 4px;
   box-shadow:
     inset 0 0 0 1.5px rgba(255, 255, 255, 0.7),
     0 0 10px 3px rgba(255, 255, 255, 0.2);
