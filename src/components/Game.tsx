@@ -1,4 +1,4 @@
-import { useReducer, useEffect, useCallback, useState, useRef, useMemo } from 'react';
+import { useReducer, useEffect, useCallback, useState, useRef, useMemo, useDeferredValue } from 'react';
 import { gameReducer, createInitialState, createDailyState } from '../game/reducer';
 import type { Board as BoardType, GameMode, PlayerStats, AchievementProgress } from '../game/types';
 import { getThemeById } from '../game/themes';
@@ -569,6 +569,11 @@ export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit
   const fillRatio = useMemo(() => getBoardFillRatio(displayBoard), [displayBoard]);
   const dangerLevel = fillRatio >= 0.85 ? 2 : fillRatio >= 0.75 ? 1 : 0;
 
+  // Deferred drag state — ghost cells update instantly, line preview catches up
+  // without blocking pointer frames
+  const deferredDragState = useDeferredValue(dragState);
+  const deferredGhostCells = useDeferredValue(ghostCells);
+
   // Ghost cells that would complete a line — glow brighter as anticipation cue
   // + preview all cells in completing rows/cols
   const { ghostCompletingCells, previewClearCells } = useMemo(() => {
@@ -576,17 +581,17 @@ export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit
       return { ghostCompletingCells: undefined, previewClearCells: undefined };
     }
 
-    if (!dragState || !dragState.isValid || dragState.boardRow === null || dragState.boardCol === null) {
+    if (!deferredDragState || !deferredDragState.isValid || deferredDragState.boardRow === null || deferredDragState.boardCol === null) {
       return { ghostCompletingCells: undefined, previewClearCells: undefined };
     }
-    const simBoard = placePiece(displayBoard, dragState.piece, dragState.boardRow, dragState.boardCol);
+    const simBoard = placePiece(displayBoard, deferredDragState.piece, deferredDragState.boardRow, deferredDragState.boardCol);
     const { rows, cols } = findCompletedLines(simBoard);
     if (rows.length === 0 && cols.length === 0) {
       return { ghostCompletingCells: undefined, previewClearCells: undefined };
     }
 
     const completing = new Set<string>();
-    for (const key of ghostCells.keys()) {
+    for (const key of deferredGhostCells.keys()) {
       const [r, c] = key.split(',').map(Number);
       if (rows.includes(r) || cols.includes(c)) {
         completing.add(key);
@@ -598,13 +603,13 @@ export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit
     for (const row of rows) {
       for (let c = 0; c < GRID_SIZE; c++) {
         const key = `${row},${c}`;
-        if (!ghostCells.has(key)) preview.add(key);
+        if (!deferredGhostCells.has(key)) preview.add(key);
       }
     }
     for (const col of cols) {
       for (let r = 0; r < GRID_SIZE; r++) {
         const key = `${r},${col}`;
-        if (!ghostCells.has(key)) preview.add(key);
+        if (!deferredGhostCells.has(key)) preview.add(key);
       }
     }
 
@@ -612,7 +617,7 @@ export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit
       ghostCompletingCells: completing.size > 0 ? completing : undefined,
       previewClearCells: preview.size > 0 ? preview : undefined,
     };
-  }, [dragState, displayBoard, ghostCells]);
+  }, [deferredDragState, displayBoard, deferredGhostCells]);
 
   // Build board container class with streak intensity (5 tiers)
   let boardContainerClass = 'board-container';
