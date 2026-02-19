@@ -1,6 +1,6 @@
 {
-  "name": "Gridlock",
-  "short_name": "Gridlock",
+  "name": "Free Block",
+  "short_name": "Free Block",
   "description": "A block puzzle game — fill rows and columns to clear them!",
   "start_url": "/",
   "display": "standalone",

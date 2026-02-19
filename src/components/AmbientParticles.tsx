@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect, useRef } from 'react';
+import { useMemo } from 'react';
 import './AmbientParticles.css';
 
 type AmbientParticle = {
@@ -12,7 +12,6 @@ type AmbientParticle = {
 };
 
 type BurstParticle = {
-  id: number;
   x: number;
   size: number;
   duration: number;
@@ -46,12 +45,9 @@ function generateParticles(): AmbientParticle[] {
   }));
 }
 
-let burstIdCounter = 1000;
-
 function generateBurstParticles(): BurstParticle[] {
   const count = 8 + Math.floor(Math.random() * 5); // 8-12
   return Array.from({ length: count }, () => ({
-    id: burstIdCounter++,
     x: 30 + Math.random() * 40, // center-biased
     size: 4 + Math.random() * 4,
     duration: 2 + Math.random() * 2,
@@ -62,25 +58,10 @@ function generateBurstParticles(): BurstParticle[] {
 
 export function AmbientParticles({ tension = 0, streak = 0, clearBurst = 0 }: AmbientParticlesProps) {
   const particles = useMemo(() => generateParticles(), []);
-  const [burstParticles, setBurstParticles] = useState<BurstParticle[]>([]);
-  const prevBurst = useRef(clearBurst);
-
-  // Spawn burst particles on clearBurst increment
-  useEffect(() => {
-    if (clearBurst === prevBurst.current) return;
-    prevBurst.current = clearBurst;
-
-    const burst = generateBurstParticles();
-    setBurstParticles(prev => [...prev, ...burst]);
-
-    // Auto-remove after longest possible duration + buffer
-    const timer = setTimeout(() => {
-      const ids = new Set(burst.map(b => b.id));
-      setBurstParticles(prev => prev.filter(p => !ids.has(p.id)));
-    }, 4500);
-
-    return () => clearTimeout(timer);
-  }, [clearBurst]);
+  const burstParticles = useMemo(
+    () => (clearBurst > 0 ? generateBurstParticles() : []),
+    [clearBurst]
+  );
 
   // Suppress unused var warning — streak reserved for future per-particle effects
   void streak;
@@ -110,9 +91,9 @@ export function AmbientParticles({ tension = 0, streak = 0, clearBurst = 0 }: Am
           } as React.CSSProperties}
         />
       ))}
-      {burstParticles.map(p => (
+      {burstParticles.map((p, i) => (
         <div
-          key={p.id}
+          key={`${clearBurst}-${i}`}
           className="ambient-particle ambient-particle--burst"
           style={{
             left: `${p.x}%`,

@@ -16,6 +16,10 @@ import {
   SPEED_FLOOR_MULTIPLIER,
 } from './constants';
 
+export function isFilledCell(cell: string | null | undefined): cell is string {
+  return typeof cell === 'string' && cell.length > 0;
+}
+
 export function createEmptyBoard(): Board {
   return Array.from({ length: GRID_SIZE }, () =>
     Array.from({ length: GRID_SIZE }, () => null)
@@ -32,7 +36,8 @@ export function canPlacePiece(
     const r = row + coord.row;
     const c = col + coord.col;
     if (r < 0 || r >= GRID_SIZE || c < 0 || c >= GRID_SIZE) return false;
-    if (board[r][c] !== null) return false;
+    if (!Array.isArray(board[r])) return false;
+    if (isFilledCell(board[r][c])) return false;
   }
   return true;
 }
@@ -58,15 +63,20 @@ export function findCompletedLines(board: Board): {
   const cols: number[] = [];
 
   for (let r = 0; r < GRID_SIZE; r++) {
-    if (board[r].every(cell => cell !== null)) {
-      rows.push(r);
+    let complete = true;
+    for (let c = 0; c < GRID_SIZE; c++) {
+      if (!isFilledCell(board[r]?.[c])) {
+        complete = false;
+        break;
+      }
     }
+    if (complete) rows.push(r);
   }
 
   for (let c = 0; c < GRID_SIZE; c++) {
     let complete = true;
     for (let r = 0; r < GRID_SIZE; r++) {
-      if (board[r][c] === null) {
+      if (!isFilledCell(board[r]?.[c])) {
         complete = false;
         break;
       }
@@ -218,7 +228,7 @@ export function clearCellsForRevive(board: Board, pieces: PieceShape[]): Board {
             inBounds = false;
             break;
           }
-          if (newBoard[cr][cc] !== null) cost++;
+          if (isFilledCell(newBoard[cr]?.[cc])) cost++;
         }
         if (inBounds && cost < bestCost) {
           bestCost = cost;
@@ -240,7 +250,12 @@ export function clearCellsForRevive(board: Board, pieces: PieceShape[]): Board {
 }
 
 export function isBoardEmpty(board: Board): boolean {
-  return board.every(row => row.every(cell => cell === null));
+  for (let r = 0; r < GRID_SIZE; r++) {
+    for (let c = 0; c < GRID_SIZE; c++) {
+      if (isFilledCell(board[r]?.[c])) return false;
+    }
+  }
+  return true;
 }
 
 /** Ratio of filled cells (0 = empty, 1 = full) */
@@ -248,7 +263,7 @@ export function getBoardFillRatio(board: Board): number {
   let filled = 0;
   for (let r = 0; r < GRID_SIZE; r++) {
     for (let c = 0; c < GRID_SIZE; c++) {
-      if (board[r][c] !== null) filled++;
+      if (isFilledCell(board[r]?.[c])) filled++;
     }
   }
   return filled / (GRID_SIZE * GRID_SIZE);

@@ -12,7 +12,7 @@ const MILESTONE_COPY: Record<number, { title: string; subtitle: string }> = {
   },
   30: {
     title: 'Thirty Days!',
-    subtitle: 'A full month of daily Gridlock. Absolutely unstoppable.',
+    subtitle: 'A full month of daily Free Block. Absolutely unstoppable.',
   },
 };
 

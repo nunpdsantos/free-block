@@ -8,22 +8,16 @@ interface BeforeInstallPromptEvent extends Event {
 }
 
 export function useInstallPrompt() {
-  const [state, setState] = useState<InstallState>('hidden');
+  const [state, setState] = useState<InstallState>(() => {
+    if (typeof window === 'undefined') return 'hidden';
+    if (window.matchMedia('(display-mode: standalone)').matches) return 'installed';
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !('MSStream' in window);
+    return isIOS ? 'ios' : 'hidden';
+  });
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
 
   useEffect(() => {
-    // Already installed as PWA
-    if (window.matchMedia('(display-mode: standalone)').matches) {
-      setState('installed');
-      return;
-    }
-
-    // iOS Safari — no beforeinstallprompt, show manual instructions
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !('MSStream' in window);
-    if (isIOS) {
-      setState('ios');
-      return;
-    }
+    if (state !== 'hidden') return;
 
     const handler = (e: Event) => {
       e.preventDefault();
@@ -40,7 +34,7 @@ export function useInstallPrompt() {
       window.removeEventListener('beforeinstallprompt', handler);
       window.removeEventListener('appinstalled', installed);
     };
-  }, []);
+  }, [state]);
 
   const install = useCallback(async () => {
     if (!deferredPrompt) return;

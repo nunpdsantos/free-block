@@ -16,7 +16,7 @@ import {
   BOARD_OPEN_THRESHOLD,
   BOARD_CRITICAL_THRESHOLD,
 } from './constants';
-import { canPlacePiece, placePiece, findCompletedLines } from './logic';
+import { canPlacePiece, placePiece, findCompletedLines, isFilledCell } from './logic';
 
 // 'easy' = small, many valid positions; 'hard' = large or awkward, few valid positions
 type DifficultyTier = 'easy' | 'medium' | 'hard';
@@ -150,7 +150,7 @@ function getBoardOpenness(board: Board): number {
   const total = GRID_SIZE * GRID_SIZE;
   for (let r = 0; r < GRID_SIZE; r++) {
     for (let c = 0; c < GRID_SIZE; c++) {
-      if (board[r][c] === null) empty++;
+      if (!isFilledCell(board[r]?.[c])) empty++;
     }
   }
   return empty / total;

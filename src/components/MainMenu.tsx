@@ -25,7 +25,7 @@ export function MainMenu({ topScore, onPlay, onDaily, todayCompleted, onTutorial
   return (
     <div className="main-menu">
       <div className="main-menu-title">
-        <h1>GRIDLOCK</h1>
+        <h1>FREE BLOCK</h1>
       </div>
 
       {displayName && (

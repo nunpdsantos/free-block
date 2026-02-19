@@ -1,4 +1,4 @@
-import { memo, useMemo } from 'react';
+import { memo, useMemo, type Ref } from 'react';
 import type { Board as BoardType, GhostCells } from '../game/types';
 import { GRID_SIZE } from '../game/constants';
 import { getCSSPx } from '../game/responsive';
@@ -18,6 +18,7 @@ type BoardProps = {
   dangerLevel?: number;
   settleCells?: Set<string>;
   isDragging?: boolean;
+  boardRef?: Ref<HTMLDivElement>;
 };
 
 /** Compute deterministic shatter offsets from cell position */
@@ -48,6 +49,7 @@ export const Board = memo(function Board({
   dangerLevel = 0,
   settleCells,
   isDragging = false,
+  boardRef,
 }: BoardProps) {
   const cells = [];
   for (let r = 0; r < GRID_SIZE; r++) {
@@ -111,7 +113,7 @@ export const Board = memo(function Board({
   else if (dangerLevel >= 1) boardClass += ' board--warning';
 
   return (
-    <div className={boardClass}>
+    <div className={boardClass} ref={boardRef}>
       {cells}
       {shockwaves}
     </div>

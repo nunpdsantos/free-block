@@ -1,4 +1,4 @@
-import type { GameState, GameAction, UndoSnapshot } from './types';
+import type { GameState, GameAction, UndoSnapshot, PieceShape } from './types';
 import {
   createEmptyBoard,
   canPlacePiece,
@@ -13,7 +13,7 @@ import {
   clearCellsForRevive,
   isBoardEmpty,
 } from './logic';
-import { generateThreePieces, generateDailyPieces, generateRevivePieces } from './pieces';
+import { generateThreePieces, generateDailyPieces } from './pieces';
 import { REVIVES_PER_GAME, ALL_CLEAR_BONUS, SCORE_MILESTONES, UNDOS_PER_GAME, PITY_THRESHOLD } from './constants';
 import { mulberry32 } from './random';
 
@@ -221,21 +221,25 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
     case 'REVIVE': {
       if (state.revivesRemaining <= 0 || !state.isGameOver) return state;
 
-      // Generate pieces first, then carve minimum space for them
-      const newPieces = generateRevivePieces(state.score);
-      const newBoard = clearCellsForRevive(state.board, newPieces);
+      // Keep the current tray; carve space so the remaining pieces can be played.
+      const remainingPieces = state.currentPieces.filter(
+        (piece): piece is PieceShape => piece !== null
+      );
+      if (remainingPieces.length === 0) return state;
+
+      const newBoard = clearCellsForRevive(state.board, remainingPieces);
 
       return {
         ...state,
         board: newBoard,
-        currentPieces: newPieces,
+        currentPieces: state.currentPieces,
         isGameOver: false,
         movesSinceLastClear: PITY_THRESHOLD,
         streak: 0,
         revivesRemaining: state.revivesRemaining - 1,
         postReviveGrace: true,
         celebrationText: null,
-        pieceGeneration: state.pieceGeneration + 1,
+        pieceGeneration: state.pieceGeneration,
         lastClearTimestamp: null,
       };
     }

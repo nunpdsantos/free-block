@@ -37,14 +37,20 @@ export function useSync(config: SyncConfig): { scheduleSync: () => void } {
 
   // Keep a ref to current data so push callbacks always read latest values
   const dataRef = useRef({ stats, achievements, dailyStreak, dailyResults });
-  dataRef.current = { stats, achievements, dailyStreak, dailyResults };
+  useEffect(() => {
+    dataRef.current = { stats, achievements, dailyStreak, dailyResults };
+  }, [stats, achievements, dailyStreak, dailyResults]);
 
-  const uidRef = useRef<string | null>(null);
-  uidRef.current = user?.uid ?? null;
+  const uidRef = useRef<string | null>(user?.uid ?? null);
+  useEffect(() => {
+    uidRef.current = user?.uid ?? null;
+  }, [user?.uid]);
 
   // Refs for setters so pull doesn't depend on them changing
   const settersRef = useRef({ setStats, setAchievements, setDailyStreak, setDailyResults });
-  settersRef.current = { setStats, setAchievements, setDailyStreak, setDailyResults };
+  useEffect(() => {
+    settersRef.current = { setStats, setAchievements, setDailyStreak, setDailyResults };
+  }, [setStats, setAchievements, setDailyStreak, setDailyResults]);
 
   // ------ Pull + merge helper (reused by initial sync and re-pull) ------
   const pullAndMerge = useCallback((uid: string) => {

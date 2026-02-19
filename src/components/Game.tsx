@@ -116,6 +116,40 @@ export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit
   const prevGameOverRef = useRef(false);
   const boardElRef = useRef<HTMLDivElement>(null);
   const prevMilestoneRef = useRef(0);
+  const activeTimerIdsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const animationRunRef = useRef(0);
+
+  const clearActiveTimers = useCallback(() => {
+    for (const timerId of activeTimerIdsRef.current) {
+      clearTimeout(timerId);
+    }
+    activeTimerIdsRef.current = [];
+  }, []);
+
+  const scheduleTimer = useCallback((callback: () => void, delayMs: number) => {
+    const timerId = setTimeout(() => {
+      activeTimerIdsRef.current = activeTimerIdsRef.current.filter(id => id !== timerId);
+      callback();
+    }, delayMs);
+    activeTimerIdsRef.current.push(timerId);
+    return timerId;
+  }, []);
+
+  const resetTransientAnimation = useCallback(() => {
+    animationRunRef.current += 1;
+    clearActiveTimers();
+    setPreClearCells(new Set());
+    setClearingCells(new Map());
+    setClearedLines(null);
+    setAnimBoard(null);
+    setAnimPieces(null);
+    setSettleCells(new Set());
+    setScreenFlash(false);
+    setScorePop(null);
+    setScorePopMult(null);
+    setReviveFlash(false);
+    setIsAnimating(false);
+  }, [clearActiveTimers]);
 
   // --- Offline detection ---
   useEffect(() => {
@@ -128,6 +162,12 @@ export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit
       window.removeEventListener('online', goOnline);
     };
   }, []);
+
+  useEffect(() => {
+    return () => {
+      clearActiveTimers();
+    };
+  }, [clearActiveTimers]);
 
   // --- Background palette cycling (theme-aware) ---
   const theme = useMemo(() => getThemeById(themeId), [themeId]);
@@ -280,6 +320,10 @@ export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit
       }
 
       if (linesCleared > 0) {
+        clearActiveTimers();
+        const animationRunId = animationRunRef.current + 1;
+        animationRunRef.current = animationRunId;
+
         // Check for all-clear
         const boardAfterClear = clearLines(boardAfterPlace, rows, cols);
         const allClear = isBoardEmpty(boardAfterClear);
@@ -324,7 +368,9 @@ export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit
         setScorePopKey(k => k + 1);
 
         // --- Phase 2: After anticipation, fire cascade + effects ---
-        setTimeout(() => {
+        scheduleTimer(() => {
+          if (animationRunRef.current !== animationRunId) return;
+
           setPreClearCells(new Set());
           setClearingCells(cellMap);
           setClearedLines({ rows, cols });
@@ -353,7 +399,10 @@ export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit
           // Screen flash on multi-clears
           if (linesCleared >= 2 || allClear) {
             setScreenFlash(true);
-            setTimeout(() => setScreenFlash(false), 200);
+            scheduleTimer(() => {
+              if (animationRunRef.current !== animationRunId) return;
+              setScreenFlash(false);
+            }, 200);
           }
 
           // Confetti — bigger for all-clear
@@ -377,7 +426,9 @@ export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit
         const maxDelay = (GRID_SIZE - 1) * CLEAR_STAGGER_MS;
         const totalMs = CLEAR_ANTICIPATION_MS + CLEAR_ANIMATION_MS + maxDelay;
 
-        setTimeout(() => {
+        scheduleTimer(() => {
+          if (animationRunRef.current !== animationRunId) return;
+
           // Post-clear settle bounce: cells adjacent to cleared cells that survived
           const boardAfterClear = clearLines(boardAfterPlace, rows, cols);
           const settleSet = new Set<string>();
@@ -395,7 +446,10 @@ export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit
             }
           }
           setSettleCells(settleSet);
-          setTimeout(() => setSettleCells(new Set()), 350);
+          scheduleTimer(() => {
+            if (animationRunRef.current !== animationRunId) return;
+            setSettleCells(new Set());
+          }, 350);
 
           setClearingCells(new Map());
           setClearedLines(null);
@@ -410,7 +464,7 @@ export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit
         dispatch({ type: 'PLACE_PIECE', pieceIndex, row, col, timestamp: dropTimestamp });
       }
     },
-    [state.board, state.currentPieces, state.streak, state.score, state.lastClearTimestamp, state.revivesRemaining, onStatsUpdate, onGameContextUpdate]
+    [state.board, state.currentPieces, state.streak, state.score, state.lastClearTimestamp, state.revivesRemaining, onStatsUpdate, onGameContextUpdate, clearActiveTimers, scheduleTimer]
   );
 
   const displayBoard = animBoard ?? state.board;
@@ -449,32 +503,36 @@ export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit
   }, [onPointerMove, onPointerUp, cancelDrag]);
 
   const handlePlayAgain = useCallback(() => {
+    resetTransientAnimation();
     dispatch({ type: 'NEW_GAME' });
-  }, []);
+  }, [resetTransientAnimation]);
 
   const handleRevive = useCallback(() => {
+    resetTransientAnimation();
     playRevive();
     dispatch({ type: 'REVIVE' });
     setReviveFlash(true);
     setTimeout(() => setReviveFlash(false), 600);
-  }, []);
+  }, [resetTransientAnimation]);
 
   const handleQuit = useCallback(() => {
+    resetTransientAnimation();
     onQuit();
-  }, [onQuit]);
+  }, [onQuit, resetTransientAnimation]);
 
   const handleDismissCelebration = useCallback(() => {
     dispatch({ type: 'DISMISS_CELEBRATION' });
   }, []);
 
   const handleRestart = useCallback(() => {
+    resetTransientAnimation();
     setIsPaused(false);
     if (mode === 'daily' && dailySeed !== undefined) {
       dispatch({ type: 'NEW_DAILY_GAME', seed: dailySeed });
     } else {
       dispatch({ type: 'NEW_GAME' });
     }
-  }, [mode, dailySeed]);
+  }, [mode, dailySeed, resetTransientAnimation]);
 
   const isNewHighScore = state.score > 0 && state.score >= topScore && state.isGameOver;
   const ghostColor = dragState?.piece.color ?? null;
@@ -571,11 +629,11 @@ export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit
         className={boardContainerClass}
         style={{ '--pressure': pressure } as React.CSSProperties}
         ref={(el) => {
-          boardRef.current = el;
           boardElRef.current = el;
         }}
       >
         <Board
+          boardRef={boardRef}
           board={displayBoard}
           ghostCells={ghostCells}
           ghostCompletingCells={ghostCompletingCells}

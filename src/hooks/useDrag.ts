@@ -6,6 +6,9 @@ import { getCSSPx } from '../game/responsive';
 import { getPieceBounds } from '../game/pieces';
 import '../components/DragOverlay.css';
 
+const SNAP_RADIUS_DRAG = 1;
+const SNAP_RADIUS_DROP = 2;
+
 export function useDrag(
   board: Board,
   onDrop: (pieceIndex: number, row: number, col: number) => void,
@@ -23,7 +26,6 @@ export function useDrag(
   const fingerOffsetRef = useRef(0);
   const pieceRowsRef = useRef(0);
   const pieceColsRef = useRef(0);
-  const rafRef = useRef<number>(0);
   const lastGridRef = useRef<{ row: number | null; col: number | null }>({ row: null, col: null });
 
   // Imperative overlay — no React involvement
@@ -93,10 +95,37 @@ export function useDrag(
     overlayElRef.current = null;
   }
 
+  const findNearestValidPlacement = useCallback((
+    piece: PieceShape,
+    rawRow: number,
+    rawCol: number,
+    maxRadius: number
+  ): { row: number; col: number } | null => {
+    for (let radius = 0; radius <= maxRadius; radius++) {
+      let bestInRing: { row: number; col: number; dist2: number } | null = null;
+      for (let dr = -radius; dr <= radius; dr++) {
+        for (let dc = -radius; dc <= radius; dc++) {
+          if (Math.max(Math.abs(dr), Math.abs(dc)) !== radius) continue;
+          const row = rawRow + dr;
+          const col = rawCol + dc;
+          if (row < 0 || row >= GRID_SIZE || col < 0 || col >= GRID_SIZE) continue;
+          if (!canPlacePiece(board, piece, row, col)) continue;
+
+          const dist2 = dr * dr + dc * dc;
+          if (!bestInRing || dist2 < bestInRing.dist2) {
+            bestInRing = { row, col, dist2 };
+          }
+        }
+      }
+      if (bestInRing) return { row: bestInRing.row, col: bestInRing.col };
+    }
+    return null;
+  }, [board]);
+
   // --- Grid position (uses cached refs, no allocations) ---
 
   const computeGridPos = useCallback(
-    (clientX: number, clientY: number) => {
+    (clientX: number, clientY: number, snapRadius: number = SNAP_RADIUS_DRAG) => {
       const rect = rectRef.current;
       if (!rect) return { row: null, col: null, isValid: false };
 
@@ -114,10 +143,18 @@ export function useDrag(
       const piece = dragRef.current?.piece;
       if (!piece) return { row: null, col: null, isValid: false };
 
-      const isValid = canPlacePiece(board, piece, row, col);
-      return { row, col, isValid };
+      const snapped = findNearestValidPlacement(piece, row, col, snapRadius);
+      if (snapped) {
+        return { row: snapped.row, col: snapped.col, isValid: true };
+      }
+
+      if (row < 0 || row >= GRID_SIZE || col < 0 || col >= GRID_SIZE) {
+        return { row: null, col: null, isValid: false };
+      }
+
+      return { row, col, isValid: false };
     },
-    [board]
+    [findNearestValidPlacement]
   );
 
   // --- Update ghost + React state (only when grid cell changes) ---
@@ -209,19 +246,14 @@ export function useDrag(
       // INSTANT — direct DOM, zero React overhead
       moveOverlay(clientX, clientY);
 
-      // DEFERRED — ghost/preview only when grid cell changes
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
-      rafRef.current = requestAnimationFrame(() => {
-        if (!dragRef.current) return;
-        const { row, col, isValid } = computeGridPos(clientX, clientY);
-        updateGridState(row, col, isValid);
-      });
+      // Immediate ghost/preview update for maximum responsiveness
+      const { row, col, isValid } = computeGridPos(clientX, clientY, SNAP_RADIUS_DRAG);
+      updateGridState(row, col, isValid);
     },
     [computeGridPos]
   );
 
   const onPointerUp = useCallback((clientX?: number, clientY?: number) => {
-    if (rafRef.current) cancelAnimationFrame(rafRef.current);
     const current = dragRef.current;
     if (!current) return;
 
@@ -230,7 +262,7 @@ export function useDrag(
     let finalCol = current.boardCol;
     let finalValid = current.isValid;
     if (clientX !== undefined && clientY !== undefined) {
-      const { row, col, isValid } = computeGridPos(clientX, clientY);
+      const { row, col, isValid } = computeGridPos(clientX, clientY, SNAP_RADIUS_DROP);
       finalRow = row;
       finalCol = col;
       finalValid = isValid;
@@ -249,7 +281,6 @@ export function useDrag(
   }, [onDrop, computeGridPos]);
 
   const cancelDrag = useCallback(() => {
-    if (rafRef.current) cancelAnimationFrame(rafRef.current);
     removeOverlay();
     dragRef.current = null;
     rectRef.current = null;

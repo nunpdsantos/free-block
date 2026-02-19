@@ -36,7 +36,7 @@ export function GameOver({
 
   const handleShare = () => {
     const dayNum = getDayNumber(getTodayDateStr());
-    const text = `Gridlock Daily #${dayNum} — ${score.toLocaleString()} pts`;
+    const text = `Free Block Daily #${dayNum} — ${score.toLocaleString()} pts`;
     navigator.clipboard.writeText(text).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);

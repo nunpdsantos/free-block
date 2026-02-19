@@ -14,7 +14,7 @@ export function DailyCalendar({ results, onBack }: DailyCalendarProps) {
     .sort((a, b) => b.date.localeCompare(a.date));
 
   const handleShare = (result: DailyResult) => {
-    const text = `Gridlock Daily #${result.dayNumber} — ${result.score.toLocaleString()} pts`;
+    const text = `Free Block Daily #${result.dayNumber} — ${result.score.toLocaleString()} pts`;
     navigator.clipboard.writeText(text).then(() => {
       setCopiedDate(result.date);
       setTimeout(() => setCopiedDate(null), 2000);

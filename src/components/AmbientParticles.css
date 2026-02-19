@@ -24,6 +24,8 @@
 .ambient-particle--burst {
   bottom: 40%;
   animation-name: ambient-burst;
+  animation-iteration-count: 1;
+  animation-fill-mode: forwards;
 }
 
 @keyframes ambient-float {

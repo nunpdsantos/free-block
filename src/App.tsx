@@ -121,9 +121,12 @@ export default function App() {
 
   useEffect(() => {
     let cancelled = false;
-    setLeaderboardLoading(true);
-    setPlayerRank(null);
-    setEntriesAroundPlayer(null);
+    queueMicrotask(() => {
+      if (cancelled) return;
+      setLeaderboardLoading(true);
+      setPlayerRank(null);
+      setEntriesAroundPlayer(null);
+    });
 
     const uid = user?.uid;
 
@@ -203,10 +206,6 @@ export default function App() {
     applyTheme(theme);
   }, [themeId, achievementProgress, setThemeId]);
 
-  // Achievement checking — runs whenever stats or dailyStreak change
-  const achievementProgressRef = useRef(achievementProgress);
-  achievementProgressRef.current = achievementProgress;
-
   const dailyCount = Object.keys(dailyResults).length;
 
   const runAchievementCheck = useCallback(() => {
@@ -218,7 +217,7 @@ export default function App() {
       currentGameRevivesRemaining: gameContextRef.current.currentGameRevivesRemaining,
       lastClearCount: gameContextRef.current.lastClearCount,
     };
-    const newIds = checkAchievements(ctx, achievementProgressRef.current);
+    const newIds = checkAchievements(ctx, achievementProgress);
     if (newIds.length > 0) {
       const now = Date.now();
       setAchievementProgress(prev => {
@@ -235,7 +234,7 @@ export default function App() {
       playAchievement();
       scheduleSync();
     }
-  }, [stats, dailyStreak, dailyCount, setAchievementProgress, scheduleSync]);
+  }, [stats, dailyStreak, dailyCount, achievementProgress, setAchievementProgress, scheduleSync]);
 
   // Run check whenever stats change
   useEffect(() => {
@@ -335,10 +334,6 @@ export default function App() {
     [setDailyResults, setDailyStreak, dailyStreak, scheduleSync, setStreakMilestone]
   );
 
-  // Ref to hold auth state for use in handleGameOver without re-creating the callback
-  const authRef = useRef<{ uid: string | null; displayName: string | null }>({ uid: null, displayName: null });
-  authRef.current = { uid: user?.uid ?? null, displayName };
-
   const handleGameOver = useCallback(
     (score: number, revivesRemaining: number, mode: 'classic' | 'daily') => {
       setStats(prev => {
@@ -358,16 +353,16 @@ export default function App() {
       handleSaveScore(score);
 
       // Submit to global Firestore leaderboard
-      const { uid, displayName: name } = authRef.current;
-      if (uid && name && score > 0) {
-        submitScore(uid, name, score, mode).catch((err) => {
+      const uid = user?.uid ?? null;
+      if (uid && displayName && score > 0) {
+        submitScore(uid, displayName, score, mode).catch((err) => {
           console.error('[Gridlock] Score submit failed:', err);
         });
       }
 
       scheduleSync();
     },
-    [setStats, handleSaveScore, scheduleSync]
+    [setStats, handleSaveScore, scheduleSync, user?.uid, displayName]
   );
 
   const dailySeed = dateToSeed(todayStr);
