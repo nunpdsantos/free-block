@@ -2,6 +2,7 @@ import { synthPlace, synthClear, synthAllClear, synthGameOver, synthRevive, synt
 
 let volume = 80; // 0-100
 let sfxEnabled = true;
+let hapticsEnabled = true;
 let lastClearTime = 0;
 const PLACE_SILENCE_GAP = 250; // ms of silence after a clear before placement sounds resume
 
@@ -27,12 +28,18 @@ try {
   if (stored !== null) sfxEnabled = JSON.parse(stored) as boolean;
 } catch { /* ignore */ }
 
+// Load persisted haptics toggle
+try {
+  const stored = localStorage.getItem('gridlock-haptics');
+  if (stored !== null) hapticsEnabled = JSON.parse(stored) as boolean;
+} catch { /* ignore */ }
+
 // Apply initial volume to synth master
 try { setMasterVolume(volume / 100); } catch { /* AudioContext may not exist yet */ }
 
-/** Haptic pulse — suppressed when volume is 0 or SFX disabled */
+/** Haptic pulse — independent toggle from audio */
 function vibrate(pattern: number | number[]) {
-  if (volume === 0 || !sfxEnabled) return;
+  if (!hapticsEnabled) return;
   try {
     navigator?.vibrate?.(pattern);
   } catch { /* unsupported */ }
@@ -60,6 +67,17 @@ export function setSfxEnabled(on: boolean) {
   sfxEnabled = on;
   try {
     localStorage.setItem('gridlock-sfx', JSON.stringify(on));
+  } catch { /* ignore */ }
+}
+
+export function getHapticsEnabled(): boolean {
+  return hapticsEnabled;
+}
+
+export function setHapticsEnabled(on: boolean) {
+  hapticsEnabled = on;
+  try {
+    localStorage.setItem('gridlock-haptics', JSON.stringify(on));
   } catch { /* ignore */ }
 }
 

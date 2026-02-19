@@ -57,7 +57,7 @@ function getInitialLeaderboard(): LeaderboardEntry[] {
       const score = JSON.parse(raw) as number;
       window.localStorage.removeItem('gridlock-highscore');
       if (score > 0) {
-        const migrated = [{ score, date: new Date().toLocaleDateString() }];
+        const migrated = [{ score, date: getTodayDateStr() }];
         window.localStorage.setItem('gridlock-leaderboard', JSON.stringify(migrated));
         return migrated;
       }
@@ -272,7 +272,7 @@ export default function App() {
       setLeaderboard((prev) => {
         const entry: LeaderboardEntry = {
           score,
-          date: new Date().toLocaleDateString(),
+          date: getTodayDateStr(),
         };
         const next = [...prev, entry]
           .sort((a, b) => b.score - a.score)
@@ -303,7 +303,7 @@ export default function App() {
         const cutoff = Date.now() - 30 * 86400000;
         const pruned: Record<string, DailyResult> = {};
         for (const [k, v] of Object.entries(prev)) {
-          if (new Date(k + 'T00:00:00Z').getTime() >= cutoff) {
+          if (new Date(k + 'T00:00:00').getTime() >= cutoff) {
             pruned[k] = v;
           }
         }
