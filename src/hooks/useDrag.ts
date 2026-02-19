@@ -101,14 +101,28 @@ export function useDrag(
     el.style.transform = `translate3d(${x}px, ${y}px, 0)`;
   }
 
-  function snapOverlayToGrid(row: number, col: number) {
+  function snapOverlayToGrid(row: number, col: number, clientX: number, clientY: number) {
     const el = overlayElRef.current;
     const rect = rectRef.current;
     if (!el || !rect) return;
     const padding = boardPaddingRef.current;
     const totalCell = totalCellRef.current;
-    const x = rect.left + padding + col * totalCell;
-    const y = rect.top + padding + row * totalCell;
+
+    // Grid-aligned position
+    const gridX = rect.left + padding + col * totalCell;
+    const gridY = rect.top + padding + row * totalCell;
+
+    // Where the overlay would be if free-tracking the finger
+    const anchorX = overlayWRef.current * grabFracXRef.current;
+    const anchorY = overlayHRef.current * grabFracYRef.current;
+    const adjustedY = clientY - pointerOffsetYRef.current;
+    const fingerX = clientX - anchorX;
+    const fingerY = adjustedY - anchorY;
+
+    // Elastic: 15% of finger offset bleeds through — piece "breathes" around the grid cell
+    const ELASTICITY = 0.15;
+    const x = gridX + (fingerX - gridX) * ELASTICITY;
+    const y = gridY + (fingerY - gridY) * ELASTICITY;
     el.style.transform = `translate3d(${x}px, ${y}px, 0)`;
   }
 
@@ -285,12 +299,8 @@ export function useDrag(
         const { row, col, isValid } = computeGridPos(clientX, clientY, SNAP_RADIUS_DRAG);
 
         if (isValid && row !== null && col !== null) {
-          // Snap overlay to exact grid position
-          const el = overlayElRef.current;
-          if (el && !isSnappedRef.current) {
-            el.classList.add('drag-overlay--snapped');
-          }
-          snapOverlayToGrid(row, col);
+          // Snap overlay toward grid position with elastic finger offset
+          snapOverlayToGrid(row, col, clientX, clientY);
           isSnappedRef.current = true;
 
           // Synchronous haptic on every grid cell change
@@ -302,11 +312,7 @@ export function useDrag(
           }
         } else {
           // Not near valid position — follow finger with zero lag
-          if (isSnappedRef.current) {
-            const el = overlayElRef.current;
-            if (el) el.classList.remove('drag-overlay--snapped');
-            isSnappedRef.current = false;
-          }
+          isSnappedRef.current = false;
           moveOverlay(clientX, clientY);
         }
 

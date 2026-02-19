@@ -9,10 +9,6 @@
   contain: layout paint style;
 }
 
-.drag-overlay--snapped {
-  transition: transform 50ms ease-out;
-}
-
 .drag-grid {
   animation: drag-lift 60ms ease-out;
   will-change: transform;
