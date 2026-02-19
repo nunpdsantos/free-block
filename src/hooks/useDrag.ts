@@ -29,7 +29,6 @@ export function useDrag(
   const pieceRowsRef = useRef(0);
   const pieceColsRef = useRef(0);
   const lastGridRef = useRef<{ row: number | null; col: number | null }>({ row: null, col: null });
-  const isSnappedRef = useRef(false);
   const hapticsRef = useRef(hapticsEnabled);
 
   // Imperative overlay — no React involvement
@@ -98,31 +97,6 @@ export function useDrag(
     const adjustedY = clientY - pointerOffsetYRef.current;
     const x = clientX - anchorX;
     const y = adjustedY - anchorY;
-    el.style.transform = `translate3d(${x}px, ${y}px, 0)`;
-  }
-
-  function snapOverlayToGrid(row: number, col: number, clientX: number, clientY: number) {
-    const el = overlayElRef.current;
-    const rect = rectRef.current;
-    if (!el || !rect) return;
-    const padding = boardPaddingRef.current;
-    const totalCell = totalCellRef.current;
-
-    // Grid-aligned position
-    const gridX = rect.left + padding + col * totalCell;
-    const gridY = rect.top + padding + row * totalCell;
-
-    // Where the overlay would be if free-tracking the finger
-    const anchorX = overlayWRef.current * grabFracXRef.current;
-    const anchorY = overlayHRef.current * grabFracYRef.current;
-    const adjustedY = clientY - pointerOffsetYRef.current;
-    const fingerX = clientX - anchorX;
-    const fingerY = adjustedY - anchorY;
-
-    // Elastic: 15% of finger offset bleeds through — piece "breathes" around the grid cell
-    const ELASTICITY = 0.15;
-    const x = gridX + (fingerX - gridX) * ELASTICITY;
-    const y = gridY + (fingerY - gridY) * ELASTICITY;
     el.style.transform = `translate3d(${x}px, ${y}px, 0)`;
   }
 
@@ -280,7 +254,6 @@ export function useDrag(
       dragRef.current = state;
       setDragState(state);
       lastGridRef.current = { row: null, col: null };
-      isSnappedRef.current = false;
 
       // Initial ghost computation
       if (LIVE_DRAG_PREVIEW_ENABLED) {
@@ -295,30 +268,23 @@ export function useDrag(
     (clientX: number, clientY: number) => {
       if (!dragRef.current) return;
 
+      // Overlay always follows finger — zero lag, full fluidity
+      moveOverlay(clientX, clientY);
+
       if (LIVE_DRAG_PREVIEW_ENABLED) {
         const { row, col, isValid } = computeGridPos(clientX, clientY, SNAP_RADIUS_DRAG);
 
+        // Synchronous haptic on every valid grid cell change
         if (isValid && row !== null && col !== null) {
-          // Snap overlay toward grid position with elastic finger offset
-          snapOverlayToGrid(row, col, clientX, clientY);
-          isSnappedRef.current = true;
-
-          // Synchronous haptic on every grid cell change
           const last = lastGridRef.current;
           if (row !== last.row || col !== last.col) {
             if (hapticsRef.current) {
               try { navigator.vibrate?.(4); } catch { /* unsupported */ }
             }
           }
-        } else {
-          // Not near valid position — follow finger with zero lag
-          isSnappedRef.current = false;
-          moveOverlay(clientX, clientY);
         }
 
         updateGridState(row, col, isValid);
-      } else {
-        moveOverlay(clientX, clientY);
       }
     },
     [computeGridPos]
