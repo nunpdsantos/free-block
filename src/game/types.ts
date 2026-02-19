@@ -52,6 +52,7 @@ export type GameState = {
   score: number;
   highScore: number;
   streak: number;
+  turnHadClear: boolean; // did any piece in current tray clear lines?
   isGameOver: boolean;
   lastClearCount: number;
   celebrationText: string | null;

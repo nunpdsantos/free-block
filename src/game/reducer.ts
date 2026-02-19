@@ -23,6 +23,7 @@ export function createInitialState(): GameState {
     score: 0,
     highScore: 0,
     streak: 0,
+    turnHadClear: false,
     isGameOver: false,
     lastClearCount: 0,
     celebrationText: null,
@@ -48,6 +49,7 @@ export function createDailyState(seed: number): GameState {
     score: 0,
     highScore: 0,
     streak: 0,
+    turnHadClear: false,
     isGameOver: false,
     lastClearCount: 0,
     celebrationText: null,
@@ -103,8 +105,11 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         newBoard = clearLines(newBoard, rows, cols);
       }
 
-      // Update streak
-      const newStreak = linesCleared > 0 ? state.streak + 1 : 0;
+      // Update streak — Block Blast style: streak only resets after a full
+      // tray of 3 pieces with zero clears. Non-clearing placements within
+      // the same tray don't break the streak.
+      const newStreak = linesCleared > 0 ? state.streak + 1 : state.streak;
+      const newTurnHadClear = state.turnHadClear || linesCleared > 0;
 
       // Update movesSinceLastClear
       const newMovesSinceLastClear = linesCleared > 0 ? 0 : state.movesSinceLastClear + 1;
@@ -139,14 +144,22 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
       const allPlaced = newPieces.every(p => p === null);
       let finalPieces = newPieces;
       let newPieceGeneration = state.pieceGeneration;
+      let finalStreak = newStreak;
+      let finalTurnHadClear = newTurnHadClear;
 
       if (allPlaced) {
+        // Tray complete — if no clears happened this tray, reset streak
+        if (!newTurnHadClear) {
+          finalStreak = 0;
+        }
+        finalTurnHadClear = false;
+
         newPieceGeneration = state.pieceGeneration + 1;
         if (state.mode === 'daily' && state.dailySeed !== undefined) {
           const rng = mulberry32(state.dailySeed + newPieceGeneration);
           finalPieces = generateDailyPieces(newBoard, rng);
         } else {
-          finalPieces = generateThreePieces(newBoard, newMovesSinceLastClear, newScore, newStreak);
+          finalPieces = generateThreePieces(newBoard, newMovesSinceLastClear, newScore, finalStreak);
         }
       }
 
@@ -169,7 +182,8 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         currentPieces: finalPieces,
         score: newScore,
         highScore: newHighScore,
-        streak: newStreak,
+        streak: finalStreak,
+        turnHadClear: finalTurnHadClear,
         isGameOver,
         lastClearCount: linesCleared,
         celebrationText,
@@ -180,7 +194,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         undoSnapshot,
         gamePiecesPlaced: state.gamePiecesPlaced + 1,
         gameLinesCleared: state.gameLinesCleared + linesCleared,
-        gameBestStreak: Math.max(state.gameBestStreak, newStreak),
+        gameBestStreak: Math.max(state.gameBestStreak, finalStreak),
       };
     }
 
@@ -211,6 +225,7 @@ export function gameReducer(state: GameState, action: GameAction): GameState {
         isGameOver: stillGameOver,
         movesSinceLastClear: 0,
         streak: 0,
+        turnHadClear: false,
         revivesRemaining: state.revivesRemaining - 1,
         celebrationText: null,
         pieceGeneration: state.pieceGeneration + 1,

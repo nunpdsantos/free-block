@@ -311,9 +311,9 @@ export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit
       const { rows, cols } = findCompletedLines(boardAfterPlace);
       const linesCleared = rows.length + cols.length;
 
-      // Stats: piece placed
+      // Stats: piece placed — streak uses per-tray tolerance (no reset on non-clearing placements)
       if (onStatsUpdate) {
-        const newStreak = linesCleared > 0 ? state.streak + 1 : 0;
+        const newStreak = linesCleared > 0 ? state.streak + 1 : state.streak;
         onStatsUpdate(prev => ({
           ...prev,
           totalPiecesPlaced: prev.totalPiecesPlaced + 1,
