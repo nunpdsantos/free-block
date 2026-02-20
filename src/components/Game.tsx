@@ -502,6 +502,14 @@ export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit
     prevDragValidRef.current = valid;
   }, [dragState?.isValid, hapticsOn]);
 
+  // Stable refs for pointer handlers — listeners register once, never torn down
+  const onPointerMoveRef = useRef(onPointerMove);
+  const onPointerUpRef = useRef(onPointerUp);
+  const cancelDragRef = useRef(cancelDrag);
+  onPointerMoveRef.current = onPointerMove;
+  onPointerUpRef.current = onPointerUp;
+  cancelDragRef.current = cancelDrag;
+
   useEffect(() => {
     const moveEvent = ('onpointerrawupdate' in window ? 'pointerrawupdate' : 'pointermove') as 'pointerrawupdate' | 'pointermove';
 
@@ -512,13 +520,13 @@ export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit
         ? e.getCoalescedEvents()
         : [];
       const latest = coalesced.length > 0 ? coalesced[coalesced.length - 1] : e;
-      onPointerMove(latest.clientX, latest.clientY);
+      onPointerMoveRef.current(latest.clientX, latest.clientY);
     };
     const handleUp = (e: PointerEvent) => {
-      onPointerUp(e.clientX, e.clientY);
+      onPointerUpRef.current(e.clientX, e.clientY);
     };
     const handleCancel = () => {
-      cancelDrag();
+      cancelDragRef.current();
     };
 
     document.addEventListener(moveEvent, handleMove, { passive: true });
@@ -530,7 +538,7 @@ export function Game({ mode, dailySeed, topScore, themeId, onThemeChange, onQuit
       document.removeEventListener('pointerup', handleUp);
       document.removeEventListener('pointercancel', handleCancel);
     };
-  }, [onPointerMove, onPointerUp, cancelDrag]);
+  }, []);
 
   const handlePlayAgain = useCallback(() => {
     if (state.isGameOver && shouldCommitOnExitFromGameOver(mode, state.revivesRemaining)) {

@@ -19,6 +19,14 @@ export function useDrag(
   const [ghostCells, setGhostCells] = useState<GhostCells>(new Map());
   const boardRef = useRef<HTMLDivElement>(null);
 
+  // Stable refs for props — avoids cascading useCallback recreation on every board change
+  const boardStateRef = useRef(board);
+  const onDropRef = useRef(onDrop);
+  const isAnimatingRef = useRef(isAnimating);
+  boardStateRef.current = board;
+  onDropRef.current = onDrop;
+  isAnimatingRef.current = isAnimating;
+
   // Internal refs — never trigger React re-renders
   const dragRef = useRef<DragState | null>(null);
   const rectRef = useRef<DOMRect | null>(null);
@@ -110,6 +118,7 @@ export function useDrag(
     rawCol: number,
     maxRadius: number
   ): { row: number; col: number } | null => {
+    const currentBoard = boardStateRef.current;
     for (let radius = 0; radius <= maxRadius; radius++) {
       let bestInRing: { row: number; col: number; dist2: number } | null = null;
       for (let dr = -radius; dr <= radius; dr++) {
@@ -118,7 +127,7 @@ export function useDrag(
           const row = rawRow + dr;
           const col = rawCol + dc;
           if (row < 0 || row >= GRID_SIZE || col < 0 || col >= GRID_SIZE) continue;
-          if (!canPlacePiece(board, piece, row, col)) continue;
+          if (!canPlacePiece(currentBoard, piece, row, col)) continue;
 
           const dist2 = dr * dr + dc * dc;
           if (!bestInRing || dist2 < bestInRing.dist2) {
@@ -129,7 +138,7 @@ export function useDrag(
       if (bestInRing) return { row: bestInRing.row, col: bestInRing.col };
     }
     return null;
-  }, [board]);
+  }, []);
 
   // --- Grid position (uses cached refs, no allocations) ---
 
@@ -210,7 +219,7 @@ export function useDrag(
       grabFracY: number = 0.5,
       pointerType: string = 'mouse'
     ) => {
-      if (isAnimating) return;
+      if (isAnimatingRef.current) return;
 
       // Clean up any leftover overlay (including animated drop overlays)
       removeOverlay();
@@ -261,7 +270,7 @@ export function useDrag(
         updateGridState(row, col, isValid);
       }
     },
-    [isAnimating, computeGridPos]
+    [computeGridPos]
   );
 
   const onPointerMove = useCallback(
@@ -317,7 +326,7 @@ export function useDrag(
     }
 
     if (finalRow !== null && finalCol !== null && finalValid) {
-      onDrop(current.pieceIndex, finalRow, finalCol);
+      onDropRef.current(current.pieceIndex, finalRow, finalCol);
 
       // Snap overlay to exact grid position before removal
       const overlayEl = overlayElRef.current;
@@ -346,7 +355,7 @@ export function useDrag(
     pointerOffsetYRef.current = 0;
     setDragState(null);
     setGhostCells(new Map());
-  }, [onDrop, computeGridPos]);
+  }, [computeGridPos]);
 
   const cancelDrag = useCallback(() => {
     if (rafIdRef.current) {
