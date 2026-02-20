@@ -28,6 +28,8 @@ export function useDrag(
   const pieceRowsRef = useRef(0);
   const pieceColsRef = useRef(0);
   const lastGridRef = useRef<{ row: number | null; col: number | null }>({ row: null, col: null });
+  const rafIdRef = useRef(0);
+  const pendingGridRef = useRef<{ row: number | null; col: number | null; isValid: boolean } | null>(null);
 
   // Imperative overlay — no React involvement
   const overlayElRef = useRef<HTMLDivElement | null>(null);
@@ -40,6 +42,7 @@ export function useDrag(
   // Clean up on unmount
   useEffect(() => {
     return () => {
+      if (rafIdRef.current) cancelAnimationFrame(rafIdRef.current);
       const el = overlayElRef.current;
       if (el?.parentNode) el.parentNode.removeChild(el);
     };
@@ -265,14 +268,27 @@ export function useDrag(
     (clientX: number, clientY: number) => {
       if (!dragRef.current) return;
 
-      // INSTANT — direct DOM, zero React overhead
+      // INSTANT — direct DOM, zero React overhead (120-240 Hz)
       moveOverlay(clientX, clientY);
 
       if (LIVE_DRAG_PREVIEW_ENABLED) {
-        // With SNAP_RADIUS_DRAG=0, computeGridPos is trivially cheap (single check).
-        // updateGridState dedupes by grid position, so React only re-renders on cell change.
         const { row, col, isValid } = computeGridPos(clientX, clientY, SNAP_RADIUS_DRAG);
-        updateGridState(row, col, isValid);
+
+        // rAF-throttle React state updates — max once per display frame (60 Hz).
+        // Overlay moves at hardware rate; ghost cells catch up each frame.
+        // Without this, pointerrawupdate at 240 Hz floods React with renders
+        // and the main thread falls behind, causing elastic lag on busy boards.
+        pendingGridRef.current = { row, col, isValid };
+        if (!rafIdRef.current) {
+          rafIdRef.current = requestAnimationFrame(() => {
+            rafIdRef.current = 0;
+            const pending = pendingGridRef.current;
+            if (pending) {
+              updateGridState(pending.row, pending.col, pending.isValid);
+              pendingGridRef.current = null;
+            }
+          });
+        }
       }
     },
     [computeGridPos]
@@ -281,6 +297,13 @@ export function useDrag(
   const onPointerUp = useCallback((clientX?: number, clientY?: number) => {
     const current = dragRef.current;
     if (!current) return;
+
+    // Cancel pending rAF — we compute final position synchronously below
+    if (rafIdRef.current) {
+      cancelAnimationFrame(rafIdRef.current);
+      rafIdRef.current = 0;
+      pendingGridRef.current = null;
+    }
 
     // Synchronous final position to avoid stale rAF on fast flicks
     let finalRow = current.boardRow;
@@ -326,6 +349,11 @@ export function useDrag(
   }, [onDrop, computeGridPos]);
 
   const cancelDrag = useCallback(() => {
+    if (rafIdRef.current) {
+      cancelAnimationFrame(rafIdRef.current);
+      rafIdRef.current = 0;
+      pendingGridRef.current = null;
+    }
     removeOverlay();
     dragRef.current = null;
     rectRef.current = null;
