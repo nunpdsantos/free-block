@@ -1,4 +1,4 @@
-import { useRef, useCallback, useState, useEffect } from 'react';
+import { useRef, useCallback, useState, useEffect, startTransition } from 'react';
 import type { PieceShape, DragState, GhostCells, Board } from '../game/types';
 import { canPlacePiece } from '../game/logic';
 import { GRID_SIZE, FINGER_OFFSET } from '../game/constants';
@@ -6,7 +6,7 @@ import { getCSSPx } from '../game/responsive';
 import { getPieceBounds } from '../game/pieces';
 import '../components/DragOverlay.css';
 
-const SNAP_RADIUS_DRAG = 0;
+const SNAP_RADIUS_DRAG = 1;
 const SNAP_RADIUS_DROP = 2;
 const LIVE_DRAG_PREVIEW_ENABLED = true;
 
@@ -37,7 +37,7 @@ export function useDrag(
   const pieceColsRef = useRef(0);
   const lastGridRef = useRef<{ row: number | null; col: number | null }>({ row: null, col: null });
   const rafIdRef = useRef(0);
-  const pendingGridRef = useRef<{ row: number | null; col: number | null; isValid: boolean } | null>(null);
+  const pendingCoordsRef = useRef<{ clientX: number; clientY: number } | null>(null);
 
   // Imperative overlay — no React involvement
   const overlayElRef = useRef<HTMLDivElement | null>(null);
@@ -191,20 +191,22 @@ export function useDrag(
 
     if (!LIVE_DRAG_PREVIEW_ENABLED) return;
 
-    // Urgent update — ghost must track finger position every frame, no deferral
-    setDragState(newState);
+    // Non-urgent transition — React can interrupt Board re-render for pointer events
+    startTransition(() => {
+      setDragState(newState);
 
-    const ghost: GhostCells = new Map();
-    if (row !== null && col !== null) {
-      for (const coord of latest.piece.coords) {
-        const r = row + coord.row;
-        const c = col + coord.col;
-        if (r >= 0 && r < GRID_SIZE && c >= 0 && c < GRID_SIZE) {
-          ghost.set(`${r},${c}`, isValid);
+      const ghost: GhostCells = new Map();
+      if (row !== null && col !== null) {
+        for (const coord of latest.piece.coords) {
+          const r = row + coord.row;
+          const c = col + coord.col;
+          if (r >= 0 && r < GRID_SIZE && c >= 0 && c < GRID_SIZE) {
+            ghost.set(`${r},${c}`, isValid);
+          }
         }
       }
-    }
-    setGhostCells(ghost);
+      setGhostCells(ghost);
+    });
   }
 
   // --- Pointer handlers ---
@@ -281,20 +283,18 @@ export function useDrag(
       moveOverlay(clientX, clientY);
 
       if (LIVE_DRAG_PREVIEW_ENABLED) {
-        const { row, col, isValid } = computeGridPos(clientX, clientY, SNAP_RADIUS_DRAG);
-
-        // rAF-throttle React state updates — max once per display frame (60 Hz).
-        // Overlay moves at hardware rate; ghost cells catch up each frame.
-        // Without this, pointerrawupdate at 240 Hz floods React with renders
-        // and the main thread falls behind, causing elastic lag on busy boards.
-        pendingGridRef.current = { row, col, isValid };
+        // Store raw coords — computeGridPos runs lazily in the rAF callback.
+        // This keeps per-event work to just moveOverlay (pure DOM).
+        // Grid computation + React state updates happen at most once per frame (60 Hz).
+        pendingCoordsRef.current = { clientX, clientY };
         if (!rafIdRef.current) {
           rafIdRef.current = requestAnimationFrame(() => {
             rafIdRef.current = 0;
-            const pending = pendingGridRef.current;
-            if (pending) {
-              updateGridState(pending.row, pending.col, pending.isValid);
-              pendingGridRef.current = null;
+            const coords = pendingCoordsRef.current;
+            if (coords) {
+              const { row, col, isValid } = computeGridPos(coords.clientX, coords.clientY, SNAP_RADIUS_DRAG);
+              updateGridState(row, col, isValid);
+              pendingCoordsRef.current = null;
             }
           });
         }
@@ -311,7 +311,7 @@ export function useDrag(
     if (rafIdRef.current) {
       cancelAnimationFrame(rafIdRef.current);
       rafIdRef.current = 0;
-      pendingGridRef.current = null;
+      pendingCoordsRef.current = null;
     }
 
     // Synchronous final position to avoid stale rAF on fast flicks
@@ -361,7 +361,7 @@ export function useDrag(
     if (rafIdRef.current) {
       cancelAnimationFrame(rafIdRef.current);
       rafIdRef.current = 0;
-      pendingGridRef.current = null;
+      pendingCoordsRef.current = null;
     }
     removeOverlay();
     dragRef.current = null;
